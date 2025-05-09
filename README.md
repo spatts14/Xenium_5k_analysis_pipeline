@@ -17,16 +17,16 @@ throughout the development and plan accordingly.
 
 
 <!-- Your exemplar title. Make it sound catchy! -->
-# This is my exemplar title
+# Reproducible Spatial Transcriptomics Pipeline with RSE Best Practices
 
 <!-- A brief description of your exemplar, which may include an image -->
 This is a brief abstract of my exemplar, which includes a representative image.
 ![Scikit Camera Image](docs/assets/readme-img.png)
 
 <!-- Author information -->
-This exemplar was developed at Imperial College London by (YOUR NAME) in
-collaboration with (RSE MENTOR) from Research Software Engineering and
-(RCDS MENTOR) from Research Computing & Data Science at the Early Career
+This exemplar was developed at Imperial College London by Sara Patti in
+collaboration with Adrian D'Alessandro from Research Software Engineering and
+Jesus Urtasun from Research Computing & Data Science at the Early Career
 Researcher Institute.
 
 
@@ -37,20 +37,21 @@ skills will be gained by studying your ReCoDE exemplar. -->
 
 After completing this exemplar, students will:
 
-- Learning Outcome 1
-- Learning Outcome 2
-- Learning Outcome 3
+- Analyze spatial transcriptomic data (Xenium)
+- Develop a reporducible pipeline
+- Implement RSE best practices (e.g testing, continous integration)
 
 
 <!-- Audience. Think broadly as to who will benefit. -->
 ## Target Audience 🎯
 
-Who will benefit from studying this exemplar.
-
+1) Biologists interested in developing bioinformatic pipelines
+2) RSE interested in analyzing spatial transcriptomics data
 
 <!-- Requirements.
 What skills and knowledge will students need before starting?
-e.g. ECRI courses, knowledge of a programming language or library...
+- Python
+- NextFlow (?)
 
 Is it a prerequisite skill or learning outcome?
 e.g. If your project uses a niche library, you could either set it as a
@@ -91,7 +92,7 @@ to work on it, and what other disciplines may find it useful.
 <!-- Software. What languages, libraries, software you use. -->
 ## Software Tools 🛠️
 
-Programming language(s), libraries, and scientific software used.
+Python, squidpy, MuSpAn
 
 
 <!-- Repository structure. Explain how your code is structured. -->

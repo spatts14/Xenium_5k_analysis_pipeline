@@ -223,6 +223,12 @@ This project is licensed under the [BSD-3-Clause license](LICENSE.md).
 
 # Spatial Transcriptomics Pipeline Documentation
 
-1. Download Xenium data from the [FFPE Human Lung Cancer Data](https://www.10xgenomics.com/datasets/ffpe-human-lung-cancer-data-with-human-immuno-oncology-profiling-panel-and-custom-add-on-1-standard).
+Download Xenium data from the [FFPE Human Lung Cancer Data](https://www.10xgenomics.com/datasets/ffpe-human-lung-cancer-data-with-human-immuno-oncology-profiling-panel-and-custom-add-on-1-standard).
 
 Data is generated using the 10x Genomics Xenium platform. The data is for human lung cancer tissue. The panel includes 380 genes from the Xenium Human Immuno-Oncology Profiling Panel with custom add-on.
+
+
+Analysis framework is based on the [Squidpy](https://squidpy.readthedocs.io/en/stable/) library, which is a Python library for spatial omics data analysis. Squidpy is built on top of the [Scanpy](https://scanpy.readthedocs.io/en/stable/) library, which is a widely used library for single-cell RNA-seq data analysis.
+The analysis framework is designed to be modular and extensible, allowing users to easily add new features and functionality as needed. The code is organized into several modules, each of which is responsible for a specific aspect of the analysis pipeline.
+
+The original tutorials are linked here: [Xenium tutorual](https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_xenium.html)

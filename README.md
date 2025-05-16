@@ -220,3 +220,9 @@ Imperial prefers BSD-3. Please update the LICENSE.md file with the current year.
 ## Licence 📄
 
 This project is licensed under the [BSD-3-Clause license](LICENSE.md).
+
+# Spatial Transcriptomics Pipeline Documentation
+
+1. Download Xenium data from the [FFPE Human Lung Cancer Data](https://www.10xgenomics.com/datasets/ffpe-human-lung-cancer-data-with-human-immuno-oncology-profiling-panel-and-custom-add-on-1-standard).
+
+Data is generated using the 10x Genomics Xenium platform. The data is for human lung cancer tissue. The panel includes 380 genes from the Xenium Human Immuno-Oncology Profiling Panel with custom add-on.

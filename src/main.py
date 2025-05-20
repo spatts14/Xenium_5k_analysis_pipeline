@@ -1,6 +1,5 @@
 def cowsay(msg):
-    """
-    Function to print a cow saying the given message.
+    """Function to print a cow saying the given message.
     """
     cow = r"""
         \   ^__^

@@ -1,18 +1,8 @@
 # Import packages
-import numpy as np
-
-import spatialdata as sd
-from spatialdata_io import xenium
-
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 import scanpy as sc
+import spatialdata as sd
 import squidpy as sq
-
-import random
-import torch
-import os
 
 from helper_function.py import seed_everything
 
@@ -24,20 +14,20 @@ seed_everything(21122023)
 # Set directories
 input_path = "./"
 output_path = "./"
-xenium_path = f"{input_path}, /Xenium" # ^ Change to file path rather than f" string
-zarr_path = f"{output_path}, /Xenium.zarr" # ^ Change to file path rather than f" string
+xenium_path = f"{input_path}, /Xenium"  # ^ Change to file path rather than f" string
+zarr_path = (
+    f"{output_path}, /Xenium.zarr"  # ^ Change to file path rather than f" string
+)
 
 # Import data
 sdata = sd.read_zarr(zarr_path)
-adata =  adata = sc.read_h5ad(f"{output_path}/data.h5ad")
+adata = adata = sc.read_h5ad(f"{output_path}/data.h5ad")
 
 # $ Calculate spatial statistics
 
 # build spatial neighborhood graph
 # compute connectivity
-sq.gr.spatial_neighbors(adata, 
-                        coord_type="generic", 
-                        delaunay=True)
+sq.gr.spatial_neighbors(adata, coord_type="generic", delaunay=True)
 
 
 # compute centrality scores
@@ -46,13 +36,10 @@ sq.gr.spatial_neighbors(adata,
 # clustering coefficient - measure of the degree to which nodes (cells) cluster together.
 # degree centrality - fraction of non-group members connected to group members
 
-sq.gr.centrality_scores(adata, 
-                        cluster_key="leiden")
+sq.gr.centrality_scores(adata, cluster_key="leiden")
 
 # plot centrality scores
-sq.pl.centrality_scores(adata, 
-                        cluster_key="leiden", 
-                        figsize=(16, 5))
+sq.pl.centrality_scores(adata, cluster_key="leiden", figsize=(16, 5))
 
 
 # Compute co-occurrence probability

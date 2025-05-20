@@ -2,15 +2,10 @@
 __pycache__
 *.egg-info
 
-## Folder ignore
-# Ignore everything in the data folder
-data/*
-
-
 ## Python ignore
 
 # Directories
-data/
+data/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,18 +1,11 @@
 # Import packages
-import numpy as np
-
-import spatialdata as sd
-from spatialdata_io import xenium
 
 import matplotlib.pyplot as plt
-import seaborn as sns
-
+import numpy as np
 import scanpy as sc
-import squidpy as sq
-
-import random
-import torch
-import os
+import seaborn as sns
+import spatialdata as sd
+from spatialdata_io import xenium
 
 from helper_function.py import seed_everything
 
@@ -27,8 +20,10 @@ min_cells = 5
 # Set directories
 input_path = "./"
 output_path = "./"
-xenium_path = f"{input_path}, /Xenium" # ^ Change to file path rather than f" string
-zarr_path = f"{output_path}, /Xenium.zarr" # ^ Change to file path rather than f" string
+xenium_path = f"{input_path}, /Xenium"  # ^ Change to file path rather than f" string
+zarr_path = (
+    f"{output_path}, /Xenium.zarr"  # ^ Change to file path rather than f" string
+)
 
 # Import data
 sdata = xenium(xenium_path)
@@ -37,13 +32,13 @@ sdata = xenium(xenium_path)
 xenium.write(zarr_path)
 
 # Read in .zarr
-sdata = sd.read_zarr(zarr_path) #  read directly from the zarr store
+sdata = sd.read_zarr(zarr_path)  #  read directly from the zarr store
 
 
-# Save anndata oject (stored in patialdata.tables layer) 
-adata = sdata.tables["table"] # contains the count matrix, cell and gene annotations
+# Save anndata oject (stored in patialdata.tables layer)
+adata = sdata.tables["table"]  # contains the count matrix, cell and gene annotations
 
-# $ Calculate and plot metrics 
+# $ Calculate and plot metrics
 
 # Calculate quality control metrics
 sc.pp.calculate_qc_metrics(adata, percent_top=(10, 20, 50, 150), inplace=True)
@@ -58,7 +53,7 @@ cwords = (
 print(f"Negative DNA probe count % : {cprobes}")
 print(f"Negative decoding count % : {cwords}")
 
-# Calculate averages 
+# Calculate averages
 avg_total_counts = np.mean(adata.obs["total_counts"])
 print(f"Average number of transcripts per cell: {avg_total_counts}")
 
@@ -69,7 +64,6 @@ area_max = np.max(adata.obs["cell_area"])
 area_min = np.min(adata.obs["cell_area"])
 print(f"Max cell area: {area_max}")
 print(f"Min cell area: {area_min}")
-
 
 
 # Plot
@@ -113,8 +107,8 @@ sc.pp.filter_genes(adata, min_cells=min_cells)
 
 
 # Normalize data
-adata.layers["counts"] = adata.X.copy() # make copy of raw data
-sc.pp.normalize_total(adata, inplace=True) # normalize data
+adata.layers["counts"] = adata.X.copy()  # make copy of raw data
+sc.pp.normalize_total(adata, inplace=True)  # normalize data
 
 # Log transform data
 sc.pp.log1p(adata)

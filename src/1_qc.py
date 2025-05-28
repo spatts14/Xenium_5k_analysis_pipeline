@@ -97,7 +97,6 @@ print(f"Min cell area: {area_min}")
 
 
 # Plot
-# ^ How do I save these plots?
 fig, axs = plt.subplots(1, 4, figsize=(15, 4))
 
 axs[0].set_title("Total transcripts per cell")
@@ -128,6 +127,11 @@ sns.histplot(
     kde=False,
     ax=axs[3],
 )
+
+# Adjust layout and save the figure
+plt.tight_layout()
+plt.savefig(Path(output_path) / "cell_summary_histograms.png", dpi=300)
+plt.close()
 
 # $ QC data #
 

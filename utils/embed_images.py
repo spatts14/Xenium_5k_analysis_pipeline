@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-import nbformat
 import base64
 import re
-from pathlib import Path
 import sys
+from pathlib import Path
+
+import nbformat
 
 if len(sys.argv) != 2:
     print("Usage: embed_images.py <notebook_directory>")
@@ -21,7 +22,7 @@ for nb_path in notebook_dir.glob("*.ipynb"):
     nb = nbformat.read(nb_path, as_version=4)
 
     for cell in nb.cells:
-        if cell.cell_type != 'markdown':
+        if cell.cell_type != "markdown":
             continue
 
         def replace_image(match):
@@ -36,6 +37,6 @@ for nb_path in notebook_dir.glob("*.ipynb"):
             print(f"  Embedded {img_path}")
             return f"![{alt_text}]({datauri})"
 
-        cell.source = re.sub(r'!\[(.*?)\]\((.*?)\)', replace_image, cell.source)
+        cell.source = re.sub(r"!\[(.*?)\]\((.*?)\)", replace_image, cell.source)
 
     nbformat.write(nb, nb_path)

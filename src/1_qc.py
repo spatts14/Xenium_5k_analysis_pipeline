@@ -124,7 +124,7 @@ sns.histplot(
 
 # Adjust layout and save the figure
 plt.tight_layout()
-plt.savefig(Path(output_path) / "cell_summary_histograms.png", dpi=300)
+plt.savefig(Path(output_path) / "1_qc/cell_summary_histograms.png", dpi=300)
 plt.close()
 
 # $ QC data #

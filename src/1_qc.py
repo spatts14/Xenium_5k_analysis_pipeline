@@ -45,14 +45,6 @@ output_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-tr
 xenium_path = Path(input_path) / "data/xenium"
 zarr_path = Path(input_path) / "data/xenium.zarr"
 
-# Load into spatialdata format
-logging.info("Reading Xenium data...")
-sdata = xenium(xenium_path)
-
-# Convert to zarr format
-logging.info("Writing to Zarr...")
-sdata.write(zarr_path)
-
 # Read in .zarr
 logging.info("Loading Xenium data...")
 sdata = sd.read_zarr(zarr_path)  #  read directly from the zarr store

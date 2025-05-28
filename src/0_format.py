@@ -31,3 +31,6 @@ sdata = xenium(xenium_path)
 # Convert to zarr format
 logging.info("Writing to Zarr...")
 sdata.write(zarr_path)
+
+# Convert to zarr format
+logging.info("Finished formatting data.")

@@ -6,6 +6,7 @@ __pycache__
 
 # Directories
 data/*
+analysis/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

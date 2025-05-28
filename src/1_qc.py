@@ -21,12 +21,6 @@ import os
 
 import logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler("my_script.log"), logging.StreamHandler()],
-)
-
 
 # from helper_function import seed_everything # ? not working please help
 
@@ -42,8 +36,16 @@ min_cells = 5
 # Set directories -
 input_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
 output_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis"
-xenium_path = Path(input_path) / "data/xenium"
 zarr_path = Path(input_path) / "data/xenium.zarr"
+logging_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis/logging"
+
+# Set up logging
+logging.basicConfig(
+    filename=Path(logging_path) / "1_qc.txt",  # output file
+    filemode="w",  # overwrites the file each time
+    format="%(asctime)s - %(levelname)s - %(message)s",  # log format
+    level=logging.INFO,  # minimum level to log
+)
 
 # Read in .zarr
 logging.info("Loading Xenium data...")
@@ -72,20 +74,20 @@ cwords = (
     / adata.obs["total_counts"].sum()
     * 100
 )
-print(f"Negative DNA probe count % : {cprobes}")
-print(f"Negative decoding count % : {cwords}")
+logging.info(f"Negative DNA probe count % : {cprobes}")
+logging.info(f"Negative decoding count % : {cwords}")
 
 # Calculate averages
 avg_total_counts = np.mean(adata.obs["total_counts"])
-print(f"Average number of transcripts per cell: {avg_total_counts}")
+logging.info(f"Average number of transcripts per cell: {avg_total_counts}")
 
 avg_total_unique_counts = np.mean(adata.obs["n_genes_by_counts"])
-print(f"Average unique transcripts per cell: {avg_total_unique_counts}")
+logging.info(f"Average unique transcripts per cell: {avg_total_unique_counts}")
 
 area_max = np.max(adata.obs["cell_area"])
 area_min = np.min(adata.obs["cell_area"])
-print(f"Max cell area: {area_max}")
-print(f"Min cell area: {area_min}")
+logging.info(f"Max cell area: {area_max}")
+logging.info(f"Min cell area: {area_min}")
 
 
 # Plot
@@ -122,12 +124,13 @@ sns.histplot(
 
 # Adjust layout and save the figure
 plt.tight_layout()
-plt.savefig(Path(output_path) / "cell_summary_histograms.png", dpi=300)
+plt.savefig(Path(output_path) / "1_qc/cell_summary_histograms.png", dpi=300)
 plt.close()
 
 # $ QC data #
 
 # Filter cells
+logging.info("Filtering cells and genes...")
 sc.pp.filter_cells(adata, min_counts=min_counts)
 sc.pp.filter_genes(adata, min_cells=min_cells)
 

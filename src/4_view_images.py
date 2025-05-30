@@ -9,6 +9,7 @@ import squidpy as sq
 
 # Set variables
 module_name = "4_view_images"  # name of the module
+gene_list = ["EPCAM", "CD3D", "CD68", "VWF", "PTPRC", "ACTA2"]
 
 # Set directories
 base_dir = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
@@ -37,12 +38,15 @@ logging.basicConfig(
     level=logging.INFO,  # minimum level to log
 )
 
+# change directory to output_path/module_name
+os.chdir(Path(output_path) / module_name)
+
 # Import data
 logging.info("Loading Xenium data...")
 adata = sc.read_h5ad(Path(output_path) / "3_annotate/adata.h5ad")
 
 # View plots
-logging.info("Plotting clusters on slide...")
+logging.info("Visualize clusters on tissue...")
 sq.pl.spatial_scatter(
     adata,
     library_id="spatial",
@@ -56,6 +60,20 @@ plt.tight_layout()
 plt.savefig(Path(output_path) / f"{module_name}/images.png", dpi=300)
 plt.close()
 logging.info(f"Saved plots to {module_name}/images.png")
+
+
+# View specific gene expression
+logging.info("Plotting genes of interest on tissue...")
+sq.pl.spatial_scatter(
+    adata,
+    library_id="spatial",
+    color=gene_list,
+    shape=None,
+    size=2,
+    img=False,
+    save="gene_expression.png",
+)
+
 
 # Save anndata object
 adata.write_h5ad(Path(output_path) / f"{module_name}/adata.h5ad")

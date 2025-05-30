@@ -63,6 +63,8 @@ sc.tl.leiden(adata)  # determine cell clusters
 
 
 # plot UMAP
+# change directory to output_path/module_name
+os.chdir(Path(output_path) / module_name)
 sc.pl.umap(
     adata,
     color=[
@@ -71,11 +73,22 @@ sc.pl.umap(
         "leiden",
     ],
     wspace=0.4,
+    show=False,
+    save=f"_{module_name}.png",  # save the figure with the module name
+    frameon=False,
+    title=[
+        "Total counts",
+        "Number of genes by counts",
+        "Leiden clusters",
+    ],
 )
-plt.tight_layout()
-plt.savefig(Path(output_path) / f"{module_name}/UMAP.png", dpi=300)
-plt.close()
-logging.info(f"Saved plots to {module_name}/UMAP.png")
+
+# plt.tight_layout()
+# plt.savefig(Path(output_path) / f"{module_name}/UMAP.png", dpi=300)
+# plt.close()
+# logging.info(
+#     f"Saved plots to {module_name}/UMAP.png"
+# )  # Not sure if we can save the plots in this way because it isnt working
 
 # Save anndata object
 adata.write_h5ad(Path(output_path) / f"{module_name}/adata.h5ad")

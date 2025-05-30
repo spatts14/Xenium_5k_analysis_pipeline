@@ -1,6 +1,4 @@
 # Import packages
-import warnings  # ? what is the best way to suppress warnings from package inputs?
-
 import logging
 import os
 from pathlib import Path
@@ -8,24 +6,15 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import scanpy as sc
 import squidpy as sq
-import torch
-
-warnings.filterwarnings("ignore")
-
-# from helper_function.py import seed_everything
-
-# Set seed
-# seed_everything(21122023)
-
 
 # Set variables
 module_name = "4_view_images"  # name of the module
 
 # Set directories
-input_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
-output_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis"
-logging_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis/logging"
-
+base_dir = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
+input_path = base_dir
+output_path = Path(base_dir) / "analysis"
+logging_path = Path(output_path) / "logging"
 
 # Confirm directories exist
 if not Path(input_path).exists():
@@ -53,14 +42,15 @@ logging.info("Loading Xenium data...")
 adata = sc.read_h5ad(Path(output_path) / "3_annotate/adata.h5ad")
 
 # View plots
+logging.info("Plotting clusters on slide...")
 sq.pl.spatial_scatter(
     adata,
     library_id="spatial",
     shape=None,
-    color=[
-        "leiden",
-    ],
+    outline=False,
+    color=["leiden", "total_counts"],
     wspace=0.4,
+    size=1,
 )
 plt.tight_layout()
 plt.savefig(Path(output_path) / f"{module_name}/images.png", dpi=300)

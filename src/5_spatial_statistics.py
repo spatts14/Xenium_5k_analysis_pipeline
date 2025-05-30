@@ -1,67 +1,120 @@
 # Import packages
+import logging
+import os
+from pathlib import Path
 
+import matplotlib.pyplot as plt
 import scanpy as sc
-import spatialdata as sd
 import squidpy as sq
 
-from helper_function.py import seed_everything
-
-# Set seed
-seed_everything(21122023)
-
 # Set variables
+module_name = "5_spatial_stats"  # name of the module
 
 # Set directories
-input_path = "./"
-output_path = "./"
-xenium_path = f"{input_path}, /Xenium"  # ^ Change to file path rather than f" string
-zarr_path = (
-    f"{output_path}, /Xenium.zarr"  # ^ Change to file path rather than f" string
+base_dir = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
+input_path = base_dir
+output_path = Path(base_dir) / "analysis"
+logging_path = Path(output_path) / "logging"
+
+# Confirm directories exist
+if not Path(input_path).exists():
+    raise FileNotFoundError(f"Input path {input_path} does not exist.")
+if not Path(output_path).exists():
+    raise FileNotFoundError(f"Output path {output_path} does not exist.")
+
+
+# Create output directories if they do not exist
+os.makedirs(Path(output_path) / module_name, exist_ok=True)
+
+# Set up logging
+os.makedirs(
+    logging_path, exist_ok=True
+)  # should set up all these directories at the start of the pipeline?
+logging.basicConfig(
+    filename=Path(logging_path) / f"{module_name}.txt",  # output file
+    filemode="w",  # overwrites the file each time
+    format="%(asctime)s - %(levelname)s - %(message)s",  # log format
+    level=logging.INFO,  # minimum level to log
 )
 
+# change directory to output_path/module_name
+os.chdir(
+    Path(output_path) / module_name
+)  # need to so plots save in the correct directory
+
 # Import data
-sdata = sd.read_zarr(zarr_path)
-adata = adata = sc.read_h5ad(f"{output_path}/data.h5ad")
+logging.info("Loading Xenium data...")
+adata = sc.read_h5ad(Path(output_path) / "4_view_images/adata.h5ad")
+
 
 # $ Calculate spatial statistics
 
-# build spatial neighborhood graph
-# compute connectivity
-sq.gr.spatial_neighbors(adata, coord_type="generic", delaunay=True)
+logging.info("Building spatial neighborhood graph...")
+sq.gr.spatial_neighbors(
+    adata, coord_type="generic", delaunay=True
+)  # compute connectivity
 
 
-# compute centrality scores
-
-# closeness centrality - measure of how close the group is to other nodes (i.e cells)
-# clustering coefficient - measure of the degree to which nodes (cells) cluster together.
-# degree centrality - fraction of non-group members connected to group members
-
+logging.info("Computing and plotting centrality scores...")
 sq.gr.centrality_scores(adata, cluster_key="leiden")
+sq.pl.centrality_scores(
+    adata, cluster_key="leiden", figsize=(16, 5), save="_plot.png"
+)
 
-# plot centrality scores
-sq.pl.centrality_scores(adata, cluster_key="leiden", figsize=(16, 5))
 
+# # $ Compute co-occurrence probability
+# logging.info("Computing co-occurrence probability...")
+# # Create subset table layer
+# adata_subsample = sc.pp.subsample(
+#     adata, fraction=0.5, copy=True
+# )  # subsample to speed up computation
 
-# Compute co-occurrence probability
+# # Visualize co-occurrence
+# sq.gr.co_occurrence(
+#     adata_subsample,
+#     cluster_key="leiden",
+# )
+# sq.pl.co_occurrence(
+#     adata_subsample,
+#     cluster_key="leiden",
+#     clusters="12",
+#     figsize=(10, 10),
+#     save="_plot.png",
+# )
 
-# Create subset table layer
-sdata.tables["subsample"] = sc.pp.subsample(adata, fraction=0.5, copy=True)
-adata_subsample = sdata.tables["subsample"]
+# $ Neighborhood enrichment analysis
+logging.info("Performing neighborhood enrichment analysis...")
+sq.gr.nhood_enrichment(adata, cluster_key="leiden")
 
-# Visualize co-occurrence
-sq.gr.co_occurrence(
-    adata_subsample,
+# Plot neighborhood enrichment
+sq.pl.nhood_enrichment(
+    adata,
     cluster_key="leiden",
+    figsize=(8, 8),
+    title="Neighborhood enrichment adata",
+    save="_plot.png",
 )
-sq.pl.co_occurrence(
+
+# $ Moran's I
+logging.info("Calculating Moran's I...")
+
+# Build spatial neighborhood graph on a subsampled dataset
+sq.gr.spatial_neighbors(adata_subsample, coord_type="generic", delaunay=True)
+
+# Calculate Moran's I for spatial autocorrelation on subsampled data
+sq.gr.spatial_autocorr(
     adata_subsample,
-    cluster_key="leiden",
-    clusters="12",
-    figsize=(10, 10),
+    mode="moran",
+    n_perms=100,
+    n_jobs=1,
 )
-sq.pl.spatial_scatter(
-    adata_subsample,
-    color="leiden",
-    shape=None,
-    size=2,
+
+# Save Moran's I results
+adata_subsample.uns["moranI"].to_csv(
+    Path(output_path) / module_name / "moranI_results.csv",
+    index=True,
 )
+
+# Save anndata object
+adata.write_h5ad(Path(output_path) / f"{module_name}/adata.h5ad")
+logging.info(f"Data saved to {module_name}/adata.h5ad")

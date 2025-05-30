@@ -1,26 +1,18 @@
 # Import packages
 import warnings  # ? what is the best way to suppress warnings from package inputs?
 
-warnings.filterwarnings("ignore")
-
-import numpy as np
-
-import spatialdata as sd
-from spatialdata_io import xenium
-
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-import scanpy as sc
-import squidpy as sq
-
+import logging
+import os
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+import numpy as np
+import scanpy as sc
+import seaborn as sns
+import spatialdata as sd
 import torch
-import os
 
-import logging
-
+warnings.filterwarnings("ignore")
 
 # from helper_function import seed_everything # ? not working please help
 
@@ -68,7 +60,7 @@ sdata = sd.read_zarr(zarr_path)  #  read directly from the zarr store
 
 logging.info("Done")
 
-# # Save anndata oject (stored in spatialdata.tables layer)
+# # Save anndata object (stored in spatialdata.tables layer)
 adata = sdata.tables[
     "table"
 ]  # contains the count matrix, cell and gene annotations

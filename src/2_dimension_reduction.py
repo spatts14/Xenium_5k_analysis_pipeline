@@ -7,6 +7,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import scanpy as sc
+import squidpy as sq
 import torch
 
 warnings.filterwarnings("ignore")
@@ -51,20 +52,31 @@ logging.info("Loading Xenium data...")
 adata = sc.read_h5ad(Path(output_path) / "1_qc/adata.h5ad")
 
 # Preform dimension reduction analysis
-logging.info("compute PCA...")
+logging.info("Compute PCA...")
 sc.pp.pca(adata)  # compute principal components
+sc.pl.pca_variance_ratio(adata, log=True, n_pcs=50)
+plt.tight_layout()
+plt.savefig(
+    Path(output_path) / module_name / "pca_variance_ratio.png"
+)  # save the figure with the module name
 
-logging.info("compute neighbors...")
+logging.info("Compute neighbors...")
 sc.pp.neighbors(adata)  # compute a neighborhood graph
 
-logging.info("create UMAPs and cluster cells..")
+logging.info("Xreate UMAPs and cluster cells..")
 sc.tl.umap(adata)  # calculate umap
-sc.tl.leiden(adata)  # determine cell clusters
+sc.tl.leiden(
+    adata,
+    resolution=1.0,  # choose resolution for clustering
+    key_added="leiden",
+)  # name leiden clusters
 
 
-# plot UMAP
 # change directory to output_path/module_name
 os.chdir(Path(output_path) / module_name)
+
+# plot UMAP
+logging.info("Plotting UMAPs...")
 sc.pl.umap(
     adata,
     color=[
@@ -78,12 +90,17 @@ sc.pl.umap(
     frameon=False,
 )
 
-# plt.tight_layout()
-# plt.savefig(Path(output_path) / f"{module_name}/UMAP.png", dpi=300)
-# plt.close()
-# logging.info(
-#     f"Saved plots to {module_name}/UMAP.png"
-# )  # Not sure if we can save the plots in this way because it isnt working
+# plot visualization of leiden clusters
+sq.pl.spatial_scatter(
+    adata,
+    library_id="spatial",
+    shape=None,
+    color=[
+        "leiden.0",
+    ],
+    wspace=0.4,
+    save="leiden_spatial.png",
+)
 
 # Save anndata object
 adata.write_h5ad(Path(output_path) / f"{module_name}/adata.h5ad")

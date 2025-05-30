@@ -76,11 +76,6 @@ sc.pl.umap(
     show=False,
     save=f"_{module_name}.png",  # save the figure with the module name
     frameon=False,
-    title=[
-        "Total counts",
-        "Number of genes by counts",
-        "Leiden clusters",
-    ],
 )
 
 # plt.tight_layout()

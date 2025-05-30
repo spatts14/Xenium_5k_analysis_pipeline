@@ -1,20 +1,16 @@
 # Import packages
 import warnings  # ? what is the best way to suppress warnings from package inputs?
 
-warnings.filterwarnings("ignore")
-
 import logging
 import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import scanpy as sc
-import seaborn as sns
-import spatialdata as sd
 import squidpy as sq
 import torch
-from spatialdata_io import xenium
+
+warnings.filterwarnings("ignore")
 
 # from helper_function.py import seed_everything
 

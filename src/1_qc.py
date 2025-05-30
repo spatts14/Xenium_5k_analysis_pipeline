@@ -1,26 +1,18 @@
 # Import packages
 import warnings  # ? what is the best way to suppress warnings from package inputs?
 
-warnings.filterwarnings("ignore")
-
-import numpy as np
-
-import spatialdata as sd
-from spatialdata_io import xenium
-
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-import scanpy as sc
-import squidpy as sq
-
+import logging
+import os
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+import numpy as np
+import scanpy as sc
+import seaborn as sns
+import spatialdata as sd
 import torch
-import os
 
-import logging
-
+warnings.filterwarnings("ignore")
 
 # from helper_function import seed_everything # ? not working please help
 
@@ -29,19 +21,34 @@ import logging
 
 # Set variables
 # ? How should I config this so a user can easily change them?
+module_name = "1_qc"  # name of the module
 min_counts = 10
 min_cells = 5
 
 
-# Set directories -
+# Set directories
 input_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
 output_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis"
 zarr_path = Path(input_path) / "data/xenium.zarr"
 logging_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis/logging"
 
+# Confirm directories exist
+if not Path(input_path).exists():
+    raise FileNotFoundError(f"Input path {input_path} does not exist.")
+if not Path(output_path).exists():
+    raise FileNotFoundError(f"Output path {output_path} does not exist.")
+if not Path(zarr_path).exists():
+    raise FileNotFoundError(f"Zarr path {zarr_path} does not exist.")
+
+# Create output directories if they do not exist
+os.makedirs(Path(output_path) / module_name, exist_ok=True)
+
 # Set up logging
+os.makedirs(
+    logging_path, exist_ok=True
+)  # should set up all these directories at the start of the pipeline?
 logging.basicConfig(
-    filename=Path(logging_path) / "1_qc.txt",  # output file
+    filename=Path(logging_path) / f"{module_name}.txt",  # output file
     filemode="w",  # overwrites the file each time
     format="%(asctime)s - %(levelname)s - %(message)s",  # log format
     level=logging.INFO,  # minimum level to log
@@ -53,7 +60,7 @@ sdata = sd.read_zarr(zarr_path)  #  read directly from the zarr store
 
 logging.info("Done")
 
-# # Save anndata oject (stored in spatialdata.tables layer)
+# # Save anndata object (stored in spatialdata.tables layer)
 adata = sdata.tables[
     "table"
 ]  # contains the count matrix, cell and gene annotations
@@ -124,8 +131,11 @@ sns.histplot(
 
 # Adjust layout and save the figure
 plt.tight_layout()
-plt.savefig(Path(output_path) / "1_qc/cell_summary_histograms.png", dpi=300)
+plt.savefig(
+    Path(output_path) / f"{module_name}/cell_summary_histograms.png", dpi=300
+)
 plt.close()
+logging.info(f"Saved plots to {module_name}/cell_summary_histograms.png")
 
 # $ QC data #
 
@@ -136,11 +146,12 @@ sc.pp.filter_genes(adata, min_cells=min_cells)
 
 
 # Normalize data
+logging.info("Normalize data...")
 adata.layers["counts"] = adata.X.copy()  # make copy of raw data
 sc.pp.normalize_total(adata, inplace=True)  # normalize data
-# Log transform data
-sc.pp.log1p(adata)
+sc.pp.log1p(adata)  # Log transform data
 
 
 # Save data
-# ? Should I have the QC data as a few .5had file each time?
+adata.write_h5ad(Path(output_path) / f"{module_name}/adata.h5ad")
+logging.info(f"Data saved to {module_name}/adata.h5ad")

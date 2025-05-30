@@ -143,4 +143,5 @@ sc.pp.log1p(adata)
 
 
 # Save data
-# ? Should I have the QC data as a few .5had file each time?
+adata.write_h5ad(adata, Path(output_path) / "1_qc/adata.h5ad")
+logging.info("Data saved to 1_qc/adata.h5ad")

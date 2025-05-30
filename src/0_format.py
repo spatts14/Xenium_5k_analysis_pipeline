@@ -1,18 +1,13 @@
 # Import packages
 import warnings  # ? what is the best way to suppress warnings from package inputs?
+import logging
+from pathlib import Path
+import spatialdata as sd
+from spatialdata_io import xenium
 
 warnings.filterwarnings("ignore")
 
-import spatialdata as sd
-from spatialdata_io import xenium
-import scanpy as sc
-import squidpy as sq
-
-from pathlib import Path
-
-import logging
-
-# Set directories -
+# Set directories
 input_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
 output_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis"
 xenium_path = Path(input_path) / "data/xenium"

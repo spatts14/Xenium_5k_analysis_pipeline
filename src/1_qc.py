@@ -33,7 +33,7 @@ min_counts = 10
 min_cells = 5
 
 
-# Set directories -
+# Set directories
 input_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
 output_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis"
 zarr_path = Path(input_path) / "data/xenium.zarr"

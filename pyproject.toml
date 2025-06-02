@@ -19,6 +19,7 @@ dev = [
     "mkdocs-material==9.6.12",
     "python-markdown-math==0.9",
     "ruff",
+    "pre-commit",
 ]
 
 

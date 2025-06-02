@@ -3,7 +3,6 @@ import logging
 import os
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import scanpy as sc
 import squidpy as sq
 
@@ -11,7 +10,9 @@ import squidpy as sq
 module_name = "5_spatial_stats"  # name of the module
 
 # Set directories
-base_dir = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
+base_dir = (
+    "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
+)
 input_path = base_dir
 output_path = Path(base_dir) / "analysis"
 logging_path = Path(output_path) / "logging"
@@ -57,9 +58,7 @@ sq.gr.spatial_neighbors(
 
 logging.info("Computing and plotting centrality scores...")
 sq.gr.centrality_scores(adata, cluster_key="leiden")
-sq.pl.centrality_scores(
-    adata, cluster_key="leiden", figsize=(16, 5), save="_plot.png"
-)
+sq.pl.centrality_scores(adata, cluster_key="leiden", figsize=(16, 5), save="_plot.png")
 
 
 # # $ Compute co-occurrence probability

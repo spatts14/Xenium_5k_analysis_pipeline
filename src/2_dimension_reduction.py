@@ -1,14 +1,12 @@
 # Import packages
-import warnings  # ? what is the best way to suppress warnings from package inputs?
-
 import logging
 import os
+import warnings  # ? what is the best way to suppress warnings from package inputs?
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import scanpy as sc
 import squidpy as sq
-import torch
 
 warnings.filterwarnings("ignore")
 
@@ -21,7 +19,9 @@ warnings.filterwarnings("ignore")
 module_name = "2_DR"
 
 # Set directories
-input_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
+input_path = (
+    "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
+)
 output_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis"
 logging_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis/logging"
 
@@ -51,7 +51,7 @@ logging.basicConfig(
 logging.info("Loading Xenium data...")
 adata = sc.read_h5ad(Path(output_path) / "1_qc/adata.h5ad")
 
-# Preform dimension reduction analysis
+# Perform dimension reduction analysis
 logging.info("Compute PCA...")
 sc.pp.pca(adata)  # compute principal components
 sc.pl.pca_variance_ratio(adata, log=True, n_pcs=50)

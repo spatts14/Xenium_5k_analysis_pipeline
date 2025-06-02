@@ -12,7 +12,9 @@ module_name = "4_view_images"  # name of the module
 gene_list = ["EPCAM", "CD3D", "CD68", "VWF", "PTPRC", "ACTA2"]
 
 # Set directories
-base_dir = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
+base_dir = (
+    "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
+)
 input_path = base_dir
 output_path = Path(base_dir) / "analysis"
 logging_path = Path(output_path) / "logging"

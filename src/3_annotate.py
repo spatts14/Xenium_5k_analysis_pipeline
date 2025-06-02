@@ -7,16 +7,9 @@ import logging
 import os
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-import numpy as np
-
 # import torch
-import openpyxl
 import pandas as pd
 import scanpy as sc
-import seaborn as sns
-import spatialdata as sd
-import squidpy as sq
 
 # from helper_function.py import seed_everything
 
@@ -28,7 +21,9 @@ import squidpy as sq
 module_name = "3_annotate"
 
 # Set directories
-input_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
+input_path = (
+    "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
+)
 output_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis"
 logging_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis/logging"
 
@@ -69,9 +64,7 @@ os.chdir(
 logging.info("Calculating differentially expressed genes for each cluster...")
 sc.tl.rank_genes_groups(adata, groupby="leiden", method="wilcoxon")
 
-logging.info(
-    "Plotting the top differentially expressed genes for each cluster..."
-)
+logging.info("Plotting the top differentially expressed genes for each cluster...")
 sc.pl.rank_genes_groups_dotplot(
     adata,
     groupby="leiden",
@@ -82,9 +75,7 @@ sc.pl.rank_genes_groups_dotplot(
 )
 
 # Plot differentially expressed genes for each cluster
-logging.info(
-    "Plot differentially expressed genes for each cluster in elbow plot..."
-)
+logging.info("Plot differentially expressed genes for each cluster in elbow plot...")
 sc.pl.rank_genes_groups(
     adata,
     n_genes=10,
@@ -96,14 +87,10 @@ sc.pl.rank_genes_groups(
 )
 
 # Make a dataframe of marker expression
-logging.info(
-    "Save files for differentially expressed genes for each cluster..."
-)
+logging.info("Save files for differentially expressed genes for each cluster...")
 logging.info("File 1...")
 markers = sc.get.rank_genes_groups_df(adata, None)
-markers = markers[
-    (markers["pvals_adj"] < 0.05) & (markers["logfoldchanges"] > 0.5)
-]
+markers = markers[(markers["pvals_adj"] < 0.05) & (markers["logfoldchanges"] > 0.5)]
 markers.to_excel(
     Path(output_path) / module_name / "markers.xlsx",
     index=False,
@@ -136,14 +123,10 @@ diff_gene_df.to_csv(
 logging.info("File 3...")
 # Create a dictionary to store DataFrames for each cluster
 cluster_dict = {}
-os.makedirs(
-    os.path.join(output_path, module_name, "cluster_diff_genes"), exist_ok=True
-)
+os.makedirs(os.path.join(output_path, module_name, "cluster_diff_genes"), exist_ok=True)
 for cluster_number in range(clusters_list):
     # print(cluster_number)
-    current_cluster = markers[
-        markers["group"] == str(cluster_number)
-    ].sort_values(
+    current_cluster = markers[markers["group"] == str(cluster_number)].sort_values(
         by="logfoldchanges", ascending=False
     )  # make a dataframe of the current cluster
     cluster_dict[f"cluster_{cluster_number}"] = (
@@ -163,9 +146,7 @@ for cluster_number in range(clusters_list):
 # Rename the clusters based on the markers
 logging.info("Renaming clusters based on markers...")
 # Get unique clusters
-unique_clusters = (
-    adata.obs["leiden"].astype(str).unique()
-)  # Get unique cluster names
+unique_clusters = adata.obs["leiden"].astype(str).unique()  # Get unique cluster names
 cluster_names = {
     cluster: f"Cluster_{cluster}" for cluster in unique_clusters
 }  # Create a mapping of cluster names

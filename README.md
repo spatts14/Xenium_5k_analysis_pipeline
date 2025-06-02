@@ -10,8 +10,7 @@ collaboration with Adrian D'Alessandro from Research Software Engineering and
 Jesus Urtasun from Research Computing & Data Science at the Early Career
 Researcher Institute.
 
-
-<!-- Learning Outcomes. 
+<!-- Learning Outcomes.
 Aim for 3 - 4 points that illustrate what knowledge and
 skills will be gained by studying your ReCoDE exemplar. -->
 ## Learning Outcomes 🎓
@@ -20,8 +19,7 @@ After completing this exemplar, students will:
 
 - Analyze spatial transcriptomic data (Xenium)
 - Develop a reporducible pipeline
-- Implement RSE best practices (e.g testing, continous integration)
-
+- Implement RSE best practices (e.g testing, continuous integration)
 
 <!-- Audience. Think broadly as to who will benefit. -->
 ## Target Audience 🎯
@@ -51,7 +49,6 @@ you must include a relevant section that helps with learning this library.
 - System requirements (e.g. Python 3.11+, Anaconda, 50 GB disk space, etc.)
 - Hardware or HPC requirements (if any)
 
-
 <!-- Quick Start Guide. Tell learners how to engage with the exemplar. -->
 ## Getting Started 🚀
 
@@ -66,19 +63,17 @@ e.g. Step-by-step guide:
 Briefly describe how this project fits in your discipline, why you chose
 to work on it, and what other disciplines may find it useful.
 
-
 <!-- Software. What languages, libraries, software you use. -->
 ## Software Tools 🛠️
 
 Python, squidpy, MuSpAn
-
 
 <!-- Repository structure. Explain how your code is structured. -->
 ## Project Structure 🗂️
 
 Overview of code organisation and structure.
 
-```
+```text
 .
 ├── notebooks
 │ ├── ex1.ipynb
@@ -104,6 +99,7 @@ Code is organised into logical components:
 ### Preprocessing & Quality Control
 
 Goal: Ensure clean, usable spatial gene expression data.
+
 - Run xenium output through Space Ranger or Xenium tools
 - Filter low-quality spots/cells
 - Normalize gene counts
@@ -111,6 +107,7 @@ Goal: Ensure clean, usable spatial gene expression data.
 ### Dimensionality Reduction & Clustering
 
 Goal: Identify patterns and groups of similar gene expression profiles.
+
 - PCA + UMAP/t-SNE
 - Cluster by gene expression
 - Identify cell types with marker genes
@@ -118,12 +115,15 @@ Goal: Identify patterns and groups of similar gene expression profiles.
 ### Spatial Mapping & Visualization
 
 Goal: Map gene expression and clusters back to their spatial context.
+
 - Overlay expression and clusters on tissue image
 - Plot spatially enriched genes
 - Map cell types or states in space
 
 ### Differential Expression & Functional Analysis
+
 Goal: Discover meaningful biology.
+
 - Spatially variable genes (SVGs)
 - DE between regions or conditions
 - Pathway or GO enrichment
@@ -135,7 +135,6 @@ List datasets used with:
 
 - Licensing info
 - Where they are included (in the repo or external links)
-
 
 <!-- Best practice notes. -->
 ## Best Practice Notes 📝
@@ -151,7 +150,6 @@ List datasets used with:
 | ---------- | ------- |
 | Reading    | 3 hours |
 | Practising | 3 hours |
-
 
 <!-- Any references, or other resources. -->
 ## Additional Resources 🔗

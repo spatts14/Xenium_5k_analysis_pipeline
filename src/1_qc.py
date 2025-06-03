@@ -1,3 +1,5 @@
+"""Quality control module."""
+
 # Import packages
 import logging
 import os
@@ -9,6 +11,8 @@ import numpy as np
 import scanpy as sc
 import seaborn as sns
 import spatialdata as sd
+
+from .paths import base_dir, logging_path, output_path, zarr_path
 
 warnings.filterwarnings("ignore")
 
@@ -23,18 +27,9 @@ module_name = "1_qc"  # name of the module
 min_counts = 10
 min_cells = 5
 
-
-# Set directories
-input_path = (
-    "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
-)
-output_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis"
-zarr_path = Path(input_path) / "data/xenium.zarr"
-logging_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis/logging"
-
 # Confirm directories exist
-if not Path(input_path).exists():
-    raise FileNotFoundError(f"Input path {input_path} does not exist.")
+if not Path(base_dir).exists():
+    raise FileNotFoundError(f"Input path {base_dir} does not exist.")
 if not Path(output_path).exists():
     raise FileNotFoundError(f"Output path {output_path} does not exist.")
 if not Path(zarr_path).exists():

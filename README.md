@@ -2,7 +2,7 @@
 
 <!-- A brief description of your exemplar, which may include an image -->
 This is a brief abstract of my exemplar, which includes a representative image.
-![Scikit Camera Image](docs/figures/nextflow-logo.png)
+![Scikit Camera Image](docs/assets/nextflow-logo.png)
 
 <!-- Author information -->
 This exemplar was developed at Imperial College London by Sara Patti in

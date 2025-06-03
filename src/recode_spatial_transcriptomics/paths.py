@@ -3,9 +3,7 @@
 from pathlib import Path
 
 # Set directories
-base_dir = Path(  # TODO: Change to a dynamically set base directory
-    "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
-)
+base_dir = Path(__file__).parent.parent.parent
 data_path = base_dir / "data"
 output_path = base_dir / "analysis"
 xenium_path = data_path / "xenium"

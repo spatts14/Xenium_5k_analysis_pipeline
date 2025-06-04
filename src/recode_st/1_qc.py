@@ -3,7 +3,7 @@
 # Import packages
 import logging
 import os
-import warnings  # ? what is the best way to suppress warnings from package inputs?
+import warnings
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -12,32 +12,24 @@ import scanpy as sc
 import seaborn as sns
 import spatialdata as sd
 
-from .paths import base_dir, logging_path, output_path, zarr_path
+from recode_st.helper_function import seed_everything
+from recode_st.paths import base_dir, logging_path, output_path, zarr_path
 
 warnings.filterwarnings("ignore")
 
-# from helper_function import seed_everything # ? not working please help
-
 if __name__ == "__main__":
     # Set seed
-    # seed_everything(21122023) # ? not working please help
+    seed_everything(21122023)
 
     # Set variables
     # ? How should I config this so a user can easily change them?
     module_name = "1_qc"  # name of the module
+    module_dir = output_path / module_name
     min_counts = 10
     min_cells = 5
 
-    # Confirm directories exist
-    if not Path(base_dir).exists():
-        raise FileNotFoundError(f"Input path {base_dir} does not exist.")
-    if not Path(output_path).exists():
-        raise FileNotFoundError(f"Output path {output_path} does not exist.")
-    if not Path(zarr_path).exists():
-        raise FileNotFoundError(f"Zarr path {zarr_path} does not exist.")
-
     # Create output directories if they do not exist
-    os.makedirs(Path(output_path) / module_name, exist_ok=True)
+    module_dir.mkdir(exist_ok=True)
 
     # Set up logging
     os.makedirs(
@@ -64,11 +56,15 @@ if __name__ == "__main__":
     # $ Calculate and plot metrics
 
     # Calculate quality control metrics
-    sc.pp.calculate_qc_metrics(adata, percent_top=(10, 20, 50, 150), inplace=True)
+    sc.pp.calculate_qc_metrics(
+        adata, percent_top=(10, 20, 50, 150), inplace=True
+    )
 
     # Calculate percent negative DNA probe and percent negative decoding count
     cprobes = (
-        adata.obs["control_probe_counts"].sum() / adata.obs["total_counts"].sum() * 100
+        adata.obs["control_probe_counts"].sum()
+        / adata.obs["total_counts"].sum()
+        * 100
     )
     cwords = (
         adata.obs["control_codeword_counts"].sum()
@@ -83,7 +79,9 @@ if __name__ == "__main__":
     logging.info(f"Average number of transcripts per cell: {avg_total_counts}")
 
     avg_total_unique_counts = np.mean(adata.obs["n_genes_by_counts"])
-    logging.info(f"Average unique transcripts per cell: {avg_total_unique_counts}")
+    logging.info(
+        f"Average unique transcripts per cell: {avg_total_unique_counts}"
+    )
 
     area_max = np.max(adata.obs["cell_area"])
     area_min = np.min(adata.obs["cell_area"])
@@ -124,10 +122,11 @@ if __name__ == "__main__":
     # Adjust layout and save the figure
     plt.tight_layout()
     plt.savefig(
-        Path(output_path) / f"{module_name}/cell_summary_histograms.png", dpi=300
+        module_dir / "cell_summary_histograms.png",
+        dpi=300,
     )
     plt.close()
-    logging.info(f"Saved plots to {module_name}/cell_summary_histograms.png")
+    logging.info(f"Saved plots to {module_dir /'cell_summary_histograms.png'}")
 
     # $ QC data #
 
@@ -143,5 +142,6 @@ if __name__ == "__main__":
     sc.pp.log1p(adata)  # Log transform data
 
     # Save data
-    adata.write_h5ad(Path(output_path) / f"{module_name}/adata.h5ad")
-    logging.info(f"Data saved to {module_name}/adata.h5ad")
+    adata.write_h5ad(module_dir / "adata.h5ad")
+    logging.info(f"Data saved to {module_dir / 'adata.h5ad'}")
+    logging.info("Quality control completed successfully.")

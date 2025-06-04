@@ -9,11 +9,12 @@ version = "0.1.0"
 dependencies = [
     "matplotlib",
     "numpy",
-    "pandas",
+    "pandas[excel]",
     "torch",
     "scanpy",
     "spatialdata-io",
     "squidpy",
+    "seaborn",
 ]
 
 [project.optional-dependencies]

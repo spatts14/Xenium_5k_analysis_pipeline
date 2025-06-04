@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "recode_spatial_transcriptomics"
+name = "recode_st"
 version = "0.1.0"
 
 dependencies = [

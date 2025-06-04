@@ -1,3 +1,5 @@
+"""Image viewing module."""
+
 # Import packages
 import logging
 import os
@@ -7,19 +9,15 @@ import matplotlib.pyplot as plt
 import scanpy as sc
 import squidpy as sq
 
+from .paths import base_dir, logging_path, output_path
+
 # Set variables
 module_name = "4_view_images"  # name of the module
 gene_list = ["EPCAM", "CD3D", "CD68", "VWF", "PTPRC", "ACTA2"]
 
-# Set directories
-base_dir = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
-input_path = base_dir
-output_path = Path(base_dir) / "analysis"
-logging_path = Path(output_path) / "logging"
-
 # Confirm directories exist
-if not Path(input_path).exists():
-    raise FileNotFoundError(f"Input path {input_path} does not exist.")
+if not Path(base_dir).exists():
+    raise FileNotFoundError(f"Input path {base_dir} does not exist.")
 if not Path(output_path).exists():
     raise FileNotFoundError(f"Output path {output_path} does not exist.")
 

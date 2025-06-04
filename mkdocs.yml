@@ -2,7 +2,7 @@ site_name: ReCoDe-spatial-transcriptomics
 repo_url: https://github.com/ImperialCollegeLondon/ReCoDe-spatial-transcriptomics
 
 ## Please change the above name and link to point to your exemplar
-## Please do not change the theme or most other options below 
+## Please do not change the theme or most other options below
 
 edit_uri: tree/main/docs/
 
@@ -42,13 +42,13 @@ plugins:
   - mkdocs-jupyter
   - exclude:
       glob:
-      - "LICENSE.md"
+        - LICENSE.md
 
 # Set settings for markdown extensions
 markdown_extensions:
   - meta
   - mdx_math:
-      enable_dollar_delimiter: True
+      enable_dollar_delimiter: true
   - pymdownx.highlight:
       anchor_linenums: false
   - pymdownx.inlinehilite

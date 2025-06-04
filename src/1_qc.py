@@ -1,8 +1,9 @@
-# Import packages
-import warnings  # ? what is the best way to suppress warnings from package inputs?
+"""Quality control module."""
 
+# Import packages
 import logging
 import os
+import warnings  # ? what is the best way to suppress warnings from package inputs?
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -10,7 +11,8 @@ import numpy as np
 import scanpy as sc
 import seaborn as sns
 import spatialdata as sd
-import torch
+
+from .paths import base_dir, logging_path, output_path, zarr_path
 
 warnings.filterwarnings("ignore")
 
@@ -25,16 +27,9 @@ module_name = "1_qc"  # name of the module
 min_counts = 10
 min_cells = 5
 
-
-# Set directories
-input_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
-output_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis"
-zarr_path = Path(input_path) / "data/xenium.zarr"
-logging_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis/logging"
-
 # Confirm directories exist
-if not Path(input_path).exists():
-    raise FileNotFoundError(f"Input path {input_path} does not exist.")
+if not Path(base_dir).exists():
+    raise FileNotFoundError(f"Input path {base_dir} does not exist.")
 if not Path(output_path).exists():
     raise FileNotFoundError(f"Output path {output_path} does not exist.")
 if not Path(zarr_path).exists():
@@ -61,9 +56,7 @@ sdata = sd.read_zarr(zarr_path)  #  read directly from the zarr store
 logging.info("Done")
 
 # # Save anndata object (stored in spatialdata.tables layer)
-adata = sdata.tables[
-    "table"
-]  # contains the count matrix, cell and gene annotations
+adata = sdata.tables["table"]  # contains the count matrix, cell and gene annotations
 
 # $ Calculate and plot metrics
 
@@ -72,14 +65,10 @@ sc.pp.calculate_qc_metrics(adata, percent_top=(10, 20, 50, 150), inplace=True)
 
 # Calculate percent negative DNA probe and percent negative decoding count
 cprobes = (
-    adata.obs["control_probe_counts"].sum()
-    / adata.obs["total_counts"].sum()
-    * 100
+    adata.obs["control_probe_counts"].sum() / adata.obs["total_counts"].sum() * 100
 )
 cwords = (
-    adata.obs["control_codeword_counts"].sum()
-    / adata.obs["total_counts"].sum()
-    * 100
+    adata.obs["control_codeword_counts"].sum() / adata.obs["total_counts"].sum() * 100
 )
 logging.info(f"Negative DNA probe count % : {cprobes}")
 logging.info(f"Negative decoding count % : {cwords}")
@@ -131,9 +120,7 @@ sns.histplot(
 
 # Adjust layout and save the figure
 plt.tight_layout()
-plt.savefig(
-    Path(output_path) / f"{module_name}/cell_summary_histograms.png", dpi=300
-)
+plt.savefig(Path(output_path) / f"{module_name}/cell_summary_histograms.png", dpi=300)
 plt.close()
 logging.info(f"Saved plots to {module_name}/cell_summary_histograms.png")
 

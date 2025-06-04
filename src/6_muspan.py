@@ -1,28 +1,21 @@
+"""Muspan module."""
+
 # Import packages
 import logging
 import os
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-import muspan as ms
-import numpy as np
 import scanpy as sc
 import spatialdata as sd
-import squidpy as sq
+
+from .paths import base_dir, logging_path, output_path, zarr_path
 
 # Set variables
 module_name = "6_muspan"  # name of the module
 
-# Set directories
-base_dir = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
-input_path = base_dir
-output_path = Path(base_dir) / "analysis"
-logging_path = Path(output_path) / "logging"
-zarr_path = Path(input_path) / "data/xenium.zarr"
-
 # Confirm directories exist
-if not Path(input_path).exists():
-    raise FileNotFoundError(f"Input path {input_path} does not exist.")
+if not Path(base_dir).exists():
+    raise FileNotFoundError(f"Input path {base_dir} does not exist.")
 if not Path(output_path).exists():
     raise FileNotFoundError(f"Output path {output_path} does not exist.")
 

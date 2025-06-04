@@ -1,14 +1,16 @@
-# Import packages
-import warnings  # ? what is the best way to suppress warnings from package inputs?
+"""Dimension reduction module."""
 
+# Import packages
 import logging
 import os
+import warnings  # ? what is the best way to suppress warnings from package inputs?
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import scanpy as sc
 import squidpy as sq
-import torch
+
+from .paths import base_dir, logging_path, output_path
 
 warnings.filterwarnings("ignore")
 
@@ -20,15 +22,9 @@ warnings.filterwarnings("ignore")
 # Set variables
 module_name = "2_DR"
 
-# Set directories
-input_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
-output_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis"
-logging_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis/logging"
-
-
 # Confirm directories exist
-if not Path(input_path).exists():
-    raise FileNotFoundError(f"Input path {input_path} does not exist.")
+if not Path(base_dir).exists():
+    raise FileNotFoundError(f"Input path {base_dir} does not exist.")
 if not Path(output_path).exists():
     raise FileNotFoundError(f"Output path {output_path} does not exist.")
 
@@ -51,7 +47,7 @@ logging.basicConfig(
 logging.info("Loading Xenium data...")
 adata = sc.read_h5ad(Path(output_path) / "1_qc/adata.h5ad")
 
-# Preform dimension reduction analysis
+# Perform dimension reduction analysis
 logging.info("Compute PCA...")
 sc.pp.pca(adata)  # compute principal components
 sc.pl.pca_variance_ratio(adata, log=True, n_pcs=50)

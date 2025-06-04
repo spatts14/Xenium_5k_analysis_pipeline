@@ -3,11 +3,17 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "recode_spatial_transcriptomics"
+name = "recode_st"
 version = "0.1.0"
 
 dependencies = [
-    # Add runtime dependencies here
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "torch",
+    "scanpy",
+    "spatialdata-io",
+    "squidpy",
 ]
 
 [project.optional-dependencies]
@@ -20,8 +26,13 @@ dev = [
     "python-markdown-math==0.9",
     "ruff",
     "pre-commit",
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
 ]
 
+[tool.pytest.ini_options]
+addopts = "-v -p no:warnings --cov=src --cov-report=html --doctest-modules --ignore=src/recode_spatial_transcriptomics/__main__.py --ignore=docs/ --ignore=utils/"
 
 [tool.ruff]
 target-version = "py310"   # Minimum version for pyupgrade

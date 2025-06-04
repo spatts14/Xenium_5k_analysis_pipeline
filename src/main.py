@@ -1,3 +1,6 @@
+"""An example main module. Currently used in the sample jupyter notebook."""
+
+
 def cowsay(msg):
     """Function to print a cow saying the given message."""
     cow = r"""

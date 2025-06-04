@@ -1,3 +1,5 @@
+"""Module containing helper functions."""
+
 import os
 import random
 
@@ -6,6 +8,11 @@ import torch
 
 
 def seed_everything(seed: int):
+    """Set random seed on every random module for reproducibility.
+
+    Args:
+        seed: The seed value to set for random number generation.
+    """
     random.seed(seed)
     os.environ["PYTHONHASHSEED"] = str(seed)
     np.random.seed(seed)

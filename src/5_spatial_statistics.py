@@ -1,3 +1,5 @@
+"""Spatial statistics module."""
+
 # Import packages
 import logging
 import os
@@ -6,20 +8,14 @@ from pathlib import Path
 import scanpy as sc
 import squidpy as sq
 
+from .paths import base_dir, logging_path, output_path
+
 # Set variables
 module_name = "5_spatial_stats"  # name of the module
 
-# Set directories
-base_dir = (
-    "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
-)
-input_path = base_dir
-output_path = Path(base_dir) / "analysis"
-logging_path = Path(output_path) / "logging"
-
 # Confirm directories exist
-if not Path(input_path).exists():
-    raise FileNotFoundError(f"Input path {input_path} does not exist.")
+if not Path(base_dir).exists():
+    raise FileNotFoundError(f"Input path {base_dir} does not exist.")
 if not Path(output_path).exists():
     raise FileNotFoundError(f"Output path {output_path} does not exist.")
 
@@ -97,22 +93,22 @@ sq.pl.nhood_enrichment(
 # $ Moran's I
 logging.info("Calculating Moran's I...")
 
-# Build spatial neighborhood graph on a subsampled dataset
-sq.gr.spatial_neighbors(adata_subsample, coord_type="generic", delaunay=True)
+# # Build spatial neighborhood graph on a subsampled dataset
+# sq.gr.spatial_neighbors(adata_subsample, coord_type="generic", delaunay=True)
 
-# Calculate Moran's I for spatial autocorrelation on subsampled data
-sq.gr.spatial_autocorr(
-    adata_subsample,
-    mode="moran",
-    n_perms=100,
-    n_jobs=1,
-)
+# # Calculate Moran's I for spatial autocorrelation on subsampled data
+# sq.gr.spatial_autocorr(
+#     adata_subsample,
+#     mode="moran",
+#     n_perms=100,
+#     n_jobs=1,
+# )
 
-# Save Moran's I results
-adata_subsample.uns["moranI"].to_csv(
-    Path(output_path) / module_name / "moranI_results.csv",
-    index=True,
-)
+# # Save Moran's I results
+# adata_subsample.uns["moranI"].to_csv(
+#     Path(output_path) / module_name / "moranI_results.csv",
+#     index=True,
+# )
 
 # Save anndata object
 adata.write_h5ad(Path(output_path) / f"{module_name}/adata.h5ad")

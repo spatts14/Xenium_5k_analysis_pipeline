@@ -1,15 +1,18 @@
+"""Annotation module."""
+
 # Import packages
-import warnings  # ? what is the best way to suppress warnings from package inputs?
-
-warnings.filterwarnings("ignore")
-
 import logging
 import os
+import warnings  # ? what is the best way to suppress warnings from package inputs?
 from pathlib import Path
 
 # import torch
 import pandas as pd
 import scanpy as sc
+
+from .paths import base_dir, logging_path, output_path
+
+warnings.filterwarnings("ignore")
 
 # from helper_function.py import seed_everything
 
@@ -20,17 +23,9 @@ import scanpy as sc
 # Set variables
 module_name = "3_annotate"
 
-# Set directories
-input_path = (
-    "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics"
-)
-output_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis"
-logging_path = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/analysis/logging"
-
-
 # Confirm directories exist
-if not Path(input_path).exists():
-    raise FileNotFoundError(f"Input path {input_path} does not exist.")
+if not Path(base_dir).exists():
+    raise FileNotFoundError(f"Input path {base_dir} does not exist.")
 if not Path(output_path).exists():
     raise FileNotFoundError(f"Output path {output_path} does not exist.")
 
@@ -59,7 +54,8 @@ os.chdir(
 )  # need to so plots save in the correct directory
 
 # Annotate cell clusters
-# Calculate the differentially expressed genes for every cluster, compared to the rest of the cells in our adata
+# Calculate the differentially expressed genes for every cluster,
+# compared to the rest of the cells in our adata
 
 logging.info("Calculating differentially expressed genes for each cluster...")
 sc.tl.rank_genes_groups(adata, groupby="leiden", method="wilcoxon")

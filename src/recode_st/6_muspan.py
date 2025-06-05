@@ -6,12 +6,9 @@ import os
 import warnings
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import scanpy as sc
-import squidpy as sq
 
-from recode_st.helper_function import seed_everything
-from recode_st.paths import base_dir, logging_path, output_path, zarr_path
+from recode_st.paths import logging_path, output_path, zarr_path
 
 warnings.filterwarnings("ignore")
 
@@ -19,7 +16,7 @@ if __name__ == "__main__":
     # Set variables
     module_name = "6_muspan"  # name of the module
     module_dir = output_path / module_name
-    
+
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 

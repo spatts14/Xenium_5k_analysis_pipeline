@@ -10,8 +10,7 @@ import matplotlib.pyplot as plt
 import scanpy as sc
 import squidpy as sq
 
-from recode_st.helper_function import seed_everything
-from recode_st.paths import base_dir, logging_path, output_path, zarr_path
+from recode_st.paths import logging_path, output_path
 
 warnings.filterwarnings("ignore")
 

@@ -15,7 +15,7 @@ def configure_logging(log_level=logging.INFO):
     logger.setLevel(log_level)
 
     ch = logging.StreamHandler()
-    fh = logging.FileHandler(logging_path / "recode_st.log", mode="w")
+    fh = logging.FileHandler(logging_path / "recode_st.log")
 
     formatter = logging.Formatter(
         "[%(asctime)s - %(name)s - %(levelname)s] %(message)s",

@@ -3,7 +3,7 @@
 # Import packages
 import logging
 import os
-import warnings  # ? what is the best way to suppress warnings from package inputs?
+import warnings
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -65,6 +65,7 @@ if __name__ == "__main__":
 
     # change directory to output_path/module_name
     os.chdir(module_dir)
+    logging.info(f"Changed directory to {module_dir}")
 
     # plot UMAP
     logging.info("Plotting UMAPs...")
@@ -95,4 +96,4 @@ if __name__ == "__main__":
 
     # Save anndata object
     adata.write_h5ad(module_dir / "adata.h5ad")
-    logging.info(f"Data saved to {module_name}/adata.h5ad")
+    logging.info(f"Data saved to {module_dir / 'adata.h5ad'}")

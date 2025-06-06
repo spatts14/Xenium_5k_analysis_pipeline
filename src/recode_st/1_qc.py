@@ -8,6 +8,7 @@ import numpy as np
 import scanpy as sc
 import seaborn as sns
 import spatialdata as sd
+from zarr.errors import PathNotFoundError
 
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
@@ -139,5 +140,5 @@ if __name__ == "__main__":
 
     try:
         run_qc()
-    except FileNotFoundError as err:
+    except PathNotFoundError as err:
         logger.error(f"File not found: {err}")

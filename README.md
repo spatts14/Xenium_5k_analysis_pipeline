@@ -161,4 +161,4 @@ Imperial prefers BSD-3. Please update the LICENSE.md file with the current year.
 -->
 ## Licence 📄
 
-This project is licensed under the [BSD-3-Clause license](LICENSE.md).
+This project is licensed under the [BSD-3-Clause license](https://github.com/ImperialCollegeLondon/ReCoDe-spatial-transcriptomics/blob/main/LICENSE.md).

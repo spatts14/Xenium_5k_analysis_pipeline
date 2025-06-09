@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     # Import data
     logging.info("Loading Xenium data...")
-    adata = sc.read_h5ad(output_path / "2_DR/adata.h5ad")
+    adata = sc.read_h5ad(output_path / "2_DR" / "adata.h5ad")
 
     # change directory to output_path/module_name
     os.chdir(module_dir)

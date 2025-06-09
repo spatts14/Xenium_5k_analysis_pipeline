@@ -30,7 +30,7 @@ def run_muspan():
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(output_path / "4_view_images/adata.h5ad")  # noqa: F841
+    adata = sc.read_h5ad(output_path / "4_view_images" / "adata.h5ad")  # noqa: F841
     sdata = sd.read_zarr(zarr_path)  # noqa: F841
 
 

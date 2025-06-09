@@ -28,7 +28,7 @@ def run_dimension_reduction():
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(output_path / "1_qc/adata.h5ad")
+    adata = sc.read_h5ad(output_path / "1_qc" / "adata.h5ad")
 
     # Perform dimension reduction analysis
     logger.info("Compute PCA...")

@@ -31,7 +31,7 @@ def run_spatial_statistics():
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(module_dir / "4_view_images/adata.h5ad")
+    adata = sc.read_h5ad(module_dir / "4_view_images" / "adata.h5ad")
 
     # $ Calculate spatial statistics
 

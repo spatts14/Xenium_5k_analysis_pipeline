@@ -33,7 +33,7 @@ def run_view_images():
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(module_dir / "3_annotate/adata.h5ad")
+    adata = sc.read_h5ad(module_dir / "3_annotate" / "adata.h5ad")
 
     # View plots
     logger.info("Visualize clusters on tissue...")
@@ -47,7 +47,7 @@ def run_view_images():
         size=1,
     )
     plt.tight_layout()
-    plt.savefig(module_dir / f"{module_name}/images.png", dpi=300)
+    plt.savefig(module_dir / "images.png", dpi=300)
     plt.close()
     logger.info(f"Saved plots to {module_dir / 'images.png'}")
 
@@ -64,7 +64,7 @@ def run_view_images():
     )
 
     # Save anndata object
-    adata.write_h5ad(module_dir / f"{module_name}/adata.h5ad")
+    adata.write_h5ad(module_dir / "adata.h5ad")
     logger.info(f"Data saved to {module_dir / 'adata.h5ad'}")
     logger.info("Imaging module completed successfully.")
 

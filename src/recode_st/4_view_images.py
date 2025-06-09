@@ -71,6 +71,6 @@ if __name__ == "__main__":
     )
 
     # Save anndata object
-    adata.write_h5ad(module_dir / f"{module_name}/adata.h5ad")
+    adata.write_h5ad(module_dir / "adata.h5ad")
     logging.info(f"Data saved to {module_dir / 'adata.h5ad'}")
     logging.info("Imaging module completed successfully.")

@@ -54,7 +54,7 @@ if __name__ == "__main__":
         size=1,
     )
     plt.tight_layout()
-    plt.savefig(module_dir / f"{module_name}/images.png", dpi=300)
+    plt.savefig(module_dir / "images.png", dpi=300)
     plt.close()
     logging.info(f"Saved plots to {module_dir / 'images.png'}")
 

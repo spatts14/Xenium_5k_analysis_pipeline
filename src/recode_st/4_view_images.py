@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     # Import data
     logging.info("Loading Xenium data...")
-    adata = sc.read_h5ad(module_dir / "3_annotate/adata.h5ad")
+    adata = sc.read_h5ad(module_dir / "3_annotate" / "adata.h5ad")
 
     # View plots
     logging.info("Visualize clusters on tissue...")

@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import scanpy as sc
 import squidpy as sq
 
+from recode_st.helper_function import seed_everything
 from recode_st.paths import logging_path, output_path
 
 warnings.filterwarnings("ignore")
@@ -17,12 +18,13 @@ warnings.filterwarnings("ignore")
 # from helper_function.py import seed_everything
 
 if __name__ == "__main__":
-    # Set seed
-    # seed_everything(21122023)
-
     # Set variables
     module_name = "2_DR"
     module_dir = output_path / module_name
+    seed = 21122023  # seed for reproducibility
+
+    # Set seed
+    seed_everything(seed)
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)

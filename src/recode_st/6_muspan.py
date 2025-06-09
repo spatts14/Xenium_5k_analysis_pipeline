@@ -6,8 +6,12 @@ import os
 import warnings
 from pathlib import Path
 
+# import matplotlib.pyplot as plt
 import scanpy as sc
+import spatialdata as sd
 
+# import squidpy as sq
+from recode_st.helper_function import seed_everything
 from recode_st.paths import logging_path, output_path, zarr_path
 
 warnings.filterwarnings("ignore")
@@ -16,6 +20,10 @@ if __name__ == "__main__":
     # Set variables
     module_name = "6_muspan"  # name of the module
     module_dir = output_path / module_name
+    seed = 21122023  # seed for reproducibility
+
+    # Set seed
+    seed_everything(seed)
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)

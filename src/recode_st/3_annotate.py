@@ -114,7 +114,7 @@ if __name__ == "__main__":
     logging.info("File 3...")
     # Create a dictionary to store DataFrames for each cluster
     cluster_dict = {}
-    os.makedirs(os.path.join(module_dir, "cluster_diff_genes"), exist_ok=True)
+    (module_dir / "cluster_diff_genes").mkdir(exist_ok=True)
     for cluster_number in range(clusters_list):
         # print(cluster_number)
         current_cluster = markers[markers["group"] == str(cluster_number)].sort_values(

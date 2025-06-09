@@ -37,5 +37,5 @@ if __name__ == "__main__":
 
     # Import data
     logging.info("Loading Xenium data...")
-    adata = sc.read_h5ad(output_path / "4_view_images/adata.h5ad")
+    adata = sc.read_h5ad(output_path / "4_view_images" / "adata.h5ad")
     sdata = sd.read_zarr(zarr_path)

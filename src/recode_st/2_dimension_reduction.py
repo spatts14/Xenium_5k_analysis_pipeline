@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     # Import data
     logging.info("Loading Xenium data...")
-    adata = sc.read_h5ad(output_path / "1_qc/adata.h5ad")
+    adata = sc.read_h5ad(output_path / "1_qc" / "adata.h5ad")
 
     # Perform dimension reduction analysis
     logging.info("Compute PCA...")

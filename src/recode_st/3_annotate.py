@@ -10,7 +10,7 @@ from pathlib import Path
 import pandas as pd
 import scanpy as sc
 
-from .paths import logging_path, output_path
+from recode_st.paths import logging_path, output_path
 
 warnings.filterwarnings("ignore")
 

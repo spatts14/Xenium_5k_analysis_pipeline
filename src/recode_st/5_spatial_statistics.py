@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     # Import data
     logging.info("Loading Xenium data...")
-    adata = sc.read_h5ad(module_dir / "4_view_images/adata.h5ad")
+    adata = sc.read_h5ad(module_dir / "4_view_images" / "adata.h5ad")
 
     # $ Calculate spatial statistics
 

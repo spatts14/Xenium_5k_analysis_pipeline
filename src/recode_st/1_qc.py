@@ -18,15 +18,16 @@ from recode_st.paths import logging_path, output_path, zarr_path
 warnings.filterwarnings("ignore")
 
 if __name__ == "__main__":
-    # Set seed
-    seed_everything(21122023)
-
     # Set variables
     # ? How should I config this so a user can easily change them?
     module_name = "1_qc"  # name of the module
     module_dir = output_path / module_name
     min_counts = 10
     min_cells = 5
+    seed = 21122023  # seed for reproducibility
+
+    # Set seed
+    seed_everything(seed)
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)

@@ -1,21 +1,25 @@
 """Image viewing module."""
 
 # Import packages
-import logging
 import os
 import warnings
-from pathlib import Path
+from logging import getLogger
 
 import matplotlib.pyplot as plt
 import scanpy as sc
 import squidpy as sq
 
 from recode_st.helper_function import seed_everything
-from recode_st.paths import logging_path, output_path
+from recode_st.logging_config import configure_logging
+from recode_st.paths import output_path
 
 warnings.filterwarnings("ignore")
 
-if __name__ == "__main__":
+logger = getLogger(__name__)
+
+
+def run_view_images():
+    """Run the image viewing module."""
     # Set variables
     module_name = "4_view_images"  # name of the module
     gene_list = ["EPCAM", "CD3D", "CD68", "VWF", "PTPRC", "ACTA2"]
@@ -28,27 +32,16 @@ if __name__ == "__main__":
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
-    # Set up logging
-    os.makedirs(
-        logging_path, exist_ok=True
-    )  # should set up all these directories at the start of the pipeline?
-    logging.basicConfig(
-        filename=Path(logging_path) / f"{module_name}.txt",  # output file
-        filemode="w",  # overwrites the file each time
-        format="%(asctime)s - %(levelname)s - %(message)s",  # log format
-        level=logging.INFO,  # minimum level to log
-    )
-
     # change directory to output_path/module_name
     os.chdir(module_dir)
-    logging.info(f"Changed directory to {module_dir}")
+    logger.info(f"Changed directory to {module_dir}")
 
     # Import data
-    logging.info("Loading Xenium data...")
+    logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(module_dir / "3_annotate" / "adata.h5ad")
 
     # View plots
-    logging.info("Visualize clusters on tissue...")
+    logger.info("Visualize clusters on tissue...")
     sq.pl.spatial_scatter(
         adata,
         library_id="spatial",
@@ -61,10 +54,10 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.savefig(module_dir / "images.png", dpi=300)
     plt.close()
-    logging.info(f"Saved plots to {module_dir / 'images.png'}")
+    logger.info(f"Saved plots to {module_dir / 'images.png'}")
 
     # View specific gene expression
-    logging.info("Plotting genes of interest on tissue...")
+    logger.info("Plotting genes of interest on tissue...")
     sq.pl.spatial_scatter(
         adata,
         library_id="spatial",
@@ -77,5 +70,16 @@ if __name__ == "__main__":
 
     # Save anndata object
     adata.write_h5ad(module_dir / "adata.h5ad")
-    logging.info(f"Data saved to {module_dir / 'adata.h5ad'}")
-    logging.info("Imaging module completed successfully.")
+    logger.info(f"Data saved to {module_dir / 'adata.h5ad'}")
+    logger.info("Imaging module completed successfully.")
+
+
+if __name__ == "__main__":
+    # Set up logger
+    configure_logging()
+    logger = getLogger("recode_st.4_view_images")
+
+    try:
+        run_view_images()
+    except FileNotFoundError as err:
+        logger.error(f"File not found: {err}")

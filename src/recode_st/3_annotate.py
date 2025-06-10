@@ -1,23 +1,24 @@
 """Annotation module."""
 
-# Import packages
-import logging
 import os
 import warnings  # ? what is the best way to suppress warnings from package inputs?
-from pathlib import Path
+from logging import getLogger
 
 # import torch
 import pandas as pd
 import scanpy as sc
 
 from recode_st.helper_function import seed_everything
-from recode_st.paths import logging_path, output_path
+from recode_st.logging_config import configure_logging
+from recode_st.paths import output_path
 
 warnings.filterwarnings("ignore")
 
-# from helper_function.py import seed_everything
+logger = getLogger(__name__)
 
-if __name__ == "__main__":
+
+def run_annotate():
+    """Run annotation on Xenium data."""
     # Set variables
     module_name = "3_annotate"
     module_dir = output_path / module_name
@@ -29,33 +30,22 @@ if __name__ == "__main__":
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
-    # Set up logging
-    os.makedirs(
-        logging_path, exist_ok=True
-    )  # should set up all these directories at the start of the pipeline?
-    logging.basicConfig(
-        filename=Path(logging_path) / f"{module_name}.txt",  # output file
-        filemode="w",  # overwrites the file each time
-        format="%(asctime)s - %(levelname)s - %(message)s",  # log format
-        level=logging.INFO,  # minimum level to log
-    )
-
     # Import data
-    logging.info("Loading Xenium data...")
+    logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(output_path / "2_DR" / "adata.h5ad")
 
     # change directory to output_path/module_name
     os.chdir(module_dir)
-    logging.info(f"Changed directory to {module_dir}")
+    logger.info(f"Changed directory to {module_dir}")
 
     # Annotate cell clusters
     # Calculate the differentially expressed genes for every cluster,
     # compared to the rest of the cells in our adata
 
-    logging.info("Calculating differentially expressed genes for each cluster...")
+    logger.info("Calculating differentially expressed genes for each cluster...")
     sc.tl.rank_genes_groups(adata, groupby="leiden", method="wilcoxon")
 
-    logging.info("Plotting the top differentially expressed genes for each cluster...")
+    logger.info("Plotting the top differentially expressed genes for each cluster...")
     sc.pl.rank_genes_groups_dotplot(
         adata,
         groupby="leiden",
@@ -66,9 +56,7 @@ if __name__ == "__main__":
     )
 
     # Plot differentially expressed genes for each cluster
-    logging.info(
-        "Plot differentially expressed genes for each cluster in elbow plot..."
-    )
+    logger.info("Plot differentially expressed genes for each cluster in elbow plot...")
     sc.pl.rank_genes_groups(
         adata,
         n_genes=10,
@@ -79,8 +67,8 @@ if __name__ == "__main__":
     )
 
     # Make a dataframe of marker expression
-    logging.info("Save files for differentially expressed genes for each cluster...")
-    logging.info("File 1...")
+    logger.info("Save files for differentially expressed genes for each cluster...")
+    logger.info("File 1...")
     markers = sc.get.rank_genes_groups_df(adata, None)
     markers = markers[(markers["pvals_adj"] < 0.05) & (markers["logfoldchanges"] > 0.5)]
     markers.to_excel(
@@ -88,7 +76,7 @@ if __name__ == "__main__":
         index=False,
     )
 
-    logging.info("File 2...")
+    logger.info("File 2...")
     # Define the number of clusters
     clusters_list = len(adata.obs["leiden"].astype(str).unique())
 
@@ -112,7 +100,7 @@ if __name__ == "__main__":
         index=True,
     )
 
-    logging.info("File 3...")
+    logger.info("File 3...")
     # Create a dictionary to store DataFrames for each cluster
     cluster_dict = {}
     (module_dir / "cluster_diff_genes").mkdir(exist_ok=True)
@@ -135,7 +123,7 @@ if __name__ == "__main__":
         print(f"Exported cluster {cluster_number} data to {csv_filename}")
 
     # Rename the clusters based on the markers
-    logging.info("Renaming clusters based on markers...")
+    logger.info("Renaming clusters based on markers...")
     # Get unique clusters
     unique_clusters = (
         adata.obs["leiden"].astype(str).unique()
@@ -149,5 +137,16 @@ if __name__ == "__main__":
 
     # Save anndata object
     adata.write_h5ad(module_dir / "adata.h5ad")
-    logging.info(f"Data saved to {module_dir / 'adata.h5ad'}")
-    logging.info("Annotation module completed successfully.")
+    logger.info(f"Data saved to {module_dir / 'adata.h5ad'}")
+    logger.info("Annotation module completed successfully.")
+
+
+if __name__ == "__main__":
+    # Set up logger
+    configure_logging()
+    logger = getLogger("recode_st.3_annotate")  # re-name the logger to match the module
+
+    try:
+        run_annotate()
+    except FileNotFoundError as err:
+        logger.error(f"File not found: {err}")

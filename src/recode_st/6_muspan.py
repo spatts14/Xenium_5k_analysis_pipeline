@@ -4,9 +4,12 @@ import os
 import warnings
 from logging import getLogger
 
+# import matplotlib.pyplot as plt
 import scanpy as sc
 import spatialdata as sd
 
+# import squidpy as sq
+from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
 from recode_st.paths import output_path, zarr_path
 
@@ -20,6 +23,10 @@ def run_muspan():
     # Set variables
     module_name = "6_muspan"  # name of the module
     module_dir = output_path / module_name
+    seed = 21122023  # seed for reproducibility
+
+    # Set seed
+    seed_everything(seed)
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)

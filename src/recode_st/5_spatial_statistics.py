@@ -8,6 +8,7 @@ from pathlib import Path
 import scanpy as sc
 import squidpy as sq
 
+from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
 from recode_st.paths import output_path
 
@@ -21,6 +22,10 @@ def run_spatial_statistics():
     # Set variables
     module_name = "5_spatial_stats"  # name of the module
     module_dir = output_path / module_name
+    seed = 21122023  # seed for reproducibility
+
+    # Set seed
+    seed_everything(seed)
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -82,10 +87,10 @@ def run_spatial_statistics():
     # $ Moran's I
     logger.info("Calculating Moran's I...")
 
-    # # Build spatial neighborhood graph on a subsampled dataset
+    # # Build spatial neighborhood graph on a subsample dataset
     # sq.gr.spatial_neighbors(adata_subsample, coord_type="generic", delaunay=True)
 
-    # # Calculate Moran's I for spatial autocorrelation on subsampled data
+    # # Calculate Moran's I for spatial autocorrelation on subsample data
     # sq.gr.spatial_autocorr(
     #     adata_subsample,
     #     mode="moran",

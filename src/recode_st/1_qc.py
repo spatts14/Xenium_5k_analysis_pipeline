@@ -27,6 +27,10 @@ def run_qc():
     module_dir = output_path / module_name
     min_counts = 10
     min_cells = 5
+    seed = 21122023  # seed for reproducibility
+
+    # Set seed
+    seed_everything(seed)
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -134,9 +138,6 @@ if __name__ == "__main__":
     # Set up logger
     configure_logging()
     logger = getLogger("recode_st.1_qc")
-
-    # Set seed
-    seed_everything(21122023)
 
     try:
         run_qc()

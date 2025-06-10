@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import scanpy as sc
 import squidpy as sq
 
+from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
 from recode_st.paths import output_path
 
@@ -23,6 +24,10 @@ def run_view_images():
     module_name = "4_view_images"  # name of the module
     gene_list = ["EPCAM", "CD3D", "CD68", "VWF", "PTPRC", "ACTA2"]
     module_dir = output_path / module_name
+    seed = 21122023  # seed for reproducibility
+
+    # Set seed
+    seed_everything(seed)
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)

@@ -22,6 +22,10 @@ def run_annotate():
     # Set variables
     module_name = "3_annotate"
     module_dir = output_path / module_name
+    seed = 21122023  # seed for reproducibility
+
+    # Set seed
+    seed_everything(seed)
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -56,7 +60,6 @@ def run_annotate():
     sc.pl.rank_genes_groups(
         adata,
         n_genes=10,
-        sharey=False,
         ncols=3,
         legend_fontsize=10,
         show=False,
@@ -142,9 +145,6 @@ if __name__ == "__main__":
     # Set up logger
     configure_logging()
     logger = getLogger("recode_st.3_annotate")  # re-name the logger to match the module
-
-    # Set seed
-    seed_everything(21122023)
 
     try:
         run_annotate()

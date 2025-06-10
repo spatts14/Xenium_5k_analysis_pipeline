@@ -52,14 +52,10 @@ if __name__ == "__main__":
     # Calculate the differentially expressed genes for every cluster,
     # compared to the rest of the cells in our adata
 
-    logging.info(
-        "Calculating differentially expressed genes for each cluster..."
-    )
+    logging.info("Calculating differentially expressed genes for each cluster...")
     sc.tl.rank_genes_groups(adata, groupby="leiden", method="wilcoxon")
 
-    logging.info(
-        "Plotting the top differentially expressed genes for each cluster..."
-    )
+    logging.info("Plotting the top differentially expressed genes for each cluster...")
     sc.pl.rank_genes_groups_dotplot(
         adata,
         groupby="leiden",
@@ -83,14 +79,10 @@ if __name__ == "__main__":
     )
 
     # Make a dataframe of marker expression
-    logging.info(
-        "Save files for differentially expressed genes for each cluster..."
-    )
+    logging.info("Save files for differentially expressed genes for each cluster...")
     logging.info("File 1...")
     markers = sc.get.rank_genes_groups_df(adata, None)
-    markers = markers[
-        (markers["pvals_adj"] < 0.05) & (markers["logfoldchanges"] > 0.5)
-    ]
+    markers = markers[(markers["pvals_adj"] < 0.05) & (markers["logfoldchanges"] > 0.5)]
     markers.to_excel(
         module_dir / "markers.xlsx",
         index=False,
@@ -126,9 +118,7 @@ if __name__ == "__main__":
     (module_dir / "cluster_diff_genes").mkdir(exist_ok=True)
     for cluster_number in range(clusters_list):
         # print(cluster_number)
-        current_cluster = markers[
-            markers["group"] == str(cluster_number)
-        ].sort_values(
+        current_cluster = markers[markers["group"] == str(cluster_number)].sort_values(
             by="logfoldchanges", ascending=False
         )  # make a dataframe of the current cluster
         cluster_dict[f"cluster_{cluster_number}"] = (

@@ -11,7 +11,7 @@ def configure_logging(log_level=logging.INFO):
     Args:
         log_level: The logging level to set. Defaults to logging.INFO.
     """
-    logger = logging.getLogger()
+    logger = logging.getLogger("recode_st")
     logger.setLevel(log_level)
 
     ch = logging.StreamHandler()

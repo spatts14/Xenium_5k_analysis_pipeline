@@ -54,7 +54,23 @@ you must include a relevant section that helps with learning this library.
 
 e.g. Step-by-step guide:
 
-1. Start by (instruction).
+1. Start by downloading the [Xenium Lung FFPE data](https://www.10xgenomics.com/datasets/ffpe-human-lung-cancer-data-with-human-immuno-oncology-profiling-panel-and-custom-add-on-1-standard)
+   - Data can be downloaded from the 10x Genomics website, or directly from the command line.
+      - If downloading from the website, download the `Xenium_V1_Human_Lung_Cancer_Addon_FFPE_outs.zip` file.
+      - If downloading from the command line, use the following command:
+
+        ```bash
+        curl -O https://cf.10xgenomics.com/samples/xenium/2.0.0/Xenium_V1_Human_Lung_Cancer_Addon_FFPE/Xenium_V1_Human_Lung_Cancer_Addon_FFPE_outs.zip
+        ```
+
+   - Unzip the downloaded file.
+     - If you downloaded the file from the website, unzip it using your preferred method.
+     - If you downloaded the file from the command line, use the following command:
+
+        ```bash
+        unzip Xenium_V1_Human_Lung_Cancer_Addon_FFPE_outs.zip
+        ```
+
 2. Visit the sections of this notebook in some particular order.
 3. Attempt exercises `1a`, `1b`, etc.
 4. Progress to advanced materials in the Github repository linked here.

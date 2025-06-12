@@ -11,7 +11,7 @@ dependencies = [
     "numpy",
     "pandas[excel]",
     "torch",
-    "scanpy",
+    "scanpy[leiden]",
     "spatialdata-io",
     "squidpy",
     "seaborn",

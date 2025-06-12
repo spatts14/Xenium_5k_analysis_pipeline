@@ -20,6 +20,15 @@ logger = getLogger(__name__)
 
 def run_muspan():
     """Run Muspan on Xenium data."""
+    try:
+        import muspan  # noqa: F401
+    except ModuleNotFoundError as err:
+        logger.error(
+            "Could not load necessary MuSpAn package. You can obtain this with:\n"
+            "    pip install 'recode_st[muspan] @ git+"
+            "https://github.com/ImperialCollegeLondon/ReCoDe-spatial-transcriptomics.git"
+        )
+        raise err
     # Set variables
     module_name = "6_muspan"  # name of the module
     module_dir = output_path / module_name

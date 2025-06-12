@@ -35,9 +35,13 @@ def run_qc():
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
-    # Read in .zarr
-    logger.info("Loading Xenium data...")
-    sdata = sd.read_zarr(zarr_path)  # read directly from the zarr store
+    try:
+        # Read in .zarr
+        logger.info("Loading Xenium data...")
+        sdata = sd.read_zarr(zarr_path)  # read directly from the zarr store
+    except PathNotFoundError as err:
+        logger.error(f"File not found (or not a valid Zarr store): {zarr_path}")
+        raise err
 
     logger.info("Done")
 
@@ -139,7 +143,4 @@ if __name__ == "__main__":
     configure_logging()
     logger = getLogger("recode_st.1_qc")
 
-    try:
-        run_qc()
-    except PathNotFoundError as err:
-        logger.error(f"File not found: {err}")
+    run_qc()

@@ -1,10 +1,8 @@
 """Dimension reduction module."""
 
-import os
 import warnings
 from logging import getLogger
 
-import matplotlib.pyplot as plt
 import scanpy as sc
 import squidpy as sq
 
@@ -30,6 +28,9 @@ def run_dimension_reduction():
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
+    # Set the directory where to save the ScanPy figures
+    sc.settings.figdir = module_dir
+
     # Import data
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(output_path / "1_qc" / "adata.h5ad")
@@ -37,11 +38,13 @@ def run_dimension_reduction():
     # Perform dimension reduction analysis
     logger.info("Compute PCA...")
     sc.pp.pca(adata)  # compute principal components
-    sc.pl.pca_variance_ratio(adata, log=True, n_pcs=50)
-    plt.tight_layout()
-    plt.savefig(
-        module_dir / "pca_variance_ratio.png"
-    )  # save the figure with the module name
+    sc.pl.pca_variance_ratio(
+        adata,
+        log=True,
+        n_pcs=50,
+        show=False,
+        save=f"_{module_name}.png",
+    )
 
     logger.info("Compute neighbors...")
     sc.pp.neighbors(adata)  # compute a neighborhood graph
@@ -53,10 +56,6 @@ def run_dimension_reduction():
         resolution=1.0,  # choose resolution for clustering
         key_added="leiden",
     )  # name leiden clusters
-
-    # change directory to output_path/module_name
-    os.chdir(module_dir)
-    logger.info(f"Changed directory to {module_dir}")
 
     # plot UMAP
     logger.info("Plotting UMAPs...")

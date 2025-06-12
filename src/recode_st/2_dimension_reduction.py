@@ -3,7 +3,6 @@
 import warnings
 from logging import getLogger
 
-import matplotlib.pyplot as plt
 import scanpy as sc
 import squidpy as sq
 
@@ -39,11 +38,13 @@ def run_dimension_reduction():
     # Perform dimension reduction analysis
     logger.info("Compute PCA...")
     sc.pp.pca(adata)  # compute principal components
-    sc.pl.pca_variance_ratio(adata, log=True, n_pcs=50)
-    plt.tight_layout()
-    plt.savefig(
-        module_dir / "pca_variance_ratio.png"
-    )  # save the figure with the module name
+    sc.pl.pca_variance_ratio(
+        adata,
+        log=True,
+        n_pcs=50,
+        show=False,
+        save=f"_{module_name}.png",
+    )
 
     logger.info("Compute neighbors...")
     sc.pp.neighbors(adata)  # compute a neighborhood graph

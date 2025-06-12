@@ -54,7 +54,7 @@ you must include a relevant section that helps with learning this library.
 
 e.g. Step-by-step guide:
 
-1. Start by downloading the [Xenium Lung FFPE data](...)
+1. Start by downloading the [Xenium Lung FFPE data](https://www.10xgenomics.com/datasets/ffpe-human-lung-cancer-data-with-human-immuno-oncology-profiling-panel-and-custom-add-on-1-standard)
    - Data can be downloaded from the 10x Genomics website, or directly from the command line.
       - If downloading from the website, download the `Xenium_V1_Human_Lung_Cancer_Addon_FFPE_outs.zip` file.
       - If downloading from the command line, use the following command:

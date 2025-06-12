@@ -16,13 +16,21 @@ logger = getLogger(__name__)
 
 def convert_xenium_to_zarr(xenium_path: Path, zarr_path: Path):
     """Convert Xenium data to Zarr format."""
-    # Load Xenium data
-    logger.info("Reading Xenium data...")
-    sdata = xenium(xenium_path)
+    try:
+        # Load Xenium data
+        logger.info("Reading Xenium data...")
+        sdata = xenium(xenium_path)
+    except FileNotFoundError as err:
+        logger.error(f"File not found: {err}")
+        raise err
 
-    # Write to Zarr format
-    logger.info("Writing to Zarr...")
-    sdata.write(zarr_path)
+    try:
+        # Write to Zarr format
+        logger.info("Writing to Zarr...")
+        sdata.write(zarr_path)
+    except ValueError as err:
+        logger.error(f"Failed writing to Zarr: {err}")
+        raise err
 
     logger.info("Finished formatting data.")
 
@@ -32,7 +40,4 @@ if __name__ == "__main__":
     configure_logging()
     logger = getLogger("recode_st.0_format")  # re-name the logger to match the module
 
-    try:
-        convert_xenium_to_zarr(xenium_path, zarr_path)
-    except FileNotFoundError as err:
-        logger.error(f"File not found: {err}")
+    convert_xenium_to_zarr(xenium_path, zarr_path)

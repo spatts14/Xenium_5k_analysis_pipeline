@@ -31,6 +31,7 @@ dev = [
     "pytest-cov",
     "pytest-mock",
 ]
+muspan = ["muspan @ https://docs.muspan.co.uk/code/latest.zip"]
 
 [tool.pytest.ini_options]
 addopts = "-v -p no:warnings --cov=src --cov-report=html --doctest-modules --ignore=src/recode_spatial_transcriptomics/__main__.py --ignore=docs/ --ignore=utils/"

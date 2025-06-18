@@ -30,6 +30,7 @@ dev = [
     "pytest",
     "pytest-cov",
     "pytest-mock",
+    "pip-tools",
 ]
 muspan = ["muspan @ https://docs.muspan.co.uk/code/latest.zip"]
 

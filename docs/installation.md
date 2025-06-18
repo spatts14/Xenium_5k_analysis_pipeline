@@ -26,3 +26,17 @@ To install the development version of the software, clone this repo and run
 ```bash
 pip install -e ".[dev,muspan]"
 ```
+
+Pinned versions of the dependencies are saved in two text files:
+
+- `requirements-muspan.txt`
+- `requirements-muspan.txt`
+
+These are managed by `pip-tools`, which is a dependency. They are built using the
+`pip-compile` command at the top of each file. You can also clean your current
+environment by ensuring it is in-sync with the following commands:
+
+```bash
+pip-sync requirements*.txt
+pip install -e .
+```

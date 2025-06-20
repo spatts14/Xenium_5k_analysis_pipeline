@@ -49,7 +49,7 @@ def run_dimension_reduction():
     logger.info("Compute neighbors...")
     sc.pp.neighbors(adata)  # compute a neighborhood graph
 
-    logger.info("Xreate UMAPs and cluster cells..")
+    logger.info("Create UMAPs and cluster cells..")
     sc.tl.umap(adata)  # calculate umap
     sc.tl.leiden(
         adata,
@@ -78,7 +78,7 @@ def run_dimension_reduction():
         library_id="spatial",
         shape=None,
         color=[
-            "leiden.0",
+            "leiden",
         ],
         wspace=0.4,
         save="leiden_spatial.png",

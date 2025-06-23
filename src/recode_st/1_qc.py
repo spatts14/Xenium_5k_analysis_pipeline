@@ -117,7 +117,7 @@ def run_qc():
         dpi=300,
     )
     plt.close()
-    logger.info(f"Saved plots to {module_dir /'cell_summary_histograms.png'}")
+    logger.info(f"Saved plots to {module_dir / 'cell_summary_histograms.png'}")
 
     # $ QC data #
 

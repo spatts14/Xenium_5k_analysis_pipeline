@@ -1,6 +1,5 @@
 """Annotation module."""
 
-import os
 import warnings  # ? what is the best way to suppress warnings from package inputs?
 from logging import getLogger
 
@@ -34,14 +33,12 @@ def run_annotate():
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(output_path / "2_DR" / "adata.h5ad")
 
-    # change directory to output_path/module_name
-    os.chdir(module_dir)
-    logger.info(f"Changed directory to {module_dir}")
+    # Set the directory where to save the ScanPy figures
+    sc.settings.figdir = module_dir
 
     # Annotate cell clusters
     # Calculate the differentially expressed genes for every cluster,
     # compared to the rest of the cells in our adata
-
     logger.info("Calculating differentially expressed genes for each cluster...")
     sc.tl.rank_genes_groups(adata, groupby="leiden", method="wilcoxon")
 
@@ -52,8 +49,9 @@ def run_annotate():
         standard_scale="var",
         n_genes=5,
         show=False,
-        save="dotplot.png",
+        save=f"{module_name}.png",
     )
+    logger.info(f"Dotplot saved to {sc.settings.figdir}")
 
     # Plot differentially expressed genes for each cluster
     logger.info("Plot differentially expressed genes for each cluster in elbow plot...")
@@ -63,8 +61,9 @@ def run_annotate():
         ncols=3,
         legend_fontsize=10,
         show=False,
-        save="rank_genes_groups_leiden.png",
+        save=f"_{module_name}.png",
     )
+    logger.info(f"UMAP plot saved to {sc.settings.figdir}")
 
     # Make a dataframe of marker expression
     logger.info("Save files for differentially expressed genes for each cluster...")
@@ -75,6 +74,7 @@ def run_annotate():
         module_dir / "markers.xlsx",
         index=False,
     )
+    logger.info(f"Markers saved to {module_dir}")
 
     logger.info("File 2...")
     # Define the number of clusters
@@ -99,11 +99,13 @@ def run_annotate():
         module_dir / "top_differentially_expressed_genes.csv",
         index=True,
     )
+    logger.info(f"Top differentially expressed genes saved to {module_dir}")
 
     logger.info("File 3...")
     # Create a dictionary to store DataFrames for each cluster
     cluster_dict = {}
-    (module_dir / "cluster_diff_genes").mkdir(exist_ok=True)
+    cluster_path = module_dir / "cluster_diff_genes"
+    cluster_path.mkdir(exist_ok=True)
     for cluster_number in range(clusters_list):
         # print(cluster_number)
         current_cluster = markers[markers["group"] == str(cluster_number)].sort_values(
@@ -113,14 +115,10 @@ def run_annotate():
             current_cluster  # Store the DataFrame in the dictionary
         )
         # Export the DataFrame to a CSV file
-        csv_filename = os.path.join(
-            output_path,
-            module_name,
-            "cluster_diff_genes",
-            f"cluster_{cluster_number}_data.csv",
-        )
+        csv_filename = cluster_path / f"cluster_{cluster_number}_data.csv"
+
         current_cluster.to_csv(csv_filename, index=False)
-        print(f"Exported cluster {cluster_number} data to {csv_filename}")
+        logger.info(f"Exported cluster {cluster_number} data to {csv_filename}")
 
     # Rename the clusters based on the markers
     logger.info("Renaming clusters based on markers...")

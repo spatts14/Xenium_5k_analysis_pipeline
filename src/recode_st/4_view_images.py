@@ -1,11 +1,9 @@
 """Image viewing module."""
 
 # Import packages
-import os
 import warnings
 from logging import getLogger
 
-import matplotlib.pyplot as plt
 import scanpy as sc
 import squidpy as sq
 
@@ -22,7 +20,7 @@ def run_view_images():
     """Run the image viewing module."""
     # Set variables
     module_name = "4_view_images"  # name of the module
-    gene_list = ["EPCAM", "CD3D", "CD68", "VWF", "PTPRC", "ACTA2"]
+    gene_list = ["EPCAM", "CD3D", "CD68", "PTPRC", "ACTA2"]  # VWF not included
     module_dir = output_path / module_name
     seed = 21122023  # seed for reproducibility
 
@@ -32,13 +30,9 @@ def run_view_images():
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
-    # change directory to output_path/module_name
-    os.chdir(module_dir)
-    logger.info(f"Changed directory to {module_dir}")
-
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(module_dir / "3_annotate" / "adata.h5ad")
+    adata = sc.read_h5ad(output_path / "3_annotate" / "adata.h5ad")
 
     # View plots
     logger.info("Visualize clusters on tissue...")
@@ -50,11 +44,10 @@ def run_view_images():
         color=["leiden", "total_counts"],
         wspace=0.4,
         size=1,
+        save=module_dir / "leiden_clusters.png",
+        dpi=300,
     )
-    plt.tight_layout()
-    plt.savefig(module_dir / "images.png", dpi=300)
-    plt.close()
-    logger.info(f"Saved plots to {module_dir / 'images.png'}")
+    logger.info(f"Saved leiden clusters plot to {module_dir / 'leiden_clusters.png'}")
 
     # View specific gene expression
     logger.info("Plotting genes of interest on tissue...")
@@ -65,8 +58,9 @@ def run_view_images():
         shape=None,
         size=2,
         img=False,
-        save="gene_expression.png",
+        save=module_dir / "gene_expression.png",
     )
+    logger.info(f"Saved gene expression plot to {module_dir / 'gene_expression.png'}")
 
     # Save anndata object
     adata.write_h5ad(module_dir / "adata.h5ad")

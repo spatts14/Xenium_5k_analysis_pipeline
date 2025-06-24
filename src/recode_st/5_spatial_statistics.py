@@ -1,9 +1,7 @@
 """Spatial statistics module."""
 
-import os
 import warnings
 from logging import getLogger
-from pathlib import Path
 
 import scanpy as sc
 import squidpy as sq
@@ -30,16 +28,11 @@ def run_spatial_statistics():
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
-    # change directory to output_path/module_name
-    os.chdir(module_dir)
-    logger.info(f"Changed directory to {module_dir}")
-
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(module_dir / "4_view_images" / "adata.h5ad")
+    adata = sc.read_h5ad(output_path / "4_view_images" / "adata.h5ad")
 
-    # $ Calculate spatial statistics
-
+    # Calculate spatial statistics
     logger.info("Building spatial neighborhood graph...")
     sq.gr.spatial_neighbors(
         adata, coord_type="generic", delaunay=True
@@ -48,30 +41,37 @@ def run_spatial_statistics():
     logger.info("Computing and plotting centrality scores...")
     sq.gr.centrality_scores(adata, cluster_key="leiden")
     sq.pl.centrality_scores(
-        adata, cluster_key="leiden", figsize=(16, 5), save="_plot.png"
+        adata,
+        cluster_key="leiden",
+        figsize=(16, 5),
+        save=module_dir / "centrality_scores.png",
+    )
+    logger.info(
+        f"Centrality scores plot saved to {module_dir / 'centrality_scores.png'}"
     )
 
-    # # $ Compute co-occurrence probability
-    # logger.info("Computing co-occurrence probability...")
-    # # Create subset table layer
-    # adata_subsample = sc.pp.subsample(
-    #     adata, fraction=0.5, copy=True
-    # )  # subsample to speed up computation
+    # Compute co-occurrence probability
+    logger.info("Computing co-occurrence probability...")
+    # Create subset table layer
+    adata_subsample = sc.pp.subsample(
+        adata, fraction=0.5, copy=True
+    )  # subsample to speed up computation
 
-    # # Visualize co-occurrence
-    # sq.gr.co_occurrence(
-    #     adata_subsample,
-    #     cluster_key="leiden",
-    # )
-    # sq.pl.co_occurrence(
-    #     adata_subsample,
-    #     cluster_key="leiden",
-    #     clusters="12",
-    #     figsize=(10, 10),
-    #     save="_plot.png",
-    # )
+    # Visualize co-occurrence
+    sq.gr.co_occurrence(
+        adata_subsample,
+        cluster_key="leiden",
+    )
+    sq.pl.co_occurrence(
+        adata_subsample,
+        cluster_key="leiden",
+        clusters="12",
+        figsize=(10, 10),
+        save=module_dir / "co_occurrence.png",
+    )
+    logger.info(f"Co-occurrence plot saved to {module_dir / 'co_occurrence.png'}")
 
-    # $ Neighborhood enrichment analysis
+    # Neighborhood enrichment analysis
     logger.info("Performing neighborhood enrichment analysis...")
     sq.gr.nhood_enrichment(adata, cluster_key="leiden")
 
@@ -81,31 +81,32 @@ def run_spatial_statistics():
         cluster_key="leiden",
         figsize=(8, 8),
         title="Neighborhood enrichment adata",
-        save="_plot.png",
+        save=module_dir / "nhood_enrichment.png",
+    )
+    logger.info(
+        f"Neighborhood enrichment plot saved to {module_dir / 'nhood_enrichment.png'}"
     )
 
-    # $ Moran's I
+    # Moran's I
     logger.info("Calculating Moran's I...")
 
-    # # Build spatial neighborhood graph on a subsample dataset
-    # sq.gr.spatial_neighbors(adata_subsample, coord_type="generic", delaunay=True)
+    # Build spatial neighborhood graph on a subsample dataset
+    sq.gr.spatial_neighbors(adata_subsample, coord_type="generic", delaunay=True)
 
-    # # Calculate Moran's I for spatial autocorrelation on subsample data
-    # sq.gr.spatial_autocorr(
-    #     adata_subsample,
-    #     mode="moran",
-    #     n_perms=100,
-    #     n_jobs=1,
-    # )
+    # Calculate Moran's I for spatial autocorrelation on subsample data
+    sq.gr.spatial_autocorr(
+        adata_subsample,
+        mode="moran",
+        n_perms=100,
+        n_jobs=1,
+    )
 
-    # # Save Moran's I results
-    # adata_subsample.uns["moranI"].to_csv(
-    #     Path(output_path) / module_name / "moranI_results.csv",
-    #     index=True,
-    # )
+    # Save Moran's I results
+    adata_subsample.uns["moranI"].to_csv(module_dir / "moranI_results.csv", index=True)
+    logger.info(f"Moran's I results saved to {module_dir / 'moranI_results.csv'}")
 
     # Save anndata object
-    adata.write_h5ad(Path(output_path) / f"{module_name}/adata.h5ad")
+    adata.write_h5ad(module_dir / "adata.h5ad")
     logger.info(f"Data saved to {module_dir / 'adata.h5ad'}")
     logger.info("Spatial statistics module completed successfully.")
 

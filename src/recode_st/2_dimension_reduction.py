@@ -45,6 +45,7 @@ def run_dimension_reduction():
         show=False,
         save=f"_{module_name}.png",
     )
+    logger.info(f"PCA Variance plot saved to {sc.settings.figdir}")
 
     logger.info("Compute neighbors...")
     sc.pp.neighbors(adata)  # compute a neighborhood graph
@@ -71,8 +72,10 @@ def run_dimension_reduction():
         save=f"_{module_name}.png",  # save the figure with the module name
         frameon=False,
     )
+    logger.info(f"UMAP plot saved to {sc.settings.figdir}")
 
     # plot visualization of leiden clusters
+    logger.info("Plotting leiden clusters...")
     sq.pl.spatial_scatter(
         adata,
         library_id="spatial",
@@ -81,8 +84,9 @@ def run_dimension_reduction():
             "leiden",
         ],
         wspace=0.4,
-        save="leiden_spatial.png",
+        save=module_dir / "leiden_spatial.png",
     )
+    logger.info(f"Leiden spatial scatter plot saved to {module_dir}")
 
     # Save anndata object
     adata.write_h5ad(module_dir / "adata.h5ad")

@@ -2,7 +2,7 @@
 
 <!-- A brief description of your exemplar, which may include an image -->
 This is a brief abstract of my exemplar, which includes a representative image.
-![ST Lung cancer FFPE](/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/ReCoDe-spatial-transcriptomics/docs/readme_image.pdf)
+![ST Lung cancer FFPE](docs/readme_image.pdf)
 
 <!-- Author information -->
 This exemplar was developed at Imperial College London by Sara Patti in

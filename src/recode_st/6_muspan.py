@@ -67,6 +67,14 @@ def run_muspan():
     )
     logger.info(f"Domain object created: {domain}")
 
+    # Save domain
+    ms.io.save_domain(
+        domain,
+        name_of_file="muspan_object",
+        path_to_save=str(module_dir),
+    )
+    logger.info("Domain saved")
+
     # Filer adata only to include cells within the area of interest
     logger.info("Filtering adata to include only cells in the area of interest...")
     domain_cell_ids = domain.labels["Cell ID"]  # Get cell IDs from the domain

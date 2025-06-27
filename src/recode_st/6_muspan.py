@@ -1,14 +1,11 @@
 """Muspan module."""
 
-import os
 import warnings
 from logging import getLogger
 
-# import matplotlib.pyplot as plt
 import scanpy as sc
 import spatialdata as sd
 
-# import squidpy as sq
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
 from recode_st.paths import output_path, zarr_path
@@ -40,13 +37,9 @@ def run_muspan():
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
-    # change directory to output_path/module_name
-    os.chdir(module_dir)
-    logger.info(f"Changed directory to {module_dir}")
-
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(output_path / "4_view_images" / "adata.h5ad")  # noqa: F841
+    adata = sc.read_h5ad(output_path / "5_spatial_stats" / "adata.h5ad")  # noqa: F841
     sdata = sd.read_zarr(zarr_path)  # noqa: F841
 
 

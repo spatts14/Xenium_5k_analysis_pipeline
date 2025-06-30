@@ -47,8 +47,15 @@ class MuspanModuleConfig(BaseModuleConfig):
     """Configuration for the Muspan module."""
 
 
+class FormatDataModuleConfig(BaseModuleConfig):
+    """Configuration for the Format Data module."""
+
+
 class ModulesConfig(BaseModel):
     """Configuration for all modules with optional fields."""
+
+    format_data: FormatDataModuleConfig | None = None
+    """Configuration for the Format Data module."""
 
     quality_control: QualityControlModuleConfig | None = None
     """Configuration for the Quality Control module."""

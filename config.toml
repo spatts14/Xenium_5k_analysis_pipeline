@@ -4,6 +4,9 @@ log_level = "INFO" # Define the logging level here. Options are: DEBUG, INFO, WA
 
 seed = 21122023 # Random seed for reproducibility
 
+[modules.format_data]
+module_name = "0_format" # Name of the module - will be used in the output directory name
+
 [modules.quality_control]
 module_name = "1_quality_control" # Name of the module - will be used in the output directory name
 min_counts = 10                   # Minimum number of counts required for a cell to pass filtering

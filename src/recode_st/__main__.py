@@ -29,8 +29,9 @@ def main(config: Config):
 
     logger.info("Starting recode_st pipeline...")
 
-    logger.info("Running Module 0 - Format")
-    run_format()
+    if config.modules.format_data:
+        logger.info("Running Module 0 - Format")
+        run_format(config.modules.format_data)
 
     if config.modules.quality_control:
         logger.info("Running Module 1 - Quality Control")

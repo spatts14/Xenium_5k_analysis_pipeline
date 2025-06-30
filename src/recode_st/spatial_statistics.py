@@ -6,6 +6,7 @@ from logging import getLogger
 import scanpy as sc
 import squidpy as sq
 
+from recode_st.config import SpatialStatisticsModuleConfig
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
 from recode_st.paths import output_path
@@ -15,11 +16,10 @@ warnings.filterwarnings("ignore")
 logger = getLogger(__name__)
 
 
-def run_spatial_statistics():
+def run_spatial_statistics(config: SpatialStatisticsModuleConfig):
     """Run spatial statistics on Xenium data."""
     # Set variables
-    module_name = "5_spatial_stats"  # name of the module
-    module_dir = output_path / module_name
+    module_dir = output_path / config.module_name
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -116,6 +116,8 @@ if __name__ == "__main__":
     seed_everything(21122023)
 
     try:
-        run_spatial_statistics()
+        run_spatial_statistics(
+            SpatialStatisticsModuleConfig(module_name="5_spatial_stats")
+        )
     except FileNotFoundError as err:
         logger.error(f"File not found: {err}")

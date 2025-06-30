@@ -45,7 +45,7 @@ def main(config: Config):
     run_view_images(config.view_images)
 
     logger.info("Running Module 5 - Spatial Statistics")
-    run_spatial_statistics()
+    run_spatial_statistics(config.spatial_statistics)
 
     logger.info("Running Module 6 - MuSpAn")
     run_muspan()

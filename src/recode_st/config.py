@@ -39,6 +39,10 @@ class ViewImagesModuleConfig(BaseModuleConfig):
     """List of genes to visualize on tissue."""
 
 
+class SpatialStatisticsModuleConfig(BaseModuleConfig):
+    """Configuration for the Spatial Statistics module."""
+
+
 class Config(BaseModel):
     """The possible configuration options for recode_st."""
 
@@ -59,6 +63,9 @@ class Config(BaseModel):
 
     view_images: ViewImagesModuleConfig
     """Configuration for the View Images module."""
+
+    spatial_statistics: SpatialStatisticsModuleConfig
+    """Configuration for the Spatial Statistics module."""
 
 
 def load_config(config_file: str | Path) -> Config:

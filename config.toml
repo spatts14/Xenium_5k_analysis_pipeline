@@ -24,3 +24,6 @@ gene_list = [
   "PTPRC",
   "ACTA2",
 ] # List of genes to visualize on tissue
+
+[spatial_statistics]
+module_name = "5_spatial_stats" # Name of the module - will be used in the output directory name

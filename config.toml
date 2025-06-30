@@ -11,3 +11,6 @@ min_cells = 5                     # Minimum number of cells expressed required f
 
 [dimension_reduction]
 module_name = "2_dimension_reduction" # Name of the module - will be used in the output directory name
+
+[annotate]
+module_name = "3_annotate" # Name of the module - will be used in the output directory name

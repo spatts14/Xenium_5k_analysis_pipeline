@@ -7,6 +7,7 @@ from logging import getLogger
 import pandas as pd
 import scanpy as sc
 
+from recode_st.config import AnnotateModuleConfig
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
 from recode_st.paths import output_path
@@ -16,11 +17,10 @@ warnings.filterwarnings("ignore")
 logger = getLogger(__name__)
 
 
-def run_annotate():
+def run_annotate(config: AnnotateModuleConfig):
     """Run annotation on Xenium data."""
     # Set variables
-    module_name = "3_annotate"
-    module_dir = output_path / module_name
+    module_dir = output_path / config.module_name
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -45,7 +45,7 @@ def run_annotate():
         standard_scale="var",
         n_genes=5,
         show=False,
-        save=f"{module_name}.png",
+        save=f"{config.module_name}.png",
     )
     logger.info(f"Dotplot saved to {sc.settings.figdir}")
 
@@ -57,7 +57,7 @@ def run_annotate():
         ncols=3,
         legend_fontsize=10,
         show=False,
-        save=f"_{module_name}.png",
+        save=f"_{config.module_name}.png",
     )
     logger.info(f"UMAP plot saved to {sc.settings.figdir}")
 
@@ -144,6 +144,6 @@ if __name__ == "__main__":
     seed_everything(21122023)
 
     try:
-        run_annotate()
+        run_annotate(AnnotateModuleConfig(module_name="3_annotate"))
     except FileNotFoundError as err:
         logger.error(f"File not found: {err}")

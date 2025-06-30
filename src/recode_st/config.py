@@ -28,6 +28,10 @@ class DimensionReductionModuleConfig(BaseModuleConfig):
     """Configuration for the Quality Control module."""
 
 
+class AnnotateModuleConfig(BaseModuleConfig):
+    """Configuration for the Annotate module."""
+
+
 class Config(BaseModel):
     """The possible configuration options for recode_st."""
 
@@ -42,6 +46,9 @@ class Config(BaseModel):
 
     dimension_reduction: DimensionReductionModuleConfig
     """Configuration for the Dimension Reduction module."""
+
+    annotate: AnnotateModuleConfig
+    """Configuration for the Annotate module."""
 
 
 def load_config(config_file: str | Path) -> Config:

@@ -39,7 +39,7 @@ def main(config: Config):
     run_dimension_reduction(config.dimension_reduction)
 
     logger.info("Running Module 3 - Annotate")
-    run_annotate()
+    run_annotate(config.annotate)
 
     logger.info("Running Module 4 - View Images")
     run_view_images()

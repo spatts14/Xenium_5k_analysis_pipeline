@@ -4,18 +4,18 @@ log_level = "INFO" # Define the logging level here. Options are: DEBUG, INFO, WA
 
 seed = 21122023 # Random seed for reproducibility
 
-[quality_control]
+[modules.quality_control]
 module_name = "1_quality_control" # Name of the module - will be used in the output directory name
 min_counts = 10                   # Minimum number of counts required for a cell to pass filtering
 min_cells = 5                     # Minimum number of cells expressed required for a gene to pass filtering
 
-[dimension_reduction]
+[modules.dimension_reduction]
 module_name = "2_dimension_reduction" # Name of the module - will be used in the output directory name
 
-[annotate]
+[modules.annotate]
 module_name = "3_annotate" # Name of the module - will be used in the output directory name
 
-[view_images]
+[modules.view_images]
 module_name = "4_view_images" # Name of the module - will be used in the output directory name
 gene_list = [
   "EPCAM",
@@ -25,8 +25,8 @@ gene_list = [
   "ACTA2",
 ] # List of genes to visualize on tissue
 
-[spatial_statistics]
+[modules.spatial_statistics]
 module_name = "5_spatial_stats" # Name of the module - will be used in the output directory name
 
-[muspan]
+[modules.muspan]
 module_name = "6_muspan" # Name of the module - will be used in the output directory name

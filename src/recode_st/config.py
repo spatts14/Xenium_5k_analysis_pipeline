@@ -47,6 +47,28 @@ class MuspanModuleConfig(BaseModuleConfig):
     """Configuration for the Muspan module."""
 
 
+class ModulesConfig(BaseModel):
+    """Configuration for all modules with optional fields."""
+
+    quality_control: QualityControlModuleConfig | None = None
+    """Configuration for the Quality Control module."""
+
+    dimension_reduction: DimensionReductionModuleConfig | None = None
+    """Configuration for the Dimension Reduction module."""
+
+    annotate: AnnotateModuleConfig | None = None
+    """Configuration for the Annotate module."""
+
+    view_images: ViewImagesModuleConfig | None = None
+    """Configuration for the View Images module."""
+
+    spatial_statistics: SpatialStatisticsModuleConfig | None = None
+    """Configuration for the Spatial Statistics module."""
+
+    muspan: MuspanModuleConfig | None = None
+    """Configuration for the Muspan module."""
+
+
 class Config(BaseModel):
     """The possible configuration options for recode_st."""
 
@@ -56,23 +78,8 @@ class Config(BaseModel):
     seed: int
     """A random seed to use for reproducibility."""
 
-    quality_control: QualityControlModuleConfig
-    """Configuration for the Quality Control module."""
-
-    dimension_reduction: DimensionReductionModuleConfig
-    """Configuration for the Dimension Reduction module."""
-
-    annotate: AnnotateModuleConfig
-    """Configuration for the Annotate module."""
-
-    view_images: ViewImagesModuleConfig
-    """Configuration for the View Images module."""
-
-    spatial_statistics: SpatialStatisticsModuleConfig
-    """Configuration for the Spatial Statistics module."""
-
-    muspan: MuspanModuleConfig
-    """Configuration for the Muspan module."""
+    modules: ModulesConfig = ModulesConfig()
+    """Configuration for all modules."""
 
 
 def load_config(config_file: str | Path) -> Config:

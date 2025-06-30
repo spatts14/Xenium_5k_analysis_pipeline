@@ -27,3 +27,6 @@ gene_list = [
 
 [spatial_statistics]
 module_name = "5_spatial_stats" # Name of the module - will be used in the output directory name
+
+[muspan]
+module_name = "6_muspan" # Name of the module - will be used in the output directory name

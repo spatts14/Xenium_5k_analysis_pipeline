@@ -43,6 +43,10 @@ class SpatialStatisticsModuleConfig(BaseModuleConfig):
     """Configuration for the Spatial Statistics module."""
 
 
+class MuspanModuleConfig(BaseModuleConfig):
+    """Configuration for the Muspan module."""
+
+
 class Config(BaseModel):
     """The possible configuration options for recode_st."""
 
@@ -66,6 +70,9 @@ class Config(BaseModel):
 
     spatial_statistics: SpatialStatisticsModuleConfig
     """Configuration for the Spatial Statistics module."""
+
+    muspan: MuspanModuleConfig
+    """Configuration for the Muspan module."""
 
 
 def load_config(config_file: str | Path) -> Config:

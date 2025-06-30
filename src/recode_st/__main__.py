@@ -48,7 +48,7 @@ def main(config: Config):
     run_spatial_statistics(config.spatial_statistics)
 
     logger.info("Running Module 6 - MuSpAn")
-    run_muspan()
+    run_muspan(config.muspan)
 
     logger.info("Running Module 7 - MuSpAn Spatial Graph")
     run_muspan_graph()

@@ -6,6 +6,7 @@ from logging import getLogger
 import matplotlib.pyplot as plt
 import scanpy as sc
 
+from recode_st.config import MuspanModuleConfig
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
 from recode_st.paths import area_path, output_path, xenium_path
@@ -17,7 +18,7 @@ logger = getLogger(__name__)
 # TODO: replace "cell_type" with variable
 
 
-def run_muspan():
+def run_muspan(config: MuspanModuleConfig):
     """Run Muspan on Xenium data."""
     try:
         import muspan as ms
@@ -29,8 +30,7 @@ def run_muspan():
         )
         raise err
     # Set variables
-    module_name = "6_muspan"  # name of the module
-    module_dir = output_path / module_name
+    module_dir = output_path / config.module_name
     domain_name = "Xenium_lung_FFPE"  # name of the domain
     transcripts_of_interest = [
         "EPCAM",
@@ -219,6 +219,6 @@ if __name__ == "__main__":
     seed_everything(21122023)
 
     try:
-        run_muspan()
+        run_muspan(MuspanModuleConfig(module_name="6_muspan"))
     except FileNotFoundError as err:
         logger.error(f"File not found: {err}")

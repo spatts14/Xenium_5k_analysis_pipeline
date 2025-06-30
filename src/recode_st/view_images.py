@@ -7,6 +7,7 @@ from logging import getLogger
 import scanpy as sc
 import squidpy as sq
 
+from recode_st.config import ViewImagesModuleConfig
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
 from recode_st.paths import output_path
@@ -16,12 +17,10 @@ warnings.filterwarnings("ignore")
 logger = getLogger(__name__)
 
 
-def run_view_images():
+def run_view_images(config: ViewImagesModuleConfig):
     """Run the image viewing module."""
     # Set variables
-    module_name = "4_view_images"  # name of the module
-    gene_list = ["EPCAM", "CD3D", "CD68", "PTPRC", "ACTA2"]  # VWF not included
-    module_dir = output_path / module_name
+    module_dir = output_path / config.module_name
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -50,7 +49,7 @@ def run_view_images():
     sq.pl.spatial_scatter(
         adata,
         library_id="spatial",
-        color=gene_list,
+        color=config.gene_list,
         shape=None,
         size=2,
         img=False,
@@ -73,6 +72,11 @@ if __name__ == "__main__":
     seed_everything(21122023)
 
     try:
-        run_view_images()
+        run_view_images(
+            ViewImagesModuleConfig(
+                module_name="4_view_images",
+                gene_list=["EPCAM", "CD3D", "CD68", "PTPRC", "ACTA2"],
+            )
+        )
     except FileNotFoundError as err:
         logger.error(f"File not found: {err}")

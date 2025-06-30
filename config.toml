@@ -14,3 +14,13 @@ module_name = "2_dimension_reduction" # Name of the module - will be used in the
 
 [annotate]
 module_name = "3_annotate" # Name of the module - will be used in the output directory name
+
+[view_images]
+module_name = "4_view_images" # Name of the module - will be used in the output directory name
+gene_list = [
+  "EPCAM",
+  "CD3D",
+  "CD68",
+  "PTPRC",
+  "ACTA2",
+] # List of genes to visualize on tissue

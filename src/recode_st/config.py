@@ -32,6 +32,13 @@ class AnnotateModuleConfig(BaseModuleConfig):
     """Configuration for the Annotate module."""
 
 
+class ViewImagesModuleConfig(BaseModuleConfig):
+    """Configuration for the View Images module."""
+
+    gene_list: list[str]
+    """List of genes to visualize on tissue."""
+
+
 class Config(BaseModel):
     """The possible configuration options for recode_st."""
 
@@ -49,6 +56,9 @@ class Config(BaseModel):
 
     annotate: AnnotateModuleConfig
     """Configuration for the Annotate module."""
+
+    view_images: ViewImagesModuleConfig
+    """Configuration for the View Images module."""
 
 
 def load_config(config_file: str | Path) -> Config:

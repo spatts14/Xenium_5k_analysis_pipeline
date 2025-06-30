@@ -42,7 +42,7 @@ def main(config: Config):
     run_annotate(config.annotate)
 
     logger.info("Running Module 4 - View Images")
-    run_view_images()
+    run_view_images(config.view_images)
 
     logger.info("Running Module 5 - Spatial Statistics")
     run_spatial_statistics()

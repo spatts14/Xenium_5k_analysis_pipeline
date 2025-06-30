@@ -27,10 +27,15 @@ def convert_xenium_to_zarr(xenium_path: Path, zarr_path: Path):
     try:
         # Write to Zarr format
         logger.info("Writing to Zarr...")
-        sdata.write(zarr_path)
+        sdata.write(zarr_path, overwrite=True)
     except ValueError as err:
         logger.error(f"Failed writing to Zarr: {err}")
         raise err
+
+
+def run_format():
+    """Run the formatting module."""
+    convert_xenium_to_zarr(xenium_path, zarr_path)
 
     logger.info("Finished formatting data.")
 
@@ -40,4 +45,4 @@ if __name__ == "__main__":
     configure_logging()
     logger = getLogger("recode_st.0_format")  # re-name the logger to match the module
 
-    convert_xenium_to_zarr(xenium_path, zarr_path)
+    run_format()

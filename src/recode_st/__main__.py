@@ -36,7 +36,7 @@ def main(config: Config):
     run_qc(config.quality_control)
 
     logger.info("Running Module 2 - Dimension Reduction")
-    run_dimension_reduction()
+    run_dimension_reduction(config.dimension_reduction)
 
     logger.info("Running Module 3 - Annotate")
     run_annotate()

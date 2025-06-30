@@ -24,6 +24,10 @@ class QualityControlModuleConfig(BaseModuleConfig):
     """Minimum number of cells expressed required for a gene to pass filtering"""
 
 
+class DimensionReductionModuleConfig(BaseModuleConfig):
+    """Configuration for the Quality Control module."""
+
+
 class Config(BaseModel):
     """The possible configuration options for recode_st."""
 
@@ -35,6 +39,9 @@ class Config(BaseModel):
 
     quality_control: QualityControlModuleConfig
     """Configuration for the Quality Control module."""
+
+    dimension_reduction: DimensionReductionModuleConfig
+    """Configuration for the Dimension Reduction module."""
 
 
 def load_config(config_file: str | Path) -> Config:

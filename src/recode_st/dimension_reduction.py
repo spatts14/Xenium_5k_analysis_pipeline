@@ -6,6 +6,7 @@ from logging import getLogger
 import scanpy as sc
 import squidpy as sq
 
+from recode_st.config import DimensionReductionModuleConfig
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
 from recode_st.paths import output_path
@@ -15,11 +16,10 @@ warnings.filterwarnings("ignore")
 logger = getLogger(__name__)
 
 
-def run_dimension_reduction():
+def run_dimension_reduction(config: DimensionReductionModuleConfig):
     """Run dimension reduction on Xenium data."""
     # Set variables
-    module_name = "2_DR"
-    module_dir = output_path / module_name
+    module_dir = output_path / config.module_name
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -39,7 +39,7 @@ def run_dimension_reduction():
         log=True,
         n_pcs=50,
         show=False,
-        save=f"_{module_name}.png",
+        save=f"_{config.module_name}.png",
     )
     logger.info(f"PCA Variance plot saved to {sc.settings.figdir}")
 
@@ -65,7 +65,7 @@ def run_dimension_reduction():
         ],
         wspace=0.4,
         show=False,
-        save=f"_{module_name}.png",  # save the figure with the module name
+        save=f"_{config.module_name}.png",  # save the figure with the module name
         frameon=False,
     )
     logger.info(f"UMAP plot saved to {sc.settings.figdir}")
@@ -98,6 +98,8 @@ if __name__ == "__main__":
     seed_everything(21122023)
 
     try:
-        run_dimension_reduction()
+        run_dimension_reduction(
+            DimensionReductionModuleConfig(module_name="2_dimension_reduction")
+        )
     except FileNotFoundError as err:
         logger.error(f"File not found: {err}")

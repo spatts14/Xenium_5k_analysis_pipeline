@@ -525,6 +525,7 @@ pydantic==2.11.7
     # via
     #   ome-types
     #   pydantic-extra-types
+    #   recode_st (pyproject.toml)
 pydantic-core==2.33.2
     # via pydantic
 pydantic-extra-types==2.10.5

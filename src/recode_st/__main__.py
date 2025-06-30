@@ -8,6 +8,7 @@ from recode_st.annotate import run_annotate
 from recode_st.config import Config, load_config
 from recode_st.dimension_reduction import run_dimension_reduction
 from recode_st.format import run_format
+from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
 from recode_st.ms_spatial_graph import run_muspan_graph
 from recode_st.ms_spatial_stat import run_muspan_stats
@@ -22,6 +23,9 @@ logger = getLogger("recode_st")
 def main(config: Config):
     """Main function to run the recode_st package."""
     configure_logging(config.log_level)
+
+    logger.info("Seeding everything...")
+    seed_everything(config.seed)
 
     logger.info("Starting recode_st pipeline...")
 

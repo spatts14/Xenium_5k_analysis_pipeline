@@ -13,6 +13,9 @@ class Config(BaseModel):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     """The logging level to use for the package."""
 
+    seed: int
+    """A random seed to use for reproducibility."""
+
 
 def load_config(config_file: str | Path) -> Config:
     """Load the configuration from a TOML file.

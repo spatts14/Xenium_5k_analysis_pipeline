@@ -31,7 +31,6 @@ def run_muspan():
     # Set variables
     module_name = "6_muspan"  # name of the module
     module_dir = output_path / module_name
-    seed = 21122023  # seed for reproducibility
     domain_name = "Xenium_lung_FFPE"  # name of the domain
     transcripts_of_interest = [
         "EPCAM",
@@ -41,9 +40,6 @@ def run_muspan():
         "PTPRC",
         "ACTA2",
     ]
-
-    # Set seed
-    seed_everything(seed)
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -218,6 +214,9 @@ if __name__ == "__main__":
     # Set up logger
     configure_logging()
     logger = getLogger("recode_st.6_muspan")  # re-name the logger to match the module
+
+    # Set seed
+    seed_everything(21122023)
 
     try:
         run_muspan()

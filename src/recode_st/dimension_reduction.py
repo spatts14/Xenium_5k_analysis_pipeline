@@ -20,10 +20,6 @@ def run_dimension_reduction():
     # Set variables
     module_name = "2_DR"
     module_dir = output_path / module_name
-    seed = 21122023  # seed for reproducibility
-
-    # Set seed
-    seed_everything(seed)
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -97,6 +93,9 @@ if __name__ == "__main__":
     # Set up logger
     configure_logging()
     logger = getLogger("recode_st.2_dimension_reduction")
+
+    # Set seed
+    seed_everything(21122023)
 
     try:
         run_dimension_reduction()

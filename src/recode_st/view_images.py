@@ -22,10 +22,6 @@ def run_view_images():
     module_name = "4_view_images"  # name of the module
     gene_list = ["EPCAM", "CD3D", "CD68", "PTPRC", "ACTA2"]  # VWF not included
     module_dir = output_path / module_name
-    seed = 21122023  # seed for reproducibility
-
-    # Set seed
-    seed_everything(seed)
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -72,6 +68,9 @@ if __name__ == "__main__":
     # Set up logger
     configure_logging()
     logger = getLogger("recode_st.4_view_images")
+
+    # Set seed
+    seed_everything(21122023)
 
     try:
         run_view_images()

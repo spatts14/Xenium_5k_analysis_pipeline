@@ -1,3 +1,5 @@
 # An example configuration file for recode_st
 
 log_level = "INFO" # Define the logging level here. Options are: DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+seed = 21122023 # Random seed for reproducibility

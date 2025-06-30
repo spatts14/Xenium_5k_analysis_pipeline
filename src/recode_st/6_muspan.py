@@ -195,7 +195,7 @@ def run_muspan():
     ms.visualise.visualise(
         domain,
         objects_to_plot=("collection", "Cell centroids"),
-        color_by="cell_type",
+        color_by=("constant", "black"),
         ax=plt.gca(),
         marker_size=1,
         add_cbar=False,

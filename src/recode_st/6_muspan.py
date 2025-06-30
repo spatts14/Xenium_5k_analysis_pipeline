@@ -3,6 +3,7 @@
 import warnings
 from logging import getLogger
 
+import matplotlib.pyplot as plt
 import muspan as ms
 import scanpy as sc
 
@@ -67,6 +68,98 @@ def run_muspan():
     )
     logger.info(f"Domain object created: {domain}")
 
+    # Filer adata only to include cells within the area of interest
+    logger.info("Filtering adata to include only cells in the area of interest...")
+    # Get cell IDs in their original order (preserving duplicates if any)
+    domain_cell_ids_ordered = [
+        str(cell_id) for cell_id in domain.labels["Cell ID"]["labels"]
+    ]
+
+    # Get unique cell IDs for filtering adata
+    domain_cell_ids_unique = set(domain_cell_ids_ordered)
+
+    logger.info(f"Number of unique cells in the domain: {len(domain_cell_ids_unique)}")
+    logger.info(
+        f"Total cell entries in domain (including duplicates): "
+        f"{len(domain_cell_ids_ordered)}"
+    )
+
+    # Filter adata to include only cells in the area of interest
+    filt_adata = adata[
+        adata.obs["cell_id"].isin(domain_cell_ids_unique)
+    ]  # filter adata object
+
+    logger.info(f"Filtered adata from {adata.n_obs} to {filt_adata.n_obs} cells")
+
+    # Add cell cluster IDs
+    logger.info("Adding cell_type IDs to domain with cluster labels")
+
+    # Create a mapping from cell_id to cell_type
+    cell_id_to_type = dict(zip(filt_adata.obs["cell_id"], filt_adata.obs["cell_type"]))
+
+    # Get cell types in the same order as domain cell IDs
+    # (preserving order and duplicates)
+    cell_types_ordered = [
+        cell_id_to_type.get(cell_id, "Unknown") for cell_id in domain_cell_ids_ordered
+    ]
+
+    # Add cell_type label to the domain
+    domain.add_labels(label_name="cell_type", labels=cell_types_ordered)
+    logger.info(f"Label keys in domain: {domain.labels.keys()}")
+    logger.info(f"Length of cell_types_ordered: {len(cell_types_ordered)}")
+    logger.info(f"Length of domain cell IDs: {len(domain_cell_ids_ordered)}")
+    logger.info(
+        f"Number of 'Unknown' cell types: {cell_types_ordered.count('Unknown')}"
+    )
+
+    logger.info("Queries to isolate the different objects within the MuSpAn domain")
+
+    qCells = ms.query.query(
+        domain, ("Collection",), "is", "Cell boundaries"
+    )  # Query to isolate cell boundaries
+    qTrans = ms.query.query(
+        domain, ("Collection",), "is", "Transcripts"
+    )  # Query to isolate transcripts
+    qNuc = ms.query.query(
+        domain, ("Collection",), "is", "Nucleus boundaries"
+    )  # Query to isolate nucleus boundaries
+
+    logger.info(f"Visualize the MuSpAn domain: {domain_name}")
+    fig, ax = plt.subplots(figsize=(20, 15), nrows=2, ncols=2)
+    # Visualise all objects in the MuSpAn domain
+    ms.visualise.visualise(domain, ax=ax[0, 0], marker_size=0.05)
+    ax[0, 0].set_title("All objects")
+
+    ms.visualise.visualise(
+        domain,
+        color_by=("label", "cell_type"),
+        ax=ax[0, 1],
+        objects_to_plot=qCells,
+    )
+    ax[0, 1].set_title("Cell type")
+
+    # Visualise transcripts, colored by 'Transcript'
+    ms.visualise.visualise(
+        domain,
+        color_by=("label", "Transcript ID"),
+        ax=ax[1, 0],
+        objects_to_plot=qTrans,
+        marker_size=5,
+    )
+    ax[1, 0].set_title("Transcripts")
+
+    # Visualise nuclei, colored by 'Nucleus Area'
+    ms.visualise.visualise(
+        domain,
+        color_by=("label", "Nucleus Area"),
+        ax=ax[1, 1],
+        objects_to_plot=qNuc,
+    )
+    ax[1, 1].set_title("Nuclei")
+
+    plt.tight_layout()
+    plt.savefig(module_dir / "muspan_domain_visualization.png")
+
     # Save domain
     ms.io.save_domain(
         domain,
@@ -74,20 +167,6 @@ def run_muspan():
         path_to_save=str(module_dir),
     )
     logger.info("Domain saved")
-
-    # Filer adata only to include cells within the area of interest
-    logger.info("Filtering adata to include only cells in the area of interest...")
-    domain_cell_ids = domain.labels["Cell ID"]  # Get cell IDs from the domain
-    filt_adata = adata[
-        adata.obs_names.isin(domain_cell_ids)
-    ].copy()  # filter adata object
-    logger.info(f"Filtered adata from {adata.n_obs} to {filt_adata.n_obs} cells")
-
-    # Add cell cluster IDs
-    logger.info("All cell_type IDs to domain with cluster labels")
-    cell_type = filt_adata.obs["cell_type"]  # filter on cell type column
-    domain.add_labels(label_name="cell_type", labels=cell_type)
-    logger.info(f"Label keys in domain: {domain.labels.keys()}")
 
 
 if __name__ == "__main__":

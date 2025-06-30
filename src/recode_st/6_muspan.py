@@ -15,6 +15,8 @@ warnings.filterwarnings("ignore")
 
 logger = getLogger(__name__)
 
+# TODO: replace "cell_type" with variable
+
 
 def run_muspan():
     """Run Muspan on Xenium data."""
@@ -117,6 +119,7 @@ def run_muspan():
     qCells = ms.query.query(
         domain, ("Collection",), "is", "Cell boundaries"
     )  # Query to isolate cell boundaries
+
     qTrans = ms.query.query(
         domain, ("Collection",), "is", "Transcripts"
     )  # Query to isolate transcripts
@@ -159,6 +162,49 @@ def run_muspan():
 
     plt.tight_layout()
     plt.savefig(module_dir / "muspan_domain_visualization.png")
+    logger.info("Muspan Domain Visualization plotted and saved")
+
+    logger.info("Convert cell boundaries to cell centres (centroids)")
+    domain.convert_objects(
+        population=("Collection", "Cell boundaries"),
+        object_type="point",
+        conversion_method="centroids",
+        collection_name="Cell centroids",
+        inherit_collections=False,
+    )
+
+    # Plot the cell centres with color based on 'cell_type'
+    plt.figure(figsize=(10, 6))
+    ms.visualise.visualise(
+        domain,
+        objects_to_plot=("collection", "Cell centroids"),
+        color_by="cell_type",
+        ax=plt.gca(),
+    )
+    plt.tight_layout()
+    plt.savefig(module_dir / "muspan_cell_centroids.png")
+    logger.info(
+        "Cell centroids visualized with cell_type color coding plotted and saved"
+    )
+
+    # Overlay the cell centres with cell type
+    plt.figure(figsize=(10, 6))
+    ms.visualise.visualise(
+        domain, objects_to_plot=qCells, color_by="cell_type", ax=plt.gca()
+    )
+    ms.visualise.visualise(
+        domain,
+        objects_to_plot=("collection", "Cell centroids"),
+        color_by="cell_type",
+        ax=plt.gca(),
+        marker_size=1,
+        add_cbar=False,
+    )
+    plt.tight_layout()
+    plt.savefig(module_dir / "muspan_cell_centroids_n_boundaries.png")
+    logger.info(
+        "Cell centroids & cell boundaries with cell type color plotted and saved"
+    )
 
     # Save domain
     ms.io.save_domain(

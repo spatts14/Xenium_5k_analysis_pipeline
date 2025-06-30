@@ -1,8 +1,11 @@
 """The main entry point for the recode_st package."""
 
+import sys
 from logging import getLogger
+from pathlib import Path
 
 from recode_st.annotate import run_annotate
+from recode_st.config import Config, load_config
 from recode_st.dimension_reduction import run_dimension_reduction
 from recode_st.format import run_format
 from recode_st.logging_config import configure_logging
@@ -16,9 +19,9 @@ from recode_st.view_images import run_view_images
 logger = getLogger("recode_st")
 
 
-def main():
+def main(config: Config):
     """Main function to run the recode_st package."""
-    configure_logging()
+    configure_logging(config.log_level)
 
     logger.info("Starting recode_st pipeline...")
 
@@ -51,4 +54,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        config_file = Path(sys.argv[1])
+    except IndexError:
+        raise Exception("No config file specified.")
+
+    config = load_config(config_file)
+
+    main(config)

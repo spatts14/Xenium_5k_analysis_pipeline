@@ -7,7 +7,7 @@ from pathlib import Path
 from recode_st.annotate import run_annotate
 from recode_st.config import Config, load_config
 from recode_st.dimension_reduction import run_dimension_reduction
-from recode_st.format import run_format
+from recode_st.format_data import run_format
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
 from recode_st.ms_spatial_graph import run_muspan_graph

@@ -7,6 +7,23 @@ import tomllib
 from pydantic import BaseModel
 
 
+class BaseModuleConfig(BaseModel):
+    """Configuration for a specific module in recode_st."""
+
+    module_name: str
+    """The name of the module."""
+
+
+class QualityControlModuleConfig(BaseModuleConfig):
+    """Configuration for the Quality Control module."""
+
+    min_counts: int
+    """Minimum number of counts required for a cell to pass filtering."""
+
+    min_cells: int
+    """Minimum number of cells expressed required for a gene to pass filtering"""
+
+
 class Config(BaseModel):
     """The possible configuration options for recode_st."""
 
@@ -15,6 +32,9 @@ class Config(BaseModel):
 
     seed: int
     """A random seed to use for reproducibility."""
+
+    quality_control: QualityControlModuleConfig
+    """Configuration for the Quality Control module."""
 
 
 def load_config(config_file: str | Path) -> Config:

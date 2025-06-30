@@ -10,6 +10,7 @@ import seaborn as sns
 import spatialdata as sd
 from zarr.errors import PathNotFoundError
 
+from recode_st.config import QualityControlModuleConfig
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
 from recode_st.paths import output_path, zarr_path
@@ -19,14 +20,10 @@ warnings.filterwarnings("ignore")
 logger = getLogger(__name__)
 
 
-def run_qc():
+def run_qc(config: QualityControlModuleConfig):
     """Run quality control on Xenium data."""
     # Set variables
-    # ? How should I config this so a user can easily change them?
-    module_name = "1_qc"  # name of the module
-    module_dir = output_path / module_name
-    min_counts = 10
-    min_cells = 5
+    module_dir = output_path / config.module_name
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -119,8 +116,8 @@ def run_qc():
 
     # Filter cells
     logger.info("Filtering cells and genes...")
-    sc.pp.filter_cells(adata, min_counts=min_counts)
-    sc.pp.filter_genes(adata, min_cells=min_cells)
+    sc.pp.filter_cells(adata, min_counts=config.min_counts)
+    sc.pp.filter_genes(adata, min_cells=config.min_cells)
 
     # Normalize data
     logger.info("Normalize data...")
@@ -142,4 +139,10 @@ if __name__ == "__main__":
     # Set seed
     seed_everything(21122023)
 
-    run_qc()
+    run_qc(
+        QualityControlModuleConfig(
+            module_name="1_quality_control",
+            min_counts=10,
+            min_cells=5,
+        )
+    )

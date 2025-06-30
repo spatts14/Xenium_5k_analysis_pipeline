@@ -33,7 +33,7 @@ def main(config: Config):
     run_format()
 
     logger.info("Running Module 1 - Quality Control")
-    run_qc()
+    run_qc(config.quality_control)
 
     logger.info("Running Module 2 - Dimension Reduction")
     run_dimension_reduction()

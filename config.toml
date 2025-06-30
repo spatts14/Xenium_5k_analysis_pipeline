@@ -3,3 +3,8 @@
 log_level = "INFO" # Define the logging level here. Options are: DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 seed = 21122023 # Random seed for reproducibility
+
+[quality_control]
+module_name = "1_quality_control" # Name of the module - will be used in the output directory name
+min_counts = 10                   # Minimum number of counts required for a cell to pass filtering
+min_cells = 5                     # Minimum number of cells expressed required for a gene to pass filtering

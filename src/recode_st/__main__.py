@@ -4,25 +4,26 @@ import sys
 from logging import getLogger
 from pathlib import Path
 
-from recode_st.annotate import run_annotate
 from recode_st.config import Config, load_config
-from recode_st.dimension_reduction import run_dimension_reduction
-from recode_st.format_data import run_format
-from recode_st.helper_function import seed_everything
-from recode_st.logging_config import configure_logging
-from recode_st.ms_spatial_graph import run_muspan_graph
-from recode_st.ms_spatial_stat import run_muspan_stats
-from recode_st.muspan import run_muspan
-from recode_st.qc import run_qc
-from recode_st.spatial_statistics import run_spatial_statistics
-from recode_st.view_images import run_view_images
 
-logger = getLogger("recode_st")
+logger = getLogger(__package__)
 
 
 def main(config: Config):
     """Main function to run the recode_st package."""
-    configure_logging(config.log_level)
+    from recode_st.annotate import run_annotate
+    from recode_st.dimension_reduction import run_dimension_reduction
+    from recode_st.format_data import run_format
+    from recode_st.helper_function import seed_everything
+    from recode_st.logging_config import configure_logging
+    from recode_st.ms_spatial_graph import run_muspan_graph
+    from recode_st.ms_spatial_stat import run_muspan_stats
+    from recode_st.muspan import run_muspan
+    from recode_st.qc import run_qc
+    from recode_st.spatial_statistics import run_spatial_statistics
+    from recode_st.view_images import run_view_images
+
+    configure_logging(config.logging_dir, config.log_level)
 
     logger.info("Seeding everything...")
     seed_everything(config.seed)
@@ -31,7 +32,7 @@ def main(config: Config):
 
     if config.modules.format_data:
         logger.info("Running Module 0 - Format")
-        run_format(config.modules.format_data)
+        run_format(config)
 
     if config.modules.quality_control:
         logger.info("Running Module 1 - Quality Control")

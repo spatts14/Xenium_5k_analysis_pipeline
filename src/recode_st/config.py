@@ -76,14 +76,8 @@ class ModulesConfig(BaseModel):
     """Configuration for the Muspan module."""
 
 
-class Config(BaseModel):
-    """The possible configuration options for recode_st."""
-
-    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
-    """The logging level to use for the package."""
-
-    seed: int
-    """A random seed to use for reproducibility."""
+class IOConfig(BaseModel):
+    """Configuration for input and output directories."""
 
     base_dir: DirectoryPath = Path()
     """The base directory for all the input and output files."""
@@ -103,9 +97,6 @@ class Config(BaseModel):
     logging_dir: Path = Path("logs")
     """The directory for logging output."""
 
-    modules: ModulesConfig = ModulesConfig()
-    """Configuration for all modules."""
-
     @model_validator(mode="after")
     def resolve_paths(self) -> Self:
         """Resolve the relative paths so they are relative to the base directory."""
@@ -124,6 +115,22 @@ class Config(BaseModel):
             self.logging_dir.mkdir(parents=True, exist_ok=True)
 
         return self
+
+
+class Config(BaseModel):
+    """The possible configuration options for recode_st."""
+
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
+    """The logging level to use for the package."""
+
+    seed: int
+    """A random seed to use for reproducibility."""
+
+    io: IOConfig = IOConfig()
+    """Input and output directories configuration."""
+
+    modules: ModulesConfig = ModulesConfig()
+    """Configuration for all modules."""
 
 
 def load_config(config_file: str | Path) -> Config:

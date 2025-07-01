@@ -23,7 +23,7 @@ def main(config: Config):
     from recode_st.spatial_statistics import run_spatial_statistics
     from recode_st.view_images import run_view_images
 
-    configure_logging(config.logging_dir, config.log_level)
+    configure_logging(config.io.logging_dir, config.log_level)
 
     logger.info("Seeding everything...")
     seed_everything(config.seed)
@@ -32,7 +32,7 @@ def main(config: Config):
 
     if config.modules.format_data:
         logger.info("Running Module 0 - Format")
-        run_format(config)
+        run_format(config.io)
 
     if config.modules.quality_control:
         logger.info("Running Module 1 - Quality Control")

@@ -3,6 +3,7 @@
 log_level = "INFO" # Define the logging level here. Options are: DEBUG, INFO, WARNING, ERROR, CRITICAL
 seed = 21122023    # Random seed for reproducibility
 
+[io]
 base_dir = "."           # Base directory for the project (relative to the current working directory)
 data_dir = "data"        # Directory where the input data is stored (relative to base_dir)
 output_dir = "analysis"  # Directory where the output will be saved (relative to base_dir)

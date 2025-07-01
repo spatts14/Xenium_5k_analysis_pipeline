@@ -4,7 +4,6 @@ import warnings
 from logging import getLogger
 
 import matplotlib.pyplot as plt
-import muspan as ms
 import scanpy as sc
 
 from recode_st.helper_function import seed_everything
@@ -21,7 +20,7 @@ logger = getLogger(__name__)
 def run_muspan():
     """Run Muspan on Xenium data."""
     try:
-        import muspan  # noqa: F401
+        import muspan as ms
     except ModuleNotFoundError as err:
         logger.error(
             "Could not load necessary MuSpAn package. You can obtain this with:\n"

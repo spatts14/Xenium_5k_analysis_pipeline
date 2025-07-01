@@ -1,10 +1,10 @@
 """The configuration module for recode_st."""
 
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 
 import tomllib
-from pydantic import BaseModel
+from pydantic import BaseModel, DirectoryPath, model_validator
 
 
 class BaseModuleConfig(BaseModel):
@@ -35,8 +35,8 @@ class AnnotateModuleConfig(BaseModuleConfig):
 class ViewImagesModuleConfig(BaseModuleConfig):
     """Configuration for the View Images module."""
 
-    gene_list: list[str]
-    """List of genes to visualize on tissue."""
+    gene_list: tuple[str, ...]
+    """List of genes to visualize on tissue. A tuple of any length."""
 
 
 class SpatialStatisticsModuleConfig(BaseModuleConfig):
@@ -85,8 +85,45 @@ class Config(BaseModel):
     seed: int
     """A random seed to use for reproducibility."""
 
+    base_dir: DirectoryPath = Path()
+    """The base directory for all the input and output files."""
+
+    data_dir: Path = Path("data")
+    """The data directory for all the input files."""
+
+    output_dir: Path = Path("analysis")
+    """The output directory for all the output files."""
+
+    xenium_dir: Path = Path("xenium")
+    """The directory containing the Xenium input data."""
+
+    zarr_dir: Path = Path("xenium.zarr")
+    """The directory containing the Zarr-formatted input data."""
+
+    logging_dir: Path = Path("logs")
+    """The directory for logging output."""
+
     modules: ModulesConfig = ModulesConfig()
     """Configuration for all modules."""
+
+    @model_validator(mode="after")
+    def resolve_paths(self) -> Self:
+        """Resolve the relative paths so they are relative to the base directory."""
+        self.data_dir = self.base_dir / self.data_dir
+        self.output_dir = self.base_dir / self.output_dir
+        self.xenium_dir = self.data_dir / self.xenium_dir
+        self.zarr_dir = self.data_dir / self.zarr_dir
+        self.logging_dir = self.output_dir / self.logging_dir
+
+        # Ensure directories exists
+        if not Path(self.data_dir).exists():
+            self.data_dir.mkdir(parents=True, exist_ok=True)
+        if not Path(self.output_dir).exists():
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+        if not Path(self.logging_dir).exists():
+            self.logging_dir.mkdir(parents=True, exist_ok=True)
+
+        return self
 
 
 def load_config(config_file: str | Path) -> Config:

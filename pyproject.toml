@@ -52,3 +52,6 @@ select = [
     "W",   # pylint
 ]
 pydocstyle.convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"notebooks/*.ipynb" = ["E501"] # Ignore line length in notebooks

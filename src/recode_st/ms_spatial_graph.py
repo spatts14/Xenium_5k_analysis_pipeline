@@ -15,7 +15,7 @@ warnings.filterwarnings("ignore")
 logger = getLogger(__name__)
 
 
-def run_muspan():
+def run_muspan_graph():
     """Run Muspan on Xenium data."""
     try:
         import muspan as ms
@@ -266,6 +266,6 @@ if __name__ == "__main__":
     logger = getLogger("recode_st.6_muspan")  # re-name the logger to match the module
 
     try:
-        run_muspan()
+        run_muspan_graph()
     except FileNotFoundError as err:
         logger.error(f"File not found: {err}")

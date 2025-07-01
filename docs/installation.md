@@ -40,3 +40,22 @@ environment by ensuring it is in-sync with the following commands:
 pip-sync requirements*.txt
 pip install -e .
 ```
+
+## A note for Intel Macs
+
+The newest versions for some packages do not support older Macs with Intel CPUs.
+
+One known issue is the pip install above works but you are seeing failures when running the code. Specifically this message followed by a segmentation fault:
+
+```log
+OMP: Info #276: omp_set_nested routine deprecated, please use omp_set_max_active_levels instead.
+```
+
+In this case, you should use `conda` to install the packages. There is an environment.yml file provided that will create a conda environment called `recode_st`. To fully install it, do the following:
+
+```bash
+conda env create -f environment.yml
+conda activate recode_st
+pip install --no-build-isolation --no-deps -e .
+pip install https://docs.muspan.co.uk/code/latest.zip # If you need the MuSpAn modules
+```

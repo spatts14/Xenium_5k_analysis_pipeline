@@ -119,3 +119,128 @@ python -m recode_st config.toml
 ```
 
 The pipeline will only run the modules you specify in your configuration file, allowing you to customize your analysis workflow.
+
+## Developer Guide: Extending the Configuration System
+
+This section explains how developers can add new configuration variables or create new modules in the ReCoDe Spatial Transcriptomics pipeline.
+
+### Key Design Principles
+
+- **All module configs inherit from `BaseModuleConfig`** which provides the required `module_name` field
+- **Module configs use [Pydantic] models** for automatic validation and type checking
+- **All modules are optional** in `ModulesConfig` (using `| None = None`)
+- **Imports are lazy** - modules are only imported when they're actually used
+- **Each module creates its own output directory** using `config.module_name`
+- **Use type hints and docstrings** for all configuration parameters
+
+This design ensures the pipeline remains modular, extensible, and efficient.
+
+### Adding Variables to Existing Module Configs
+
+To add new configurable parameters to an existing module:
+
+1. **Update the module config class** in `src/recode_st/config.py`:
+
+   ```python
+   class QualityControlModuleConfig(BaseModuleConfig):
+       """Configuration for the Quality Control module."""
+
+       min_counts: int
+       min_cells: int
+       # Add your new parameter here
+       new_parameter: float
+       """Description of what this parameter does."""
+   ```
+
+1. **Update the module function** to use the new parameter:
+
+   ```python
+   def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
+       # Use the new parameter
+       threshold = config.new_parameter
+       # ... rest of function
+   ```
+
+1. **Add the parameter to config files** like `config.toml`:
+
+   ```toml
+   [modules.quality_control]
+   module_name = "1_qc"
+   min_counts = 10
+   min_cells = 5
+   new_parameter = 0.5  # Add your new parameter
+   ```
+
+### Creating a New Module
+
+To add a completely new analysis module:
+
+1. **Create the module config class** in `src/recode_st/config.py`:
+
+   ```python
+   class MyNewModuleConfig(BaseModuleConfig):
+       """Configuration for My New Module."""
+
+       my_parameter: int
+       """Description of this parameter."""
+
+       another_parameter: tuple[str, ...]
+       """List of items for analysis."""
+   ```
+
+1. **Add it to ModulesConfig** in the same file:
+
+   ```python
+   class ModulesConfig(BaseModel):
+       # ...existing modules...
+
+       my_new_module: MyNewModuleConfig | None = None
+       """Configuration for My New Module."""
+   ```
+
+1. **Create the module file** `src/recode_st/my_new_module.py`:
+
+   ```python
+   """My new analysis module."""
+
+   from logging import getLogger
+   from recode_st.config import IOConfig, MyNewModuleConfig
+
+   logger = getLogger(__name__)
+
+   def run_my_new_module(config: MyNewModuleConfig, io_config: IOConfig):
+       """Run my new analysis."""
+       # Use config parameters
+       param_value = config.my_parameter
+       items = config.another_parameter
+
+       # Create output directory
+       module_dir = io_config.output_dir / config.module_name
+       module_dir.mkdir(exist_ok=True)
+
+       # Your analysis code here...
+       logger.info(f"Running analysis with parameter: {param_value}")
+   ```
+
+1. **Add the conditional import** in `src/recode_st/__main__.py`:
+
+   ```python
+   def main(config: Config):
+       # ...existing code...
+
+       if config.modules.my_new_module:
+           from recode_st.my_new_module import run_my_new_module
+           logger.info("Running My New Module")
+           run_my_new_module(config.modules.my_new_module, config.io)
+   ```
+
+1. **Add to configuration files**:
+
+   ```toml
+   [modules.my_new_module]
+   module_name = "my_analysis"
+   my_parameter = 42
+   another_parameter = ["item1", "item2", "item3"]
+   ```
+
+[Pydantic]: https://docs.pydantic.dev/latest/

@@ -57,6 +57,8 @@ base_dir
 - `view_images` - Tissue visualization (requires `gene_list`)
 - `spatial_statistics` - Spatial analysis
 - `muspan` - Advanced spatial analysis (requires MuSpAn license)
+- `muspan_spatial_stat` - Spatial statistics and graph analysis (requires MuSpAn license)
+- `muspan_spatial_graph` - Spatial graph construction (requires MuSpAn license)
 
 ## Example 1: Basic Quality Control Pipeline
 

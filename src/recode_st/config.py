@@ -53,6 +53,16 @@ class MuspanModuleConfig(BaseModuleConfig):
     """List of transcripts of interest for MuSpAn analysis."""
 
 
+class MuspanSpatialStatModuleConfig(BaseModuleConfig):
+    """Configuration for the Muspan Spatial Statistics module."""
+
+    muspan_object: str
+    """Name of the muspan object file."""
+
+    cluster_labels: str
+    """Name of the cluster labels field to use for analysis."""
+
+
 class MuspanSpatialGraphModuleConfig(BaseModuleConfig):
     """Configuration for the Muspan Spatial Graph module."""
 
@@ -76,16 +86,6 @@ class MuspanSpatialGraphModuleConfig(BaseModuleConfig):
 
     k_list: tuple[int, ...]
     """List of k values for KNN networks."""
-
-
-class MuspanSpatialStatModuleConfig(BaseModuleConfig):
-    """Configuration for the Muspan Spatial Statistics module."""
-
-    muspan_object: str
-    """Name of the muspan object file."""
-
-    cluster_labels: str
-    """Name of the cluster labels field to use for analysis."""
 
 
 class FormatDataModuleConfig(BaseModuleConfig):
@@ -116,11 +116,11 @@ class ModulesConfig(BaseModel):
     muspan: MuspanModuleConfig | None = None
     """Configuration for the Muspan module."""
 
-    muspan_spatial_graph: MuspanSpatialGraphModuleConfig | None = None
-    """Configuration for the Muspan Spatial Graph module."""
-
     muspan_spatial_stat: MuspanSpatialStatModuleConfig | None = None
     """Configuration for the Muspan Spatial Statistics module."""
+
+    muspan_spatial_graph: MuspanSpatialGraphModuleConfig | None = None
+    """Configuration for the Muspan Spatial Graph module."""
 
 
 class IOConfig(BaseModel):

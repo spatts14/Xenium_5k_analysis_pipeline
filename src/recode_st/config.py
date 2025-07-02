@@ -46,6 +46,47 @@ class SpatialStatisticsModuleConfig(BaseModuleConfig):
 class MuspanModuleConfig(BaseModuleConfig):
     """Configuration for the Muspan module."""
 
+    domain_name: str
+    """Name of the domain for MuSpAn analysis."""
+
+    transcripts_of_interest: tuple[str, ...]
+    """List of transcripts of interest for MuSpAn analysis."""
+
+
+class MuspanSpatialGraphModuleConfig(BaseModuleConfig):
+    """Configuration for the Muspan Spatial Graph module."""
+
+    muspan_object: str
+    """Name of the muspan object file."""
+
+    min_edge_distance: int
+    """Minimum edge distance for spatial graphs."""
+
+    max_edge_distance: int
+    """Maximum edge distance for spatial graphs."""
+
+    distance_list: tuple[int, ...]
+    """List of distances for proximity networks."""
+
+    min_edge_distance_shape: int
+    """Minimum edge distance for shape-based networks."""
+
+    max_edge_distance_shape: int
+    """Maximum edge distance for shape-based networks."""
+
+    k_list: tuple[int, ...]
+    """List of k values for KNN networks."""
+
+
+class MuspanSpatialStatModuleConfig(BaseModuleConfig):
+    """Configuration for the Muspan Spatial Statistics module."""
+
+    muspan_object: str
+    """Name of the muspan object file."""
+
+    cluster_labels: str
+    """Name of the cluster labels field to use for analysis."""
+
 
 class FormatDataModuleConfig(BaseModuleConfig):
     """Configuration for the Format Data module."""
@@ -74,6 +115,12 @@ class ModulesConfig(BaseModel):
 
     muspan: MuspanModuleConfig | None = None
     """Configuration for the Muspan module."""
+
+    muspan_spatial_graph: MuspanSpatialGraphModuleConfig | None = None
+    """Configuration for the Muspan Spatial Graph module."""
+
+    muspan_spatial_stat: MuspanSpatialStatModuleConfig | None = None
+    """Configuration for the Muspan Spatial Statistics module."""
 
 
 class IOConfig(BaseModel):

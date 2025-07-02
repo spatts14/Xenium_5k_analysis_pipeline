@@ -94,6 +94,9 @@ class IOConfig(BaseModel):
     zarr_dir: Path = Path("xenium.zarr")
     """The directory containing the Zarr-formatted input data."""
 
+    area_path: Path = Path("selected_cells_stats.csv")
+    """The path to the CSV file containing selected cells statistics."""
+
     logging_dir: Path = Path("logs")
     """The directory for logging output."""
 
@@ -104,6 +107,7 @@ class IOConfig(BaseModel):
         self.output_dir = self.base_dir / self.output_dir
         self.xenium_dir = self.data_dir / self.xenium_dir
         self.zarr_dir = self.data_dir / self.zarr_dir
+        self.area_path = self.data_dir / self.area_path
         self.logging_dir = self.output_dir / self.logging_dir
 
         # Ensure directories exists

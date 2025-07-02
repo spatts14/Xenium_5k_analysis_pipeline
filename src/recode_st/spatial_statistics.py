@@ -6,27 +6,26 @@ from logging import getLogger
 import scanpy as sc
 import squidpy as sq
 
-from recode_st.config import SpatialStatisticsModuleConfig
+from recode_st.config import IOConfig, SpatialStatisticsModuleConfig
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
-from recode_st.paths import output_path
 
 warnings.filterwarnings("ignore")
 
 logger = getLogger(__name__)
 
 
-def run_spatial_statistics(config: SpatialStatisticsModuleConfig):
+def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOConfig):
     """Run spatial statistics on Xenium data."""
     # Set variables
-    module_dir = output_path / config.module_name
+    module_dir = io_config.output_dir / config.module_name
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(output_path / "4_view_images" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "4_view_images" / "adata.h5ad")
 
     # Calculate spatial statistics
     logger.info("Building spatial neighborhood graph...")
@@ -117,7 +116,7 @@ if __name__ == "__main__":
 
     try:
         run_spatial_statistics(
-            SpatialStatisticsModuleConfig(module_name="5_spatial_stats")
+            SpatialStatisticsModuleConfig(module_name="5_spatial_stats"), IOConfig()
         )
     except FileNotFoundError as err:
         logger.error(f"File not found: {err}")

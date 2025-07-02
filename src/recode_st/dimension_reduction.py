@@ -6,20 +6,21 @@ from logging import getLogger
 import scanpy as sc
 import squidpy as sq
 
-from recode_st.config import DimensionReductionModuleConfig
+from recode_st.config import DimensionReductionModuleConfig, IOConfig
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
-from recode_st.paths import output_path
 
 warnings.filterwarnings("ignore")
 
 logger = getLogger(__name__)
 
 
-def run_dimension_reduction(config: DimensionReductionModuleConfig):
+def run_dimension_reduction(
+    config: DimensionReductionModuleConfig, io_config: IOConfig
+):
     """Run dimension reduction on Xenium data."""
     # Set variables
-    module_dir = output_path / config.module_name
+    module_dir = io_config.output_dir / config.module_name
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -29,7 +30,7 @@ def run_dimension_reduction(config: DimensionReductionModuleConfig):
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(output_path / "1_qc" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "1_qc" / "adata.h5ad")
 
     # Perform dimension reduction analysis
     logger.info("Compute PCA...")
@@ -99,7 +100,8 @@ if __name__ == "__main__":
 
     try:
         run_dimension_reduction(
-            DimensionReductionModuleConfig(module_name="2_dimension_reduction")
+            DimensionReductionModuleConfig(module_name="2_dimension_reduction"),
+            IOConfig(),
         )
     except FileNotFoundError as err:
         logger.error(f"File not found: {err}")

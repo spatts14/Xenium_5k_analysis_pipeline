@@ -6,10 +6,9 @@ from logging import getLogger
 import matplotlib.pyplot as plt
 import scanpy as sc
 
-from recode_st.config import MuspanModuleConfig
+from recode_st.config import IOConfig, MuspanModuleConfig
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
-from recode_st.paths import area_path, output_path, xenium_path
 
 warnings.filterwarnings("ignore")
 
@@ -18,7 +17,7 @@ logger = getLogger(__name__)
 # TODO: replace "cell_type" with variable
 
 
-def run_muspan(config: MuspanModuleConfig):
+def run_muspan(config: MuspanModuleConfig, io_config: IOConfig):
     """Run Muspan on Xenium data."""
     try:
         import muspan as ms
@@ -30,35 +29,26 @@ def run_muspan(config: MuspanModuleConfig):
         )
         raise err
     # Set variables
-    module_dir = output_path / config.module_name
-    domain_name = "Xenium_lung_FFPE"  # name of the domain
-    transcripts_of_interest = [
-        "EPCAM",
-        "CD3D",
-        "CD68",
-        "VWF",
-        "PTPRC",
-        "ACTA2",
-    ]
+    module_dir = io_config.output_dir / config.module_name
+    domain_name = config.domain_name
+    transcripts_of_interest = config.transcripts_of_interest
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(output_path / "5_spatial_stats" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "5_spatial_stats" / "adata.h5ad")
 
     # Import Xenium data using muspan
-    tofi = transcripts_of_interest
-
     # Create muspan object
     logger.info("Creating MuSpAn domain object...")
     domain = ms.io.xenium_to_domain(
-        path_to_xenium_data=str(xenium_path),  # Convert Path to string
-        cells_from_selection_csv=str(area_path),  # Convert Path to string
+        path_to_xenium_data=str(io_config.xenium_path),  # Convert Path to string
+        cells_from_selection_csv=str(io_config.area_path),  # Convert Path to string
         domain_name=domain_name,
         load_transcripts=True,
-        selected_transcripts=tofi,
+        selected_transcripts=transcripts_of_interest,
         load_nuclei=True,
         load_cells_as_shapes=True,
         exclude_no_nuclei_cells=True,
@@ -219,6 +209,6 @@ if __name__ == "__main__":
     seed_everything(21122023)
 
     try:
-        run_muspan(MuspanModuleConfig(module_name="6_muspan"))
+        run_muspan(MuspanModuleConfig(module_name="6_muspan"), IOConfig())
     except FileNotFoundError as err:
         logger.error(f"File not found: {err}")

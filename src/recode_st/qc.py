@@ -10,20 +10,19 @@ import seaborn as sns
 import spatialdata as sd
 from zarr.errors import PathNotFoundError
 
-from recode_st.config import QualityControlModuleConfig
+from recode_st.config import IOConfig, QualityControlModuleConfig
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
-from recode_st.paths import output_path, zarr_path
 
 warnings.filterwarnings("ignore")
 
 logger = getLogger(__name__)
 
 
-def run_qc(config: QualityControlModuleConfig):
+def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     """Run quality control on Xenium data."""
     # Set variables
-    module_dir = output_path / config.module_name
+    module_dir = io_config.output_dir / config.module_name
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -31,9 +30,11 @@ def run_qc(config: QualityControlModuleConfig):
     try:
         # Read in .zarr
         logger.info("Loading Xenium data...")
-        sdata = sd.read_zarr(zarr_path)  # read directly from the zarr store
+        sdata = sd.read_zarr(io_config.zarr_dir)  # read directly from the zarr store
     except PathNotFoundError as err:
-        logger.error(f"File not found (or not a valid Zarr store): {zarr_path}")
+        logger.error(
+            f"File not found (or not a valid Zarr store): {io_config.zarr_dir}"
+        )
         raise err
 
     logger.info("Done")
@@ -144,5 +145,6 @@ if __name__ == "__main__":
             module_name="1_quality_control",
             min_counts=10,
             min_cells=5,
-        )
+        ),
+        IOConfig(),
     )

@@ -36,33 +36,35 @@ def main(config: Config):
 
     if config.modules.quality_control:
         logger.info("Running Module 1 - Quality Control")
-        run_qc(config.modules.quality_control)
+        run_qc(config.modules.quality_control, config.io)
 
     if config.modules.dimension_reduction:
         logger.info("Running Module 2 - Dimension Reduction")
-        run_dimension_reduction(config.modules.dimension_reduction)
+        run_dimension_reduction(config.modules.dimension_reduction, config.io)
 
     if config.modules.annotate:
         logger.info("Running Module 3 - Annotate")
-        run_annotate(config.modules.annotate)
+        run_annotate(config.modules.annotate, config.io)
 
     if config.modules.view_images:
         logger.info("Running Module 4 - View Images")
-        run_view_images(config.modules.view_images)
+        run_view_images(config.modules.view_images, config.io)
 
     if config.modules.spatial_statistics:
         logger.info("Running Module 5 - Spatial Statistics")
-        run_spatial_statistics(config.modules.spatial_statistics)
+        run_spatial_statistics(config.modules.spatial_statistics, config.io)
 
     if config.modules.muspan:
         logger.info("Running Module 6 - MuSpAn")
-        run_muspan(config.modules.muspan)
+        run_muspan(config.modules.muspan, config.io)
 
-    logger.info("Running Module 7 - MuSpAn Spatial Graph")
-    run_muspan_graph()
+    if config.modules.muspan_spatial_graph:
+        logger.info("Running Module 7 - MuSpAn Spatial Graph")
+        run_muspan_graph(config.modules.muspan_spatial_graph, config.io)
 
-    logger.info("Running Module 8 - MuSpAn Spatial Stats")
-    run_muspan_stats()
+    if config.modules.muspan_spatial_stat:
+        logger.info("Running Module 8 - MuSpAn Spatial Stats")
+        run_muspan_stats(config.modules.muspan_spatial_stat, config.io)
 
 
 if __name__ == "__main__":

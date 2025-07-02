@@ -7,27 +7,26 @@ from logging import getLogger
 import pandas as pd
 import scanpy as sc
 
-from recode_st.config import AnnotateModuleConfig
+from recode_st.config import AnnotateModuleConfig, IOConfig
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
-from recode_st.paths import output_path
 
 warnings.filterwarnings("ignore")
 
 logger = getLogger(__name__)
 
 
-def run_annotate(config: AnnotateModuleConfig):
+def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     """Run annotation on Xenium data."""
     # Set variables
-    module_dir = output_path / config.module_name
+    module_dir = io_config.output_dir / config.module_name
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(output_path / "2_DR" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "2_DR" / "adata.h5ad")
 
     # Set the directory where to save the ScanPy figures
     sc.settings.figdir = module_dir
@@ -144,6 +143,6 @@ if __name__ == "__main__":
     seed_everything(21122023)
 
     try:
-        run_annotate(AnnotateModuleConfig(module_name="3_annotate"))
+        run_annotate(AnnotateModuleConfig(module_name="3_annotate"), IOConfig())
     except FileNotFoundError as err:
         logger.error(f"File not found: {err}")

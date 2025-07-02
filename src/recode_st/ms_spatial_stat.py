@@ -5,17 +5,17 @@ from logging import getLogger
 
 import matplotlib.pyplot as plt
 
+from recode_st.config import IOConfig, MuspanSpatialStatModuleConfig
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
-from recode_st.paths import output_path
 
 warnings.filterwarnings("ignore")
 
 logger = getLogger(__name__)
 
 
-def run_muspan_stats():
-    """Run Muspan on Xenium data."""
+def run_muspan_stats(config: MuspanSpatialStatModuleConfig, io_config: IOConfig):
+    """Run Muspan spatial statistics analysis on Xenium data."""
     try:
         import muspan as ms
     except ModuleNotFoundError as err:
@@ -25,20 +25,13 @@ def run_muspan_stats():
             "https://github.com/ImperialCollegeLondon/ReCoDe-spatial-transcriptomics.git"
         )
         raise err
-    # Set variables
-    module_name = "6_muspan"  # name of the module
-    module_dir = output_path / module_name
-    muspan_object = "muspan_object.muspan"
-    seed = 21122023  # seed for reproducibility
-    cluster_labels = "cell_type"
-
-    # Set seed
-    seed_everything(seed)
+    # Set variables from config
+    module_dir = io_config.output_dir / config.module_name
+    muspan_object = config.muspan_object
+    cluster_labels = config.cluster_labels
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
-
-    print(module_dir)
 
     # Import data
     logger.info("Loading MuSpAn object...")
@@ -143,9 +136,19 @@ def run_muspan_stats():
 if __name__ == "__main__":
     # Set up logger
     configure_logging()
-    logger = getLogger("recode_st.6_muspan")  # re-name the logger to match the module
+    logger = getLogger("recode_st.ms_spatial_stat")
+
+    # Set seed
+    seed_everything(21122023)
 
     try:
-        run_muspan_stats()
+        run_muspan_stats(
+            MuspanSpatialStatModuleConfig(
+                module_name="6_muspan",
+                muspan_object="muspan_object.muspan",
+                cluster_labels="cell_type",
+            ),
+            IOConfig(),
+        )
     except FileNotFoundError as err:
         logger.error(f"File not found: {err}")

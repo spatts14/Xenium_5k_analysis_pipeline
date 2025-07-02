@@ -1,6 +1,6 @@
 # Configuration Guide
 
-ReCoDe uses TOML configuration files to control which analysis modules to run and their parameters. Only modules defined in the configuration file will be executed.
+`recode_st` uses TOML configuration files to control which analysis modules to run and their parameters. Only modules defined in the configuration file will be executed.
 
 ## Basic Configuration Structure
 
@@ -27,11 +27,12 @@ and their defaults are:
 ```toml
 [io]
 base_dir = "."
-data_dir = "data"        # relative to base_dir
-output_dir = "analysis"  # relative to base_dir
-xenium_dir = "xenium"    # relative to data_dir
-zarr_dir = "xenium.zarr" # relative to data_dir
-logging_path = "logs"    # relative to output_dir
+data_dir = "data"                      # relative to base_dir
+output_dir = "analysis"                # relative to base_dir
+xenium_dir = "xenium"                  # relative to data_dir
+zarr_dir = "xenium.zarr"               # relative to data_dir
+area_path = "selected_cells_stats.csv" # relative to data_dir
+logging_path = "logs"                  # relative to output_dir
 ```
 
 This resolves to the following default directory structure:
@@ -44,9 +45,13 @@ base_dir
 │   └── logs/
 ├── config.toml
 └── data
+    ├── selected_cells_stats.csv
     ├── xenium/
     └── xenium.zarr/
 ```
+
+It is also possible to define absolute paths for each of these paths, which means you
+are not locked into this particular directory structure.
 
 ## Available Modules
 

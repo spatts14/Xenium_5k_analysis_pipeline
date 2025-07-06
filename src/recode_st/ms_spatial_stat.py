@@ -4,6 +4,7 @@ import warnings
 from logging import getLogger
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
@@ -48,11 +49,15 @@ def run_muspan_stats():
     logger.info("Calculating pairwise cross-PCF for all cell types...")
 
     # Define the cell types to be analyzed
-    cluster_labels = domain.labels[cluster_labels]["labels"].tolist()
-    unique_cluster = domain.unique(cluster_labels)
+    all_cluster_labels = domain.labels["cell_type"]["labels"].tolist()
+    unique_cluster = np.unique(all_cluster_labels).astype(str).tolist()
 
     cell_type_1 = unique_cluster[0]  # TODO: how can I move this to the top?
     cell_type_2 = unique_cluster[1]  # TODO: how can I move this to the top?
+
+    logger.info(f"Found {len(unique_cluster)} unique number of cell types")
+
+    logger.info("Calculating cross-PCF for pairwise cell types...")
 
     # Create a n x n plot for visualizing the cross-PCF for combination of cell types
     fig, axes = plt.subplots(len(unique_cluster), len(unique_cluster), figsize=(40, 40))
@@ -61,10 +66,10 @@ def run_muspan_stats():
     for i in range(len(unique_cluster)):
         for j in range(len(unique_cluster)):
             pop_A = ms.query.query(
-                domain, ("label", unique_cluster), "is", unique_cluster[i]
+                domain, ("label", cluster_labels), "is", unique_cluster[i]
             )
             pop_B = ms.query.query(
-                domain, ("label", unique_cluster), "is", unique_cluster[j]
+                domain, ("label", cluster_labels), "is", unique_cluster[j]
             )
             r, PCF = ms.spatial_statistics.cross_pair_correlation_function(
                 domain,

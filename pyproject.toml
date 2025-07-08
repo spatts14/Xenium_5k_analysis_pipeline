@@ -12,9 +12,11 @@ dependencies = [
     "pandas[excel]",
     "torch",
     "scanpy[leiden]",
+    "spatialdata",
     "spatialdata-io",
     "squidpy",
     "seaborn",
+    "zarr",
     "pydantic",
 ]
 

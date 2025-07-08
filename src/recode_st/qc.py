@@ -23,6 +23,8 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     """Run quality control on Xenium data."""
     # Set variables
     module_dir = io_config.output_dir / config.module_name
+    min_cells = config.min_cells
+    min_counts = config.min_counts
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -73,7 +75,52 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info(f"Max cell area: {area_max}")
     logger.info(f"Min cell area: {area_min}")
 
-    # Plot
+    # Plot the summary metrics
+    plot_metrics(module_dir, adata)
+
+    # $ QC data #
+
+    # Filter cells
+    logger.info("Filtering cells and genes...")
+    sc.pp.filter_cells(adata, min_counts=min_counts)
+    sc.pp.filter_genes(adata, min_cells=min_cells)
+
+    # Normalize data
+    logger.info("Normalize data...")
+    adata.layers["counts"] = adata.X.copy()  # make copy of raw data
+    sc.pp.normalize_total(adata, inplace=True)  # normalize data
+    sc.pp.log1p(adata)  # Log transform data
+
+    # Save data
+    adata.write_h5ad(module_dir / "adata.h5ad")
+    logger.info(f"Data saved to {module_dir / 'adata.h5ad'}")
+    logger.info("Quality control completed successfully.")
+
+
+def plot_metrics(module_dir, adata):
+    """Generates and saves histograms summarizing key cell metrics.
+
+    This function creates a 1x4 grid of histograms visualizing:
+        1. Total transcripts per cell
+        2. Unique transcripts per cell
+        3. Area of segmented cells
+        4. Nucleus-to-cell area ratio
+
+    The resulting figure is saved as 'cell_summary_histograms.png'
+    in the specified module directory.
+
+    Args:
+        module_dir (Path or str): Directory path where the output plot will be saved.
+        adata (anndata.AnnData): Annotated data matrix with cell metrics stored in
+            `adata.obs`. Must contain the columns:
+            - 'total_counts'
+            - 'n_genes_by_counts'
+            - 'cell_area'
+            - 'nucleus_area'
+
+    Returns:
+        None: The function saves the plot to disk and logs the output location.
+    """
     fig, axs = plt.subplots(1, 4, figsize=(15, 4))
 
     axs[0].set_title("Total transcripts per cell")
@@ -112,24 +159,6 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     )
     plt.close()
     logger.info(f"Saved plots to {module_dir / 'cell_summary_histograms.png'}")
-
-    # $ QC data #
-
-    # Filter cells
-    logger.info("Filtering cells and genes...")
-    sc.pp.filter_cells(adata, min_counts=config.min_counts)
-    sc.pp.filter_genes(adata, min_cells=config.min_cells)
-
-    # Normalize data
-    logger.info("Normalize data...")
-    adata.layers["counts"] = adata.X.copy()  # make copy of raw data
-    sc.pp.normalize_total(adata, inplace=True)  # normalize data
-    sc.pp.log1p(adata)  # Log transform data
-
-    # Save data
-    adata.write_h5ad(module_dir / "adata.h5ad")
-    logger.info(f"Data saved to {module_dir / 'adata.h5ad'}")
-    logger.info("Quality control completed successfully.")
 
 
 if __name__ == "__main__":

@@ -27,9 +27,23 @@ class QualityControlModuleConfig(BaseModuleConfig):
 class DimensionReductionModuleConfig(BaseModuleConfig):
     """Configuration for the Quality Control module."""
 
+    n_comps: int
+    """number of principal components to compute"""
+    n_neighbors: int
+    """ number of neighbors for the neighborhood graph"""
+    resolution: float
+    """resolution for leiden clustering"""
+    cluster_name: str
+    """Name of the cluster column in adata.obs."""
+
 
 class AnnotateModuleConfig(BaseModuleConfig):
     """Configuration for the Annotate module."""
+
+    cluster_name: str
+    """Name of the cluster column in adata.obs."""
+    new_clusters: str
+    """Name of the new cluster column in adata.obs."""
 
 
 class ViewImagesModuleConfig(BaseModuleConfig):
@@ -51,6 +65,12 @@ class MuspanModuleConfig(BaseModuleConfig):
 
     transcripts_of_interest: tuple[str, ...]
     """List of transcripts of interest for MuSpAn analysis."""
+
+    adata_cell_id: str
+    """Column name in adata.obs for cell IDs."""
+
+    cluster_labels: str
+    """Column name in adata.obs for cell types."""
 
 
 class MuspanSpatialStatModuleConfig(BaseModuleConfig):

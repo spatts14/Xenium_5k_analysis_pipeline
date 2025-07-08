@@ -22,9 +22,15 @@ min_cells = 5                     # Minimum number of cells expressed required f
 
 [modules.dimension_reduction]
 module_name = "2_dimension_reduction" # Name of the module - will be used in the output directory name
+n_comps = 50                          # number of principal components to compute
+n_neighbors = 15                      # number of neighbors for the neighborhood graph
+resolution = 0.1                      # resolution for leiden clustering
+cluster_name = "leiden"               # name of the cluster column in adata.obs
 
 [modules.annotate]
 module_name = "3_annotate" # Name of the module - will be used in the output directory name
+cluster_name = "leiden"    # name of the cluster column in adata.obs
+new_clusters = "cell_type" # name of the new cluster column in adata.obs
 
 [modules.view_images]
 module_name = "4_view_images" # Name of the module - will be used in the output directory name
@@ -50,6 +56,8 @@ transcripts_of_interest = [ # List of transcripts of interest for MuSpAn analysi
     "PTPRC",
     "ACTA2",
 ]
+adata_cell_id = "cell_id" # column name in adata.obs for cell IDs
+cluster_labels = "cell_type" # column name in adata.obs for cell types
 
 [modules.muspan_spatial_stat]
 module_name = "6_muspan"               # Name of the module - will be used in the output directory name

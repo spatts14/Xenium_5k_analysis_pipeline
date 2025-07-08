@@ -20,6 +20,8 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     """Run annotation on Xenium data."""
     # Set variables
     module_dir = io_config.output_dir / config.module_name
+    cluster_name = config.cluster_name
+    new_clusters = config.new_clusters
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -35,12 +37,12 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     # Calculate the differentially expressed genes for every cluster,
     # compared to the rest of the cells in our adata
     logger.info("Calculating differentially expressed genes for each cluster...")
-    sc.tl.rank_genes_groups(adata, groupby="leiden", method="wilcoxon")
+    sc.tl.rank_genes_groups(adata, groupby=cluster_name, method="wilcoxon")
 
     logger.info("Plotting the top differentially expressed genes for each cluster...")
     sc.pl.rank_genes_groups_dotplot(
         adata,
-        groupby="leiden",
+        groupby=cluster_name,
         standard_scale="var",
         n_genes=5,
         show=False,
@@ -73,7 +75,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
 
     logger.info("File 2...")
     # Define the number of clusters
-    clusters_list = len(adata.obs["leiden"].astype(str).unique())
+    clusters_list = len(adata.obs[cluster_name].astype(str).unique())
 
     # Create a list
     list = []
@@ -119,13 +121,13 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     logger.info("Renaming clusters based on markers...")
     # Get unique clusters
     unique_clusters = (
-        adata.obs["leiden"].astype(str).unique()
+        adata.obs[cluster_name].astype(str).unique()
     )  # Get unique cluster names
     cluster_names = {
         cluster: f"Cluster_{cluster}" for cluster in unique_clusters
     }  # Create a mapping of cluster names
-    adata.obs["cell_type"] = (
-        adata.obs["leiden"].astype(str).map(cluster_names)
+    adata.obs[new_clusters] = (
+        adata.obs[cluster_name].astype(str).map(cluster_names)
     )  # Map the cluster names to the cell_type column
 
     # Save anndata object

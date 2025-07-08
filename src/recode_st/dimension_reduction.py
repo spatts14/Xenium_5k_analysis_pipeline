@@ -21,6 +21,10 @@ def run_dimension_reduction(
     """Run dimension reduction on Xenium data."""
     # Set variables
     module_dir = io_config.output_dir / config.module_name
+    n_comps = config.n_comps
+    n_neighbors = config.n_neighbors
+    resolution = config.resolution
+    cluster_name = config.cluster_name
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -34,7 +38,7 @@ def run_dimension_reduction(
 
     # Perform dimension reduction analysis
     logger.info("Compute PCA...")
-    sc.pp.pca(adata)  # compute principal components
+    sc.pp.pca(adata, n_comps=n_comps)  # compute principal components
     sc.pl.pca_variance_ratio(
         adata,
         log=True,
@@ -45,14 +49,14 @@ def run_dimension_reduction(
     logger.info(f"PCA Variance plot saved to {sc.settings.figdir}")
 
     logger.info("Compute neighbors...")
-    sc.pp.neighbors(adata)  # compute a neighborhood graph
+    sc.pp.neighbors(adata, n_neighbors=n_neighbors)  # compute a neighborhood graph
 
     logger.info("Create UMAPs and cluster cells..")
     sc.tl.umap(adata)  # calculate umap
     sc.tl.leiden(
         adata,
-        resolution=1.0,  # choose resolution for clustering
-        key_added="leiden",
+        resolution=resolution,  # choose resolution for clustering
+        key_added=cluster_name,
     )  # name leiden clusters
 
     # plot UMAP
@@ -62,7 +66,7 @@ def run_dimension_reduction(
         color=[
             "total_counts",
             "n_genes_by_counts",
-            "leiden",
+            cluster_name,
         ],
         wspace=0.4,
         show=False,
@@ -72,18 +76,16 @@ def run_dimension_reduction(
     logger.info(f"UMAP plot saved to {sc.settings.figdir}")
 
     # plot visualization of leiden clusters
-    logger.info("Plotting leiden clusters...")
+    logger.info(f"Plotting {cluster_name} clusters...")
     sq.pl.spatial_scatter(
         adata,
         library_id="spatial",
         shape=None,
-        color=[
-            "leiden",
-        ],
+        color=[cluster_name],
         wspace=0.4,
-        save=module_dir / "leiden_spatial.png",
+        save=module_dir / f"{cluster_name}_spatial.png",
     )
-    logger.info(f"Leiden spatial scatter plot saved to {module_dir}")
+    logger.info(f"{cluster_name} spatial scatter plot saved to {module_dir}")
 
     # Save anndata object
     adata.write_h5ad(module_dir / "adata.h5ad")

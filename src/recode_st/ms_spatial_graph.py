@@ -54,11 +54,7 @@ def run_muspan_graph(config: MuspanSpatialGraphModuleConfig, io_config: IOConfig
     create_delaunay_unfiltered_network(domain)
     create_delaunay_filt_network(domain, min_edge_distance, max_edge_distance)
     logger.info("Plotting filtered and unfiltered Delaunay networks...")
-    plot_delaunay_networks(domain)
-
-    plt.tight_layout()
-    plt.savefig(module_dir / "muspan_delaunay.png")
-    logger.info("Delaunay networks plotted and saved")
+    plot_delaunay_networks(domain, module_dir)
 
     # Create proximity triangulation spatial graph with point-like objects
     logger.info("Creating Proximity based networks (point-like objects)...")
@@ -90,23 +86,21 @@ def run_muspan_graph(config: MuspanSpatialGraphModuleConfig, io_config: IOConfig
     logger.info("Domain saved")
 
 
-def plot_delaunay_networks(domain):
+def plot_delaunay_networks(domain, module_dir):
     """Plot the unfiltered and filtered Delaunay cell-cell (CC) networks for domain.
 
     This function creates a side-by-side visualization of two Delaunay networks:
     one unfiltered and one filtered, using the provided domain object. The networks
     are visualized with cell centroids as markers and edges colored in a constant color.
 
-    Parameters
-    ----------
-    domain: (muspan object)
-        The spatial domain object containing network information and cell centroids.
-        Must be compatible with `ms.visualise.visualise_network`.
+    Args:
+        domain (muspan object): The spatial domain object containing network
+            information and cell centroids. Must be compatible with
+            `ms.visualise.visualise_network`.
+        module_dir (Path or str): Directory path where the output image will be saved.
 
     Returns:
-    -------
-    None
-        Displays the generated matplotlib figure with the two network plots.
+        None: Displays the generated matplotlib figure with the two network plots.
     """
     fig, ax = plt.subplots(1, 2, figsize=(20, 12))
     ax[0].set_title("Delaunay CC unfiltered")
@@ -137,6 +131,10 @@ def plot_delaunay_networks(domain):
             color_by=("constant", "#4D7EAB"),
         ),
     )
+
+    plt.tight_layout()
+    plt.savefig(module_dir / "muspan_delaunay.png")
+    logger.info("Delaunay networks plotted and saved")
 
 
 def create_delaunay_filt_network(domain, min_edge_distance, max_edge_distance):
@@ -193,7 +191,7 @@ def create_delaunay_unfiltered_network(domain):
 def create_proximity_shape(domain, min_edge_distance_shape, max_edge_distance_shape):
     """Creates a proximity-based contact network for a given domain.
 
-    Parameters:
+    Args:
         domain: (muspan object)
             The spatial domain or context in which the network will be generated.
         min_edge_distance_shape: float
@@ -353,9 +351,6 @@ def create_knn_networks(domain, k_list):
     Side Effects:
         Modifies the given domain by adding KNN networks with the specified k values.
         Each network is named as "{k}-NN network".
-
-    Example:
-        create_knn_networks(my_domain, [5, 10, 15])
     """
     for k in k_list:
         ms.networks.generate_network(
@@ -387,7 +382,6 @@ def plot_proximity_networks(domain, module_dir, color_map, distance_list):
         None. The function saves the generated plot as 'muspan_proximity_point.png'
         in the specified directory and logs the completion of the plotting process.
     """
-    """Plot proximity networks for point-like objects."""
     fig, axes = plt.subplots(1, len(distance_list), figsize=(20, 6))
 
     if len(distance_list) == 1:

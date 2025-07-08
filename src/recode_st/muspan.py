@@ -59,7 +59,7 @@ def run_muspan(config: MuspanModuleConfig, io_config: IOConfig):
     # Filer adata only to include cells within the area of interest
     logger.info("Filtering adata to include only cells in the area of interest...")
     # Get cell IDs in their original order (preserving duplicates if any)
-    map_cell_types_to_domain(adata, domain, adata_cell_id, cluster_labels)
+    domain = map_cell_types_to_domain(adata, domain, adata_cell_id, cluster_labels)
 
     logger.info("Queries to isolate the different objects within the MuSpAn domain")
 
@@ -235,6 +235,9 @@ def map_cell_types_to_domain(adata, domain, adata_cell_id, cluster_labels):
     logger.info(
         f"Number of 'Unknown' cell types: {cell_types_ordered.count('Unknown')}"
     )
+
+    # Return muspan domain with cell types mapped
+    return domain
 
 
 if __name__ == "__main__":

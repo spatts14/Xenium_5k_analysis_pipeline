@@ -54,6 +54,7 @@ OMP: Info #276: omp_set_nested routine deprecated, please use omp_set_max_active
 In this case, you should use `conda` to install the packages. There is an environment.yml file provided that will create a conda environment called `recode_st`. To fully install it, do the following:
 
 ```bash
+cd ReCoDe-spatial-transcriptomics # Ensure you are in the root directory of the repo
 conda env create -f environment.yml
 conda activate recode_st
 pip install --no-build-isolation --no-deps -e .

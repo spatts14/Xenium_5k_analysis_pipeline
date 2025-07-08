@@ -10,27 +10,21 @@ import seaborn as sns
 import spatialdata as sd
 from zarr.errors import PathNotFoundError
 
+from recode_st.config import IOConfig, QualityControlModuleConfig
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
-from recode_st.paths import output_path, zarr_path
 
 warnings.filterwarnings("ignore")
 
 logger = getLogger(__name__)
 
 
-def run_qc():
+def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     """Run quality control on Xenium data."""
     # Set variables
-    # ? How should I config this so a user can easily change them?
-    module_name = "1_qc"  # name of the module
-    module_dir = output_path / module_name
-    min_counts = 10
-    min_cells = 5
-    seed = 21122023  # seed for reproducibility
-
-    # Set seed
-    seed_everything(seed)
+    module_dir = io_config.output_dir / config.module_name
+    min_cells = config.min_cells
+    min_counts = config.min_counts
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -38,9 +32,11 @@ def run_qc():
     try:
         # Read in .zarr
         logger.info("Loading Xenium data...")
-        sdata = sd.read_zarr(zarr_path)  # read directly from the zarr store
+        sdata = sd.read_zarr(io_config.zarr_dir)  # read directly from the zarr store
     except PathNotFoundError as err:
-        logger.error(f"File not found (or not a valid Zarr store): {zarr_path}")
+        logger.error(
+            f"File not found (or not a valid Zarr store): {io_config.zarr_dir}"
+        )
         raise err
 
     logger.info("Done")
@@ -79,7 +75,52 @@ def run_qc():
     logger.info(f"Max cell area: {area_max}")
     logger.info(f"Min cell area: {area_min}")
 
-    # Plot
+    # Plot the summary metrics
+    plot_metrics(module_dir, adata)
+
+    # $ QC data #
+
+    # Filter cells
+    logger.info("Filtering cells and genes...")
+    sc.pp.filter_cells(adata, min_counts=min_counts)
+    sc.pp.filter_genes(adata, min_cells=min_cells)
+
+    # Normalize data
+    logger.info("Normalize data...")
+    adata.layers["counts"] = adata.X.copy()  # make copy of raw data
+    sc.pp.normalize_total(adata, inplace=True)  # normalize data
+    sc.pp.log1p(adata)  # Log transform data
+
+    # Save data
+    adata.write_h5ad(module_dir / "adata.h5ad")
+    logger.info(f"Data saved to {module_dir / 'adata.h5ad'}")
+    logger.info("Quality control completed successfully.")
+
+
+def plot_metrics(module_dir, adata):
+    """Generates and saves histograms summarizing key cell metrics.
+
+    This function creates a 1x4 grid of histograms visualizing:
+        1. Total transcripts per cell
+        2. Unique transcripts per cell
+        3. Area of segmented cells
+        4. Nucleus-to-cell area ratio
+
+    The resulting figure is saved as 'cell_summary_histograms.png'
+    in the specified module directory.
+
+    Args:
+        module_dir (Path or str): Directory path where the output plot will be saved.
+        adata (anndata.AnnData): Annotated data matrix with cell metrics stored in
+            `adata.obs`. Must contain the columns:
+            - 'total_counts'
+            - 'n_genes_by_counts'
+            - 'cell_area'
+            - 'nucleus_area'
+
+    Returns:
+        None: The function saves the plot to disk and logs the output location.
+    """
     fig, axs = plt.subplots(1, 4, figsize=(15, 4))
 
     axs[0].set_title("Total transcripts per cell")
@@ -119,28 +160,20 @@ def run_qc():
     plt.close()
     logger.info(f"Saved plots to {module_dir / 'cell_summary_histograms.png'}")
 
-    # $ QC data #
-
-    # Filter cells
-    logger.info("Filtering cells and genes...")
-    sc.pp.filter_cells(adata, min_counts=min_counts)
-    sc.pp.filter_genes(adata, min_cells=min_cells)
-
-    # Normalize data
-    logger.info("Normalize data...")
-    adata.layers["counts"] = adata.X.copy()  # make copy of raw data
-    sc.pp.normalize_total(adata, inplace=True)  # normalize data
-    sc.pp.log1p(adata)  # Log transform data
-
-    # Save data
-    adata.write_h5ad(module_dir / "adata.h5ad")
-    logger.info(f"Data saved to {module_dir / 'adata.h5ad'}")
-    logger.info("Quality control completed successfully.")
-
 
 if __name__ == "__main__":
     # Set up logger
     configure_logging()
     logger = getLogger("recode_st.1_qc")
 
-    run_qc()
+    # Set seed
+    seed_everything(21122023)
+
+    run_qc(
+        QualityControlModuleConfig(
+            module_name="1_quality_control",
+            min_counts=10,
+            min_cells=5,
+        ),
+        IOConfig(),
+    )

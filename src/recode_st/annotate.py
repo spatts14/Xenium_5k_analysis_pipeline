@@ -7,31 +7,28 @@ from logging import getLogger
 import pandas as pd
 import scanpy as sc
 
+from recode_st.config import AnnotateModuleConfig, IOConfig
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
-from recode_st.paths import output_path
 
 warnings.filterwarnings("ignore")
 
 logger = getLogger(__name__)
 
 
-def run_annotate():
+def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     """Run annotation on Xenium data."""
     # Set variables
-    module_name = "3_annotate"
-    module_dir = output_path / module_name
-    seed = 21122023  # seed for reproducibility
-
-    # Set seed
-    seed_everything(seed)
+    module_dir = io_config.output_dir / config.module_name
+    cluster_name = config.cluster_name
+    new_clusters = config.new_clusters
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(output_path / "2_DR" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "2_DR" / "adata.h5ad")
 
     # Set the directory where to save the ScanPy figures
     sc.settings.figdir = module_dir
@@ -40,16 +37,16 @@ def run_annotate():
     # Calculate the differentially expressed genes for every cluster,
     # compared to the rest of the cells in our adata
     logger.info("Calculating differentially expressed genes for each cluster...")
-    sc.tl.rank_genes_groups(adata, groupby="leiden", method="wilcoxon")
+    sc.tl.rank_genes_groups(adata, groupby=cluster_name, method="wilcoxon")
 
     logger.info("Plotting the top differentially expressed genes for each cluster...")
     sc.pl.rank_genes_groups_dotplot(
         adata,
-        groupby="leiden",
+        groupby=cluster_name,
         standard_scale="var",
         n_genes=5,
         show=False,
-        save=f"{module_name}.png",
+        save=f"{config.module_name}.png",
     )
     logger.info(f"Dotplot saved to {sc.settings.figdir}")
 
@@ -61,7 +58,7 @@ def run_annotate():
         ncols=3,
         legend_fontsize=10,
         show=False,
-        save=f"_{module_name}.png",
+        save=f"_{config.module_name}.png",
     )
     logger.info(f"UMAP plot saved to {sc.settings.figdir}")
 
@@ -78,7 +75,7 @@ def run_annotate():
 
     logger.info("File 2...")
     # Define the number of clusters
-    clusters_list = len(adata.obs["leiden"].astype(str).unique())
+    clusters_list = len(adata.obs[cluster_name].astype(str).unique())
 
     # Create a list
     list = []
@@ -124,13 +121,13 @@ def run_annotate():
     logger.info("Renaming clusters based on markers...")
     # Get unique clusters
     unique_clusters = (
-        adata.obs["leiden"].astype(str).unique()
+        adata.obs[cluster_name].astype(str).unique()
     )  # Get unique cluster names
     cluster_names = {
         cluster: f"Cluster_{cluster}" for cluster in unique_clusters
     }  # Create a mapping of cluster names
-    adata.obs["cell_type"] = (
-        adata.obs["leiden"].astype(str).map(cluster_names)
+    adata.obs[new_clusters] = (
+        adata.obs[cluster_name].astype(str).map(cluster_names)
     )  # Map the cluster names to the cell_type column
 
     # Save anndata object
@@ -144,7 +141,10 @@ if __name__ == "__main__":
     configure_logging()
     logger = getLogger("recode_st.3_annotate")  # re-name the logger to match the module
 
+    # Set seed
+    seed_everything(21122023)
+
     try:
-        run_annotate()
+        run_annotate(AnnotateModuleConfig(module_name="3_annotate"), IOConfig())
     except FileNotFoundError as err:
         logger.error(f"File not found: {err}")

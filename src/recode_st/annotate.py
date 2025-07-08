@@ -7,33 +7,28 @@ from logging import getLogger
 import pandas as pd
 import scanpy as sc
 
+from recode_st.config import AnnotateModuleConfig, IOConfig
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
-from recode_st.paths import output_path
 
 warnings.filterwarnings("ignore")
 
 logger = getLogger(__name__)
 
 
-def run_annotate():
+def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     """Run annotation on Xenium data."""
     # Set variables
-    module_name = "3_annotate"
-    module_dir = output_path / module_name
-    seed = 21122023  # seed for reproducibility
-    cluster_name = "leiden"  # name of the cluster column in adata.obs
-    new_clusters = "cell_type"  # name of the new cluster column in adata.obs
-
-    # Set seed
-    seed_everything(seed)
+    module_dir = io_config.output_dir / config.module_name
+    cluster_name = config.cluster_name
+    new_clusters = config.new_clusters
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(output_path / "2_DR" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "2_DR" / "adata.h5ad")
 
     # Set the directory where to save the ScanPy figures
     sc.settings.figdir = module_dir
@@ -51,7 +46,7 @@ def run_annotate():
         standard_scale="var",
         n_genes=5,
         show=False,
-        save=f"{module_name}.png",
+        save=f"{config.module_name}.png",
     )
     logger.info(f"Dotplot saved to {sc.settings.figdir}")
 
@@ -63,7 +58,7 @@ def run_annotate():
         ncols=3,
         legend_fontsize=10,
         show=False,
-        save=f"_{module_name}.png",
+        save=f"_{config.module_name}.png",
     )
     logger.info(f"UMAP plot saved to {sc.settings.figdir}")
 
@@ -146,7 +141,10 @@ if __name__ == "__main__":
     configure_logging()
     logger = getLogger("recode_st.3_annotate")  # re-name the logger to match the module
 
+    # Set seed
+    seed_everything(21122023)
+
     try:
-        run_annotate()
+        run_annotate(AnnotateModuleConfig(module_name="3_annotate"), IOConfig())
     except FileNotFoundError as err:
         logger.error(f"File not found: {err}")

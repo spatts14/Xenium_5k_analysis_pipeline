@@ -6,8 +6,8 @@ from pathlib import Path
 
 from spatialdata_io import xenium
 
+from recode_st.config import IOConfig
 from recode_st.logging_config import configure_logging
-from recode_st.paths import xenium_path, zarr_path
 
 warnings.filterwarnings("ignore")
 
@@ -33,9 +33,9 @@ def convert_xenium_to_zarr(xenium_path: Path, zarr_path: Path):
         raise err
 
 
-def run_format():
+def run_format(io_config: IOConfig):
     """Run the formatting module."""
-    convert_xenium_to_zarr(xenium_path, zarr_path)
+    convert_xenium_to_zarr(io_config.xenium_dir, io_config.zarr_dir)
 
     logger.info("Finished formatting data.")
 
@@ -45,4 +45,4 @@ if __name__ == "__main__":
     configure_logging()
     logger = getLogger("recode_st.0_format")  # re-name the logger to match the module
 
-    run_format()
+    run_format(IOConfig())

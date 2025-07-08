@@ -6,9 +6,9 @@ from logging import getLogger
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from recode_st.config import IOConfig, MuspanSpatialGraphModuleConfig
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
-from recode_st.paths import output_path
 
 warnings.filterwarnings("ignore")
 
@@ -21,8 +21,8 @@ except ModuleNotFoundError:
     ms = None
 
 
-def run_muspan_graph():
-    """Run Muspan on Xenium data."""
+def run_muspan_graph(config: MuspanSpatialGraphModuleConfig, io_config: IOConfig):
+    """Run Muspan spatial graph analysis on Xenium data."""
     if ms is None:
         logger.error(
             "Could not load necessary MuSpAn package. You can obtain this with:\n"
@@ -31,21 +31,16 @@ def run_muspan_graph():
         )
         raise ModuleNotFoundError("MuSpAn package not found")
 
-    # Set variables
-    module_name = "6_muspan"  # name of the module
-    module_dir = output_path / module_name
-    muspan_object = "muspan_object.muspan"
-    seed = 21122023  # seed for reproducibility
+    # Set variables from config
+    module_dir = io_config.output_dir / config.module_name
+    muspan_object = config.muspan_object
+    min_edge_distance = config.min_edge_distance
+    max_edge_distance = config.max_edge_distance
+    distance_list = config.distance_list
+    min_edge_distance_shape = config.min_edge_distance_shape
+    max_edge_distance_shape = config.max_edge_distance_shape
+    k_list = config.k_list
     color_map = sns.color_palette("Blues", as_cmap=True)
-    min_edge_distance = 0
-    max_edge_distance = 45
-    distance_list = [10, 20, 50]
-    min_edge_distance_shape = 0
-    max_edge_distance_shape = 1
-    k_list = [2, 5, 10, 15]
-
-    # Set seed
-    seed_everything(seed)
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -422,12 +417,25 @@ def plot_proximity_networks(domain, module_dir, color_map, distance_list):
 if __name__ == "__main__":
     # Set up logger
     configure_logging()
-    logger = getLogger(
-        "recode_st.ms_spatial_graph"
-    )  # re-name the logger to match the module
+    logger = getLogger("recode_st.ms_spatial_graph")
+
+    # Set seed
+    seed_everything(21122023)
 
     try:
-        run_muspan_graph()
+        run_muspan_graph(
+            MuspanSpatialGraphModuleConfig(
+                module_name="6_muspan",
+                muspan_object="muspan_object.muspan",
+                min_edge_distance=0,
+                max_edge_distance=45,
+                distance_list=(10, 20, 50),
+                min_edge_distance_shape=0,
+                max_edge_distance_shape=1,
+                k_list=(2, 5, 10, 15),
+            ),
+            IOConfig(),
+        )
     except FileNotFoundError as err:
         logger.error(f"File not found: {err}")
     except ModuleNotFoundError as err:

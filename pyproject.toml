@@ -15,6 +15,7 @@ dependencies = [
     "spatialdata-io",
     "squidpy",
     "seaborn",
+    "pydantic",
 ]
 
 [project.optional-dependencies]

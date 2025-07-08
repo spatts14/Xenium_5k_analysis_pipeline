@@ -1,21 +1,27 @@
 """Module for configuring logging in the recode_st package."""
 
 import logging
+import time
+from pathlib import Path
 
-from recode_st.paths import logging_path
 
-
-def configure_logging(log_level=logging.INFO):
+def configure_logging(logging_dir: Path | None = None, log_level=logging.INFO):
     """Configure logging for the package.
 
     Args:
+        logging_dir: The directory where log files will be stored.
         log_level: The logging level to set. Defaults to logging.INFO.
     """
+    if logging_dir is None:
+        logging_dir = Path("analysis/logs")
+
     logger = logging.getLogger("recode_st")
     logger.setLevel(log_level)
 
     ch = logging.StreamHandler()
-    fh = logging.FileHandler(logging_path / "recode_st.log", mode="w")
+    fh = logging.FileHandler(
+        logging_dir / f"recode_st-{time.strftime('%Y%m%d-%H%M%S')}.log"
+    )
 
     formatter = logging.Formatter(
         "[%(asctime)s - %(name)s - %(levelname)s] %(message)s",

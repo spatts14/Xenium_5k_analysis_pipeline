@@ -6,24 +6,21 @@ from logging import getLogger
 import scanpy as sc
 import squidpy as sq
 
+from recode_st.config import DimensionReductionModuleConfig, IOConfig
 from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
-from recode_st.paths import output_path
 
 warnings.filterwarnings("ignore")
 
 logger = getLogger(__name__)
 
 
-def run_dimension_reduction():
+def run_dimension_reduction(
+    config: DimensionReductionModuleConfig, io_config: IOConfig
+):
     """Run dimension reduction on Xenium data."""
     # Set variables
-    module_name = "2_DR"
-    module_dir = output_path / module_name
-    seed = 21122023  # seed for reproducibility
-
-    # Set seed
-    seed_everything(seed)
+    module_dir = io_config.output_dir / config.module_name
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -33,7 +30,7 @@ def run_dimension_reduction():
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(output_path / "1_qc" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "1_qc" / "adata.h5ad")
 
     # Perform dimension reduction analysis
     logger.info("Compute PCA...")
@@ -43,7 +40,7 @@ def run_dimension_reduction():
         log=True,
         n_pcs=50,
         show=False,
-        save=f"_{module_name}.png",
+        save=f"_{config.module_name}.png",
     )
     logger.info(f"PCA Variance plot saved to {sc.settings.figdir}")
 
@@ -69,7 +66,7 @@ def run_dimension_reduction():
         ],
         wspace=0.4,
         show=False,
-        save=f"_{module_name}.png",  # save the figure with the module name
+        save=f"_{config.module_name}.png",  # save the figure with the module name
         frameon=False,
     )
     logger.info(f"UMAP plot saved to {sc.settings.figdir}")
@@ -98,7 +95,13 @@ if __name__ == "__main__":
     configure_logging()
     logger = getLogger("recode_st.2_dimension_reduction")
 
+    # Set seed
+    seed_everything(21122023)
+
     try:
-        run_dimension_reduction()
+        run_dimension_reduction(
+            DimensionReductionModuleConfig(module_name="2_dimension_reduction"),
+            IOConfig(),
+        )
     except FileNotFoundError as err:
         logger.error(f"File not found: {err}")

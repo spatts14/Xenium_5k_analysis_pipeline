@@ -109,22 +109,17 @@ def plot_metrics(module_dir, adata):
     The resulting figure is saved as 'cell_summary_histograms.png'
     in the specified module directory.
 
-    Parameters
-    ----------
-    module_dir : Path or str
-        Directory path where the output plot will be saved.
-    adata : anndata.AnnData
-        Annotated data matrix with cell metrics stored in `adata.obs`.
-        Must contain the columns:
+    Args:
+        module_dir (Path or str): Directory path where the output plot will be saved.
+        adata (anndata.AnnData): Annotated data matrix with cell metrics stored in
+            `adata.obs`. Must contain the columns:
             - 'total_counts'
             - 'n_genes_by_counts'
             - 'cell_area'
             - 'nucleus_area'
 
     Returns:
-    -------
-    None
-        The function saves the plot to disk and logs the output location.
+        None: The function saves the plot to disk and logs the output location.
     """
     fig, axs = plt.subplots(1, 4, figsize=(15, 4))
 

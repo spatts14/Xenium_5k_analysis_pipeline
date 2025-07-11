@@ -39,7 +39,7 @@ def test_io_config_resolve_paths(tmp_path):
 
     # Check that paths outside of the base directory are resolved correctly
     base_dir = tmp_path / "base"
-    base_dir.mkdir()
+    base_dir.mkdir(parents=True, exist_ok=True)
     io_config = IOConfig(base_dir=base_dir, data_dir=tmp_path / "data")
 
     assert io_config.base_dir == base_dir

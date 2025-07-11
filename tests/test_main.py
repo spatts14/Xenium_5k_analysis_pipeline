@@ -31,6 +31,7 @@ def test_main(mocker, caplog):
     convert_xenium_to_zarr_mock = mocker.patch(
         "recode_st.format_data.convert_xenium_to_zarr"
     )
+    run_qc_mock = mocker.patch("recode_st.qc.run_qc")
     config.modules.format_data = FormatDataModuleConfig(module_name="0_format")
     with caplog.at_level("INFO"):
         main(config)
@@ -38,6 +39,7 @@ def test_main(mocker, caplog):
     convert_xenium_to_zarr_mock.assert_called_once_with(
         config.io.xenium_dir, config.io.zarr_dir
     )
+    run_qc_mock.assert_not_called()
     assert caplog.record_tuples[-2:] == [
         ("recode_st", 20, "Running Module 0 - Format"),
         ("recode_st.format_data", 20, "Finished formatting data."),
@@ -61,6 +63,7 @@ def test_main(mocker, caplog):
     run_spatial_statistics_mock.assert_called_once_with(
         config.modules.spatial_statistics, config.io
     )
+    run_qc_mock.assert_not_called()
     assert caplog.record_tuples[-3:] == [
         ("recode_st", 20, "Running Module 0 - Format"),
         ("recode_st.format_data", 20, "Finished formatting data."),

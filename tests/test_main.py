@@ -11,6 +11,7 @@ def test_main(mocker, caplog):
     )
 
     configure_logging_mock = mocker.patch("recode_st.logging_config.configure_logging")
+    seed_everything_mock = mocker.patch("recode_st.helper_function.seed_everything")
 
     # Test with no modules enabled in config
     config = Config(seed=42)
@@ -20,6 +21,7 @@ def test_main(mocker, caplog):
     configure_logging_mock.assert_called_once_with(
         config.io.logging_dir, config.log_level
     )
+    seed_everything_mock.assert_called_once_with(config.seed)
     assert caplog.record_tuples == [
         ("recode_st", 20, "Seeding everything..."),
         ("recode_st", 20, "Starting recode_st pipeline..."),

@@ -13,9 +13,9 @@ Cell segmentation is *not* included in this pipeline as it is performed prior to
 In addition to the analysis pipeline, we highlight several good software engineering practices including version control, containarization, linting, and continuous integration. Details on these practices and how to implement them can be found in the [Best Practices for Software Engineering](docs/RSE_best_practices.md) section of the documentation.
 
 <!-- Author information -->
-This exemplar was developed at Imperial College London by Sara Patti in
-collaboration with Adrian D'Alessandro from Research Software Engineering and
-Jesus Urtasun from Research Computing & Data Science at the Early Career
+This exemplar was developed at Imperial College London by *Sara Patti* in
+collaboration with *Adrian D'Alessandro* from Research Software Engineering and
+*Jesus Urtasun* from Research Computing & Data Science at the Early Career
 Researcher Institute.
 
 <!-- Learning Outcomes.
@@ -25,51 +25,55 @@ skills will be gained by studying your ReCoDE exemplar. -->
 
 <!-- TODO: NEED TO BE REVISED -->
 
-After completing this exemplar, students will:
+After completing this exemplar, students will be able to:
 
-- Analyze spatial transcriptomic data and perform spatial statistics (Xenium)
-- Develop a reporducible pipeline
-- Implement RSE best practices (e.g testing, continuous integration)
+- Describe the key steps in spatial transcriptomic analysis
+- Analyze spatial transcriptomic data and apply spatial statistical methods
+- Design and build a reproducible analysis pipeline
+- Apply research software engineering (RSE) best practices, including testing and continuous integration
 
 <!-- Audience. Think broadly as to who will benefit. -->
 ## Target Audience 🎯
 
-1) Biologists interested in developing bioinformatic pipelines
-2) RSE interested in analyzing spatial transcriptomics data
+1) Biologists interested in analyzing spatial transcriptomics data
+2) Biologists interested in developing bioinformatic pipelines
+3) RSE interested in analyzing spatial transcriptomics data
 
-<!-- Requirements.
-What skills and knowledge will students need before starting?
-- Python
-- NextFlow (?)
-
-Is it a prerequisite skill or learning outcome?
-e.g. If your project uses a niche library, you could either set it as a
-requirement or make it a learning outcome above. If a learning outcome,
-you must include a relevant section that helps with learning this library.
--->
-
+<!-- Requirements. -->
 ## Prerequisites ✅
 
-### Academic 📚
+Prior to undertaking this exemplar, learners should have the following skills and knowledge:
 
-- Basic understanding of Python programming
-- Familiarity with [scverse ecosystem](https://scverse.org/) (e.g. scanpy, squidpy)
+- Python
+
+Although not necessary, we recommend the following skills and knowledge to enhance the learning experience:
+
+- Familiarity with the scverse ecosystem (e.g. scanpy, squidpy)
 - Familiarity with data analysis and statistics (including spatial statistics)
 - Familiarity with spatial transcriptomics
 
+### Academic 📚
+
+- Basic understanding of Python programming and command line interface (CLI)
+- Familiarity with [scverse ecosystem](https://scverse.org/) (e.g. scanpy, squidpy)
+- Familiarity with data analysis and statistics (including spatial statistics)
+- Familiarity with spatial transcriptomics platforms (e.g. 10X Genomics Xenium)
+
 ### System 💻
-
 <!-- TODO: NEED TO BE REVISED -->
-
-- System requirements (e.g. Python 3.11+, Anaconda, 50 GB disk space, etc.)
-- Hardware or HPC requirements (if any)
+- Python 3.12+
+- Anaconda required for Mac Intel users, for more details please refer to the [Installation Guide](docs/installation.md)
 
 <!-- Quick Start Guide. Tell learners how to engage with the exemplar. -->
 ## Getting Started 🚀
 
-<!-- TODO: NEED TO BE REVISED -->
+1. Start by cloning the repository to your local machine in the directory of your choice
 
-1. Start by downloading the [Xenium Lung FFPE data](https://www.10xgenomics.com/datasets/ffpe-human-lung-cancer-data-with-human-immuno-oncology-profiling-panel-and-custom-add-on-1-standard)
+   ```bash
+   git clone https://github.com/ImperialCollegeLondon/ReCoDe-spatial-transcriptomics.git
+   ```
+
+2. Download the [Xenium Lung FFPE data](https://www.10xgenomics.com/datasets/ffpe-human-lung-cancer-data-with-human-immuno-oncology-profiling-panel-and-custom-add-on-1-standard)
    - Data can be downloaded from the 10x Genomics website, or directly from the command line.
       - If downloading from the website, download the `Xenium_V1_Human_Lung_Cancer_Addon_FFPE_outs.zip` file.
       - If downloading from the command line, use the following command:
@@ -86,11 +90,31 @@ you must include a relevant section that helps with learning this library.
         unzip Xenium_V1_Human_Lung_Cancer_Addon_FFPE_outs.zip
         ```
 
-2. Create new virtual environment using `conda` or `venv`:
-3. Run pipeline
+3. Create new virtual environment using `conda` or `venv`
+Full details on how to set up the environment and install necessary packages can be found in the [Installation Guide](docs/installation.md).
 
-Briefly describe how this project fits in your discipline, why you chose
-to work on it, and what other disciplines may find it useful.
+If you are using `venv`, run the following command:
+
+   ```bash
+   python -m venv recode_st
+   source recode_st/bin/activate  # On Windows use: st_env\Scripts\activate
+   pip install git+https://github.com/ImperialCollegeLondon/ReCoDe-spatial-transcriptomics.git
+   ```
+
+If you are using `conda`, run the following command:
+
+   ```bash
+   cd ReCoDe-spatial-transcriptomics # Ensure you are in the root directory
+   of the repo
+   conda env create -f environment.yml
+   conda activate recode_st
+   pip install --no-build-isolation --no-deps -e .
+   pip install https://docs.muspan.co.uk/code/latest.zip # If you need the MuSpAn modules
+   ```
+
+Newest versions for some packages do not support older Macs with Intel CPUs, so we recommend using the `conda` environment for these systems. If you are using an Apple Silicon Mac, you can use either `conda` or `venv`.
+4. Update the `config.yaml` file with the relevant paths and parameters for your analysis. This file contains configuration settings for the analysis pipeline, such as paths to data files and parameters for various steps in the pipeline.
+5. Run the analysis pipeline by executing the main script or following the workflow outlined in the documentation.
 
 <!-- Software. What languages, libraries, software you use. -->
 ## Software Tools 🛠️
@@ -124,6 +148,7 @@ Code is organised into logical components:
 - `notebooks` for tutorials and exercises
 - `src` for core code,
 - `data` contains needed datasets
+<!-- TODO: NEED TO BE REVISED:  should I upload a zip file? -->
 - `docs` for documentation
 - `test` for testing scripts
 
@@ -135,6 +160,10 @@ Code is organised into logical components:
 
 Goal: Ensure clean, usable spatial gene expression data.
 
+It is critical to preprocess and perform quality control on the data before proceeding with analysis. This step ensures that the data is clean, usable, and of high quality by removing low quality cells and low quality transcripts.
+
+Steps:
+
 - Calculate quality metrics
 - Filter low-quality genes and cells
 - Normalize and transform gene counts
@@ -143,7 +172,7 @@ Goal: Ensure clean, usable spatial gene expression data.
 
 Goal: Identify patterns and groups of similar gene expression profiles.
 
-Dimensionality Reduction a technique used to reduce the number of features (or dimensions) in a dataset while preserving important information. Clustering is a technique used to group similar data points together based on their features.
+Dimensionality Reduction a technique used to reduce the number of features (or dimensions) in a dataset while preserving important information. Clustering is a technique used to group similar data points together based on their features. It is critical to determine the most accurate number of clusters to ensure that the clusters are meaningful and representative of the data.
 
 Steps:
 
@@ -155,6 +184,10 @@ Steps:
 ### Annotation & Cell Type Identification
 
 Goal: Assign biological meaning to clusters.
+
+Annotation is the process of assigning biological meaning to clusters. This typically equates to assigning a cell type identification to each clusters. is the process of identifying the cell types present in the data. Choosing the number of clusters can be challenging and can be seen as more of an art than a science. It is important to choose the number of clusters that best represents the data and the biological question being asked. More information on how to choose the number of clusters can be found in the [scRNAseq best practices](https://www.sc-best-practices.org/cellular_structure/clustering.html).
+
+Steps:
 
 - Compute differentially expressed genes for each cluster
 - Visualize cluster marker genes

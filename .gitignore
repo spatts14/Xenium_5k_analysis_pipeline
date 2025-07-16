@@ -6,6 +6,7 @@ __pycache__
 
 # Directories
 data/*
+!data/selected_cells_stats.csv
 analysis/*
 
 # Ignore file types

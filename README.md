@@ -126,7 +126,7 @@ Full details on how to set up the environment and install necessary packages can
 
 4. Update the `config.toml` file with the relevant paths and parameters for your analysis. This file contains configuration settings for the analysis pipeline, such as paths to data files and parameters for various steps in the pipeline.
 
-      Additional details can be found in the [Configuration Management](docs/configuration_management.md) section of the documentation.
+      Additional details can be found in the [Configuration Management](docs/configuration.md) section of the documentation.
 
 5. Run the analysis pipeline by executing the main script.
 

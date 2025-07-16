@@ -1,8 +1,16 @@
 # Reproducible Spatial Transcriptomics Pipeline with RSE Best Practices
 
 <!-- A brief description of your exemplar, which may include an image -->
-This exemplar details a spatial transcriptomics pipeline for Xenium data from 10X. Below is representative image of spatial transcriptomics data.
+This exemplar details an analysis pipeline for spatial transcriptomics (10X Xenium platform). Below is representative image of spatial transcriptomics data.
 ![ST Lung cancer FFPE](docs/readme_image.png)
+
+The pipeline covers preprocessing, quality control, dimensionality reduction, clustering, annotation, viewing spatial images, and spatial statistics (squidpy and MuSpAn).
+
+Cell segmentation is *not* included in this pipeline as it is performed prior to the analysis using the 10X Genomics Xenium software. If you would like to segment the cells yourself, please refer to the [10X Genomics Nucleus and Cell Segmentation Algorithms](https://www.10xgenomics.com/support/software/xenium-onboard-analysis/latest/algorithms-overview/segmentation) for more information.
+
+![ST Pipeline](docs/ST_workflow.png)
+
+In addition to the analysis pipeline, we highlight several good software engineering practices including version control, containarization, linting, and continuous integration.
 
 <!-- Author information -->
 This exemplar was developed at Imperial College London by Sara Patti in
@@ -134,6 +142,10 @@ Goal: Ensure clean, usable spatial gene expression data.
 ### Dimensionality Reduction & Clustering
 
 Goal: Identify patterns and groups of similar gene expression profiles.
+
+Dimensionality Reduction a technique used to reduce the number of features (or dimensions) in a dataset while preserving important information. Clustering is a technique used to group similar data points together based on their features.
+
+Steps:
 
 - Compute PCA and neighbors
 - Compute and plot UMAP

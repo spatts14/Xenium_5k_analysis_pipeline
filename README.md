@@ -10,7 +10,7 @@ Cell segmentation is *not* included in this pipeline as it is performed prior to
 
 ![ST Pipeline](docs/ST_workflow.png)
 
-In addition to the analysis pipeline, we highlight several good software engineering practices including version control, containarization, linting, and continuous integration.
+In addition to the analysis pipeline, we highlight several good software engineering practices including version control, containarization, linting, and continuous integration. Details on these practices and how to implement them can be found in the [Best Practice Notes](docs/RSE_best_practices.md) section of the documentation.
 
 <!-- Author information -->
 This exemplar was developed at Imperial College London by Sara Patti in

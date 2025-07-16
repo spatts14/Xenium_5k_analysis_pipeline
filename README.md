@@ -1,8 +1,8 @@
 # Reproducible Spatial Transcriptomics Pipeline with RSE Best Practices
 
 <!-- A brief description of your exemplar, which may include an image -->
-This is a brief abstract of my exemplar, which includes a representative image.
-![ST Lung cancer FFPE](docs/readme_image.pdf)
+This exemplar details a spatial transcriptomics pipeline for Xenium data from 10X. Below is representative image of spatial transcriptomics data.
+![ST Lung cancer FFPE](docs/readme_image.png)
 
 <!-- Author information -->
 This exemplar was developed at Imperial College London by Sara Patti in

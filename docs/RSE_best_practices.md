@@ -313,9 +313,11 @@ Tools like `pre-commit` and `ruff` can be used to automate code quality checks a
 
 ### Github Actions
 
-GitHub Actions is a platform that allows you to automate developer workflows directly within your GitHub repository.
+GitHub Actions is a platform that allows you to automate developer workflows directly within your GitHub repository. The workflows are made up of individual tasks called actions, which can be combined to create a complete workflow. You can use workflow templates to quickly set up common workflows, such as running tests, building code, or deploying applications.
 
 You can define workflows in YAML files that specify the steps to be executed when certain events occur, such as pushing code to the repository or creating a pull request. These workflows can include running tests, checking code style, and deploying code to production environments.
+
+In this repository, we have a `.github/workflows/ci.yml` file that defines a CI workflow. This workflow is triggered on every push and pull request to the main branch. It runs tests using `pytest`, checks code style with `ruff`, and builds the documentation using `mkdocs`. We also have additional workflows for testing markdown files ``.github/workflows/ci.yml` and running the `pre-commit` hooks.
 
 ### Pre-commit
 

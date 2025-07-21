@@ -90,7 +90,7 @@ The choice between Anaconda and `venv` depends on your specific needs:
 
 ## Modularity and modularization (e.g. functions, classes)
 
-Broadly, `modularity` refers to the practice of breaking down a complex system into smaller, manageable parts. This improves code organization, readability, and maintainability. In the context of software engineering, modularity is achieved through the use of functions, classes, and modules. In data science, modularity is often applied to analysis pipelines, where different steps of the analysis are separated into distinct components.
+Broadly, modularity refers to the practice of breaking down a complex system into smaller, manageable parts. This improves code organization, readability, and maintainability. In the context of software engineering, modularity is achieved through the use of functions, classes, and modules. In data science, modularity is often applied to analysis pipelines, where different steps of the analysis are separated into distinct components.
 
 ### As defined by a research software engineer
 
@@ -138,7 +138,7 @@ if __name__ == "__main__":
     main()
 ```
 
-*Bonus* when using VSCode, you can use the `Refactor` feature to automatically extract code into functions or classes, making it easier to modularize your code. More information on this feature can be found in the [VSCode documentation](https://code.visualstudio.com/docs/editing/refactoring).
+*Bonus:* when using VSCode, you can use the `Refactor` feature to automatically extract code into functions or classes, making it easier to modularize your code. More information on this feature can be found in the [VSCode documentation](https://code.visualstudio.com/docs/editing/refactoring).
 
 ### As defined by a data scientist
 
@@ -146,7 +146,19 @@ if __name__ == "__main__":
 
 For example, you might have separate functions for data cleaning, feature engineering, model training, and evaluation. Each of these functions can be developed and tested independently, making it easier to manage the overall analysis process. This approach also allows for better collaboration among team members, as different parts of the analysis can be worked on simultaneously.
 
-This can be done by separating an analysis into distinct step. The example below demonstrates how to modularize a machine learning analysis pipeline using Python. Each step of the analysis is encapsulated in a function, making the code more organized and easier to maintain.
+This can be done by separating an analysis into distinct step. For example, when analyzing single-cell RNA sequencing data, you might have separate steps for loading data, cleaning data, clustering cells, annotating clusters, identifying differentially expressed genes (DEGs), and performing pathway analysis. Each step can be encapsulated in its own function or script, making the analysis pipeline modular and easier to maintain.
+
+```bash
+analysis_pipeline/
+├── load_data
+├── data_cleaning
+├── clustering
+├── annotation
+├── DEG
+└── pathway_analysis
+```
+
+The example below demonstrates how to modularize a machine learning analysis pipeline using Python. Each step of the analysis is encapsulated in a function, making the code more organized and easier to maintain.
 
 ```bash
 analysis_pipeline/
@@ -212,13 +224,191 @@ if __name__ == "__main__":
 
 ## Code documentation (e.g. docstrings, comments)
 
-## Code style (e.g. PEP 8 for Python)
+Code documentation is the practice of writing comments and explanations within your code to help others (and yourself) understand its purpose and functionality. This is crucial for maintaining code quality, especially in collaborative projects where multiple people may work on the same codebase.
+
+`Docstrings` tell users what a function or class does, its parameters, and its return values. They are typically written in a specific format (e.g., Google style, NumPy style) and can be automatically extracted to generate documentation.
+
+```python
+
+def add(a, b):
+    """
+    Adds two numbers.
+
+    Args:
+        a (int or float): The first number.
+        b (int or float): The second number.
+
+    Returns:
+        int or float: The sum of the two numbers.
+    """
+    return a + b
+```
+
+`Type hinting` annotations are used to specify the expected data types of function parameters and return values. This helps with code readability and can also be used by static type checkers to catch potential errors.
+
+```python
+def add(a: int, b: int) -> int:
+    return a + b
+```
+
+`Comments` are used to explain specific lines or blocks of code, providing context or clarifying complex logic. They should be concise and relevant, avoiding unnecessary explanations of obvious code.
+
+```python
+def add(a: int, b: int) -> int:
+    return a + b # add two integers and return the result
+```
+
+The following example demonstrates how to use docstrings, type hinting, and comments effectively in a Python function:
+
+```python
+def add(a: int, b: int) -> int:
+    """
+    Adds two integers.
+
+    Args:
+        a (int): The first number.
+        b (int): The second number.
+
+    Returns:
+        int: The sum of the two numbers.
+    """
+    return a + b # add two integers and return the result
+```
+
+## Code style, linters, and code formatters
+
+PEP 8 is the style guide for Python code, providing conventions for writing clean and readable code. Following a consistent style improves code readability and maintainability, making it easier for others to understand and contribute to your code.
+
+The full python style guide can be found here: [PEP 8](https://peps.python.org/pep-0008/).
+
+We've highlighted some of the key points below:
+
+- **Indentation**: Use 4 spaces per indentation level. Avoid using tabs.
+- **Line Length**: Limit all lines to a maximum of 79 characters. For docstrings and comments, the line length should be limited to 72 characters.
+- **Blank Lines**: Use blank lines to separate functions and classes, and to separate sections within functions. Use two blank lines before top-level function and class definitions, and one blank line between methods in a class.
+- **Imports**: Imports should be on separate lines and grouped in the following order: standard library imports, related third-party imports, local application/library-specific imports. Each group should be separated by a blank line.
+- **Naming Conventions**: Use descriptive names for variables, functions, and classes. Use lowercase words separated by underscores for function and variable names (e.g., `my_function`), and use CamelCase for class names (e.g., `MyClass`). Constants should be written in all uppercase letters with underscores (e.g., `MY_CONSTANT`).
+- **Whitespace**: Avoid extraneous whitespace in expressions and statements. For example, do not use spaces around the `=` sign when assigning a value to a variable, but do use spaces around operators (e.g., `x = 1 + 2` is correct, but `x=1 + 2` is not).
+
+You do not need to memorize all of these rules, but it is important to be aware of them and to use a linter to check your code for style violations. A `linter` is a tool that automatically checks your code for style and syntax errors. For Python, you can use `flake8` or `pylint` as linters. We recommend using `ruff`, which is a fast and highly configurable linter that can be used to enforce PEP 8 style guidelines and other coding standards.
+
+To install linters and use them in VSCode, you can follow these steps:
+
+1. Install the linter using pip:
+        ```bash
+        pip install ruff
+        ```
+2. Open VSCode and go **to the settings (File > Preferences > Settings).
+3. Search for "Python Linting" and enable it.
+4. Set the linter you want to use (e.g., ruff) in the settings. You can also choose the version of Python you want to use for linting.**
+5. Save your settings and restart VSCode.
+
+## Continuous integration and continuous deployments (pre-commit, ruff) - Adrian, can we go through this together?
+
+Continuous integration (CI) is a software development practice where code changes are automatically tested and integrated into the main codebase. This is useful when working with multiple developers where you need to reconcile merge conflicts. This helps catch errors early and ensures that the codebase remains stable. It is a workflow that allows developers to automatically run tests and checks on their code before it is merged into the main branch. This helps ensure that the code is of high quality and meets the project's standards.
+
+This is usually done using a CI/CD (Continuous Integration/Continuous Deployment) tool, such as GitHub Actions, that can automatically run tests, check code style, and perform other checks on your code whenever you push changes to the repository. These tests can include unit tests, integration tests, and other types of tests that ensure your code works as expected. Users will specify the tests they want to run in a configuration file, which is then used by the CI/CD tool to run the tests automatically.
+
+Tools like `pre-commit` and `ruff` can be used to automate code quality checks and enforce coding standards. It automatically points out issues in code such as missing semicolons, trailing whitespace, and debug statements.
+
+### Github Actions
+
+GitHub Actions is a platform that allows you to automate developer workflows directly within your GitHub repository.
+
+You can define workflows in YAML files that specify the steps to be executed when certain events occur, such as pushing code to the repository or creating a pull request. These workflows can include running tests, checking code style, and deploying code to production environments.
+
+### Pre-commit
+
+`pre-commit` is a framework for managing and maintaining multi-language pre-commit hooks.
+Pre-commit hooks are scripts that run automatically before a commit is made, allowing you to catch errors and enforce coding standards before code is added to the repository. This helps maintain code quality and consistency across the project. Learn more about pre-commit hooks in the [pre-commit documentation](https://pre-commit.com/).
+
+To use `pre-commit` in your project
+
+1. Install `pre-commit` using pip:
+
+    ```bash
+    pip install pre-commit
+    ```
+
+2. Create a `.pre-commit-config.yaml` file in the root of your repository. You can generate a very basic configuration using
+
+    ```bash
+    pre-commit sample-config
+    ```
+
+3. Add the hooks you want to use in the `.pre-commit-config.yaml` file.
+Here is an example configuration that includes `ruff` for linting and `black` for code formatting:
+
+    ```yaml
+        repos:
+        - repo: https://github.com/pre-commit/pre-commit-hooks
+            rev: v5.0.0
+            hooks:
+            - id: check-merge-conflict
+            - id: debug-statements
+            - id: trailing-whitespace
+            - id: end-of-file-fixer
+        - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+            rev: v2.15.0
+            hooks:
+            - id: pretty-format-yaml
+                args: [--autofix, --indent, '2', --offset, '2']
+    ```
+
+4. Install the pre-commit git hooks by running:
+
+    ```bash
+    pre-commit installed at .git/hooks/pre-commit # can also be run with `pre-commit install` ?? @Adrian is this true?
+    ```
+
+## Configuration management with [Pydantic](https://docs.pydantic.dev/latest/)
+
+Configuration management is the practice of managing and maintaining the configuration of software systems. This includes managing settings, parameters, and other configuration data that can affect the behavior of the software. Pydantic is a Python library that provides data validation and settings management using Python type annotations.
+
+Pydantic allows you to define data models with type annotations, which can be used to validate and parse configuration data. This is particularly useful for managing configuration files, environment variables, and other settings in a structured way.
+
+Pydantic is explained in more detail in the [Configuration Guide](docs/configuration.md) page.
 
 ## Code testing
 
-## Use of continuous integration (pre-commit, ruff)
+Code testing is the practice of writing tests to verify that your code behaves as expected. This is crucial for ensuring code quality and catching bugs early in the development process. There are several types of tests, including unit tests, integration tests, and end-to-end tests.
 
-## Configuration management with [Pydantic](https://docs.pydantic.dev/latest/)
+Unit tests are used to test individual functions or methods in isolation, while integration tests check how different components of the code work together. End-to-end tests simulate real user interactions with the software to ensure that the entire system works as expected.
+
+To write tests in Python, you can use the built-in `unittest` module or third-party libraries like `pytest`. These libraries provide tools for writing and running tests, as well as assertions to check the expected behavior of your code.
+
+To write a simple unit test using `unittest` or `pytest`, you can follow this example:
+
+1. Write a function to be tested using Python and pytest
+
+    ```python
+    def add(a: int, b: int) -> int:
+        """Adds two integers."""
+        return a + b
+
+    def test_add_positive_numbers():
+        assert add(2, 3) == 5
+
+    def test_add_negative_numbers():
+        assert add(-1, -4) == -5
+
+    def test_add_mixed_sign_numbers():
+        assert add(-2, 5) == 3
+
+    def test_add_zero():
+        assert add(0, 5) == 5
+        assert add(5, 0) == 5
+        assert add(0, 0) == 0
+    ```
+
+2. Save this to a file labeled test_function_name.py (e.g test_add.py)
+3. Run the test from the command line
+
+    ```bash
+    pytest test_add.py
+    ```
+
+4. If the tests pass, you will see output indicating that all tests were successful. If any test fails, pytest will provide detailed information about the failure.
 
 ## More Information on Best Practices
 

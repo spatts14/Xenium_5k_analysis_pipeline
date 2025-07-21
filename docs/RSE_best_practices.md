@@ -7,12 +7,12 @@ The best practices included are key for producing high-quality code that can be 
 ## Overview of Best Practices Included in this Exemplar
 
 - Version control (git)
-- Virtual environments (e.g. conda, venv)
-- Code modularity (e.g. functions, classes)
-- Code documentation (e.g. docstrings, comments)
-- Code style (e.g. PEP 8 for Python)
+- Virtual environments
+- Modularity and modularization
+- Code documentation
+- Code style, linters, and code formatters
+- Continuous integration and continuous deployments
 - Code testing
-- Use of continuous integration (pre-commit, ruff)
 - Configuration management with [Pydantic](https://docs.pydantic.dev/latest/)
 
 ## Version control (git and Github)
@@ -317,7 +317,7 @@ GitHub Actions is a platform that allows you to automate developer workflows dir
 
 You can define workflows in YAML files that specify the steps to be executed when certain events occur, such as pushing code to the repository or creating a pull request. These workflows can include running tests, checking code style, and deploying code to production environments.
 
-In this repository, we have a `.github/workflows/ci.yml` file that defines a CI workflow. This workflow is triggered on every push and pull request to the main branch. It runs tests using `pytest`, checks code style with `ruff`, and builds the documentation using `mkdocs`. We also have additional workflows for testing markdown files ``.github/workflows/ci.yml` and running the `pre-commit` hooks.
+In this repository, we have a `.github/workflows/ci.yml` file that defines a CI workflow. This workflow is triggered on every push and pull request to the main branch. It runs tests using `pytest`, checks code style with `ruff`, and builds the documentation using `mkdocs`. We also have additional workflows for testing markdown files `.github/workflows/link_checker.yml`.
 
 ### Pre-commit
 
@@ -339,7 +339,7 @@ To use `pre-commit` in your project
     ```
 
 3. Add the hooks you want to use in the `.pre-commit-config.yaml` file.
-Here is an example configuration that includes `ruff` for linting and `black` for code formatting:
+Here is an example configuration that includes `pre-commit` for linting and `ruff` for code formatting:
 
     ```yaml
         repos:
@@ -355,6 +355,13 @@ Here is an example configuration that includes `ruff` for linting and `black` fo
             hooks:
             - id: pretty-format-yaml
                 args: [--autofix, --indent, '2', --offset, '2']
+        - repo: https://github.com/astral-sh/ruff-pre-commit
+            rev: v0.12.3
+            hooks:
+            - id: ruff
+                args: [--fix, --exit-non-zero-on-fix]
+            - id: ruff-format
+                args: [--fix, --exit-non-zero-on-fix]
     ```
 
 4. Install the pre-commit git hooks by running:

@@ -162,8 +162,6 @@ These dependencies are required to *develop* the exemplar:
 <!-- Repository structure. Explain how your code is structured. -->
 ## Project Structure 🗂️
 
-<!-- TODO: NEED TO BE REVISED -->
-
 Overview of code organisation and structure.
 
 ```text
@@ -209,8 +207,6 @@ Code is organised into logical components:
 ## Roadmap 🗺️
 
 ### Preprocessing & Quality Control
-
-<!-- TODO: NEED TO BE REVISED -->
 
 Goal: Ensure clean, usable spatial gene expression data.
 
@@ -262,20 +258,41 @@ Goal: Quantify spatial patterns and variability utilizing spatial statistics.
 
 We use two different approaches to spatial statistics: Squidpy and MuSpAn.
 
-- Compute spatial autocorrelation (e.g. Moran's I)
+#### Squidpy
 
-### TODO: Differential Expression & Functional Analysis
+- Construct spatial networks
+- Spatial autocorrelation (e.g. Moran's I)
+- Neighborhood Enrichment
 
-Goal: Discover meaningful biology.
+#### MuSpAn
 
-- Spatially variable genes (SVGs)
+- Construct spatial networks
+- Cross-PCF pairwise comparison
+
+There are several additional spatial statistics methods available in MuSpAn, including:
+
+- wPCF pairwise comparison
+- Spatial autocorrelation (Hotspot Analysis)
+- Ripley's K
+- Neighborhood Enrichment
+- Community detection
+- Network filteration
+- Comparing Networks
+
+### Further analysis
+
+We have included several potential downstream analysis methods in this pipeline to discover meaningful biological insights. Below are additional analysis approaches one could use to build on the methods mentioned above.
+
 - DE between regions or conditions
-- Pathway or GO enrichment
+- Pathway analysis (e.g. GSEA, ORA)
+- Spatially variable genes (e.g `SpatialDE`)
+- Drug-to-cell interactions (e.g`Drug2Cell`)
+- Ligand-receptor interactions (e.g `SOAPy`)
+
+and more...
 
 <!-- Data availability (remove this section if no data used) -->
 ## Data 📊
-
-<!-- TODO: NEED TO BE REVISED -->
 
 - Small toy dataset for testing and development (TBD)
 - [Xenium Lung FFPE data](https://www.10xgenomics.com/datasets/ffpe-human-lung-cancer-data-with-human-immuno-oncology-profiling-panel-and-custom-add-on-1-standard)
@@ -283,15 +300,14 @@ Goal: Discover meaningful biology.
 <!-- Best practice notes. -->
 ## Best Practice Notes 📝
 
-<!-- TODO: NEED TO BE REVISED -->
-
-- Git version control
-- Virtual environments (e.g. conda, venv)
-- Code modularity (e.g. functions, classes)
-- Code documentation (e.g. docstrings, comments)
-- Code style (e.g. PEP 8 for Python)
+- Version control (git)
+- Virtual environments
+- Modularity and modularization
+- Code documentation
+- Code style, linters, and code formatters
+- Continuous integration and continuous deployments
 - Code testing
-- Use of continuous integration (pre-commit, ruff) (?)
+- Configuration management with [Pydantic](https://docs.pydantic.dev/latest/)
 
 <!-- Estimate the time it will take for a learner to progress through the exemplar. -->
 ## Estimated Time ⏳

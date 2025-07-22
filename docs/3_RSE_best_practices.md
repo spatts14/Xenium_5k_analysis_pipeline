@@ -33,7 +33,7 @@ Anaconda is a popular distribution of Python and R for scientific computing and 
 
 In addition to the package manager, Anaconda also includes a collection of pre-installed packages commonly used in data science, such as NumPy, pandas, and Matplotlib. This makes it easier to get started with data analysis and scientific computing without having to install each package individually. A user can download either `Anaconda` or `Miniconda`, which is a smaller version of Anaconda that includes only the conda package manager and Python.
 
-![Anaconda, miniconda, and conda diagram](docs/figs/conda.png)
+![Anaconda, miniconda, and conda diagram](assets/conda.png)
 
 #### Creating a virtual environment with conda
 
@@ -142,7 +142,7 @@ if __name__ == "__main__":
 
 ### As defined by a data scientist
 
-`Modularity` refers to separating your analysis pipeline into smaller logical components.
+`Pipeline modularity` refers to separating your analysis pipeline into smaller logical components.
 
 For example, you might have separate functions for data cleaning, feature engineering, model training, and evaluation. Each of these functions can be developed and tested independently, making it easier to manage the overall analysis process. This approach also allows for better collaboration among team members, as different parts of the analysis can be worked on simultaneously.
 
@@ -303,28 +303,43 @@ To install linters and use them in VSCode, you can follow these steps:
 4. Set the linter you want to use (e.g., ruff) in the settings. You can also choose the version of Python you want to use for linting.**
 5. Save your settings and restart VSCode.
 
-## Continuous integration and continuous deployments (pre-commit, ruff) - Adrian, can we go through this together?
+## Continuous integration
 
-Continuous integration (CI) is a software development practice where code changes are automatically tested and integrated into the main codebase. This is useful when working with multiple developers where you need to reconcile merge conflicts. This helps catch errors early and ensures that the codebase remains stable. It is a workflow that allows developers to automatically run tests and checks on their code before it is merged into the main branch. This helps ensure that the code is of high quality and meets the project's standards.
+Continuous integration (CI) is a software development practice where code changes are automatically tested and integrated into the main codebase.  It is a workflow that allows developers to automatically run tests and checks on their code before it is merged into the main branch. This helps catch errors early, ensures that the codebase remains stable, ensure that the code is of high quality and meets the project's standards.
 
-This is usually done using a CI/CD (Continuous Integration/Continuous Deployment) tool, such as GitHub Actions, that can automatically run tests, check code style, and perform other checks on your code whenever you push changes to the repository. These tests can include unit tests, integration tests, and other types of tests that ensure your code works as expected. Users will specify the tests they want to run in a configuration file, which is then used by the CI/CD tool to run the tests automatically.
-
-Tools like `pre-commit` and `ruff` can be used to automate code quality checks and enforce coding standards. It automatically points out issues in code such as missing semicolons, trailing whitespace, and debug statements.
+CI is usually done using a CI tool, such as GitHub Actions, that can automatically run tests, check code style, and perform other checks on your code whenever you push changes to the repository. These tests can include unit tests, integration tests, and other types of tests that ensure your code works as expected. Users will specify the tests they want to run in a configuration file, which is then used by the CI tool to run the workflow automatically.
 
 ### Github Actions
 
-GitHub Actions is a platform that allows you to automate developer workflows directly within your GitHub repository. The workflows are made up of individual tasks called actions, which can be combined to create a complete workflow. You can use workflow templates to quickly set up common workflows, such as running tests, building code, or deploying applications.
+GitHub Actions is a platform that allows you to automate developer workflows directly within your GitHub repository. The workflows are made up of individual tasks called actions, which can be combined to create a complete workflow. You can use workflow templates to quickly set up common workflows, such as running tests, building code, or deploying applications. You can define workflows in YAML files that specify the steps to be executed when certain events occur.
 
-You can define workflows in YAML files that specify the steps to be executed when certain events occur, such as pushing code to the repository or creating a pull request. These workflows can include running tests, checking code style, and deploying code to production environments.
+In this Exemplar, we have a `.github/workflows/ci.yml` file that defines a CI workflow. This workflow is triggered on every push and pull request to the main branch. It runs tests using `pytest`, checks code style with `ruff`, and builds the documentation using `mkdocs`. We also have additional workflows for testing markdown files links are working in the `.github/workflows/link_checker.yml`.
 
-In this repository, we have a `.github/workflows/ci.yml` file that defines a CI workflow. This workflow is triggered on every push and pull request to the main branch. It runs tests using `pytest`, checks code style with `ruff`, and builds the documentation using `mkdocs`. We also have additional workflows for testing markdown files `.github/workflows/link_checker.yml`.
+Read more about GitHub Actions in the [GitHub Actions documentation](https://docs.github.com/en/actions).
 
-### Pre-commit
+Automatic docs documentation generation is also a common practice in software development. It allows you to automatically generate documentation from your code, making it easier to keep the documentation up to date and ensuring that it reflects the current state of the codebase. This can be done using tools like Sphinx or MkDocs, which can generate HTML or PDF documentation from your code comments and docstrings.
 
-`pre-commit` is a framework for managing and maintaining multi-language pre-commit hooks.
+### Exemplar CI workflows
+
+In this Exemplar, we used several CI tools. Below we have highlighted a few you might find useful:
+
+- Publish MkDocs to create a static website for documentation (`.github/workflows/doc.yml`)
+- Link Checker to check that all links in the documentation are working (`.github/workflows/link_checker.yml`)
+- Pre-commit to automatically run code quality checks and enforce coding standards before code is committed to the repository
+
+In order to use the tools, you will need to create a .yml file in .github/workflow folder. Copy the contents from the pre-existing .yml file below and paste it into your new .yml file. You can then edit the file to suit your needs.
+
+To see all the CI tools and workflows used and their .yml files, please look in the `.github/workflows/` folder.
+
+#### Pre-commit
+
+In order to use `pre-commit` in your project, you will need to install pre-commit and create a `.pre-commit-config.yaml` file in the root of your repository.
+
+`pre-commit` is a CI tool which automates code quality checks and enforces coding standards. It automatically points out issues in code such as missing semicolons, trailing whitespace, and debug statements.
+
 Pre-commit hooks are scripts that run automatically before a commit is made, allowing you to catch errors and enforce coding standards before code is added to the repository. This helps maintain code quality and consistency across the project. Learn more about pre-commit hooks in the [pre-commit documentation](https://pre-commit.com/).
 
-To use `pre-commit` in your project
+To use `pre-commit` in your project follow the following steps:
 
 1. Install `pre-commit` using pip:
 
@@ -367,7 +382,7 @@ Here is an example configuration that includes `pre-commit` for linting and `ruf
 4. Install the pre-commit git hooks by running:
 
     ```bash
-    pre-commit installed at .git/hooks/pre-commit # can also be run with `pre-commit install` ?? @Adrian is this true?
+    pre-commit install
     ```
 
 ## Configuration management with [Pydantic](https://docs.pydantic.dev/latest/)

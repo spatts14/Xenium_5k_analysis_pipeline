@@ -10,7 +10,7 @@ This exemplar details an analysis pipeline for spatial transcriptomics (10X Xeni
 <!-- TODO: Add description of what ST is -->
 
 Below is representative image of spatial transcriptomics data.
-![ST Lung cancer FFPE](docs/figs/readme_image.png)
+![ST Lung cancer FFPE](docs/assets/readme_image.png)
 
 ### Spatial transcriptomics analysis pipeline
 
@@ -18,7 +18,7 @@ The pipeline covers preprocessing, quality control, dimensionality reduction, cl
 
 Cell segmentation is *not* included in this pipeline as it is performed prior to the analysis using the 10X Genomics Xenium software. If you would like to segment the cells yourself, please refer to the [10X Genomics Nucleus and Cell Segmentation Algorithms](https://www.10xgenomics.com/support/software/xenium-onboard-analysis/latest/algorithms-overview/segmentation) for more information.
 
-![ST Pipeline](docs/figs/ST_workflow.png)
+![ST Pipeline](docs/assets/ST_workflow.png)
 
 ### Best Practices for Software Engineering
 

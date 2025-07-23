@@ -438,7 +438,7 @@ To write a simple unit test using `unittest` or `pytest`, you can follow this ex
 
 If you would like to learn more about best practices for software engineering, we recommend the following resources:
 
-- [The Turning Way](https://book.the-turing-way.org/latest/): A comprehensive guide to reproducible research practices, including software engineering best practices.
+- [The Turning Way](https://book.the-turing-way.org): A comprehensive guide to reproducible research practices, including software engineering best practices.
 - [Good Enough Practices in Scientific Computing](https://carpentries-lab.github.io/good-enough-practices/index.html)
 - [Software Carpentry](https://software-carpentry.org/): A great resource for learning about best practices in software development, particularly for researchers.
 - [The Carpentries](https://carpentries.org/): Offers workshops and resources on software development best practices, including version control, testing, and documentation.

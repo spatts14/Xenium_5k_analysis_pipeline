@@ -22,7 +22,7 @@ Cell segmentation is *not* included in this pipeline as it is performed prior to
 
 ### Best Practices for Software Engineering
 
-In addition to the analysis pipeline, we highlight several good software engineering practices including version control, containarization, linting, and continuous integration. Details on these practices and how to implement them can be found in the [Best Practices for Software Engineering](docs/RSE_best_practices.md) section of the documentation.
+In addition to the analysis pipeline, we highlight several good software engineering practices including version control, containarization, linting, and continuous integration. Details on these practices and how to implement them can be found in the [Best Practices for Software Engineering](docs/3_RSE_best_practices.md) section of the documentation.
 
 ### Author information
 
@@ -38,7 +38,7 @@ After completing this exemplar, students will be able to:
 - Describe the key steps in spatial transcriptomic analysis
 - Analyze spatial transcriptomic data and apply spatial statistical methods
 - Design and build a reproducible analysis pipeline
-- Apply research software engineering (RSE) best practices detailed in the [RSE Best Practices](docs/RSE_best_practices.md) section
+- Apply research software engineering (RSE) best practices detailed in the [RSE Best Practices](docs/3_RSE_best_practices.md) section
 
 <!-- Audience. Think broadly as to who will benefit. -->
 ## Target Audience 🎯
@@ -100,7 +100,7 @@ Although not necessary, we recommend the following skills and knowledge to enhan
          ```
 
 3. Create new virtual environment using `conda` or `venv`
-Full details on how to set up the environment and install necessary packages can be found in the [Installation Guide](docs/installation.md).
+Full details on how to set up the environment and install necessary packages can be found in the [Installation Guide](docs/1_installation.md).
 
       If you are using `venv`, run the following command:
 
@@ -126,7 +126,7 @@ Full details on how to set up the environment and install necessary packages can
 
 4. Update the `config.toml` file with the relevant paths and parameters for your analysis. This file contains configuration settings for the analysis pipeline, such as paths to data files and parameters for various steps in the pipeline.
 
-      Additional details can be found in the [Configuration Management](docs/configuration.md) section of the documentation.
+      Additional details can be found in the [Configuration Management](docs/2_configuration.md) section of the documentation.
 
 5. Run the analysis pipeline by executing the main script.
 

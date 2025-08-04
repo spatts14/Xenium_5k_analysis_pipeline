@@ -10,7 +10,7 @@ This exemplar details an analysis pipeline for spatial transcriptomics (10X Xeni
 <!-- TODO: Add description of what ST is -->
 
 Below is representative image of spatial transcriptomics data.
-![ST Lung cancer FFPE](docs/readme_image.png)
+![ST Lung cancer FFPE](docs/assets/readme_image.png)
 
 ### Spatial transcriptomics analysis pipeline
 
@@ -18,11 +18,11 @@ The pipeline covers preprocessing, quality control, dimensionality reduction, cl
 
 Cell segmentation is *not* included in this pipeline as it is performed prior to the analysis using the 10X Genomics Xenium software. If you would like to segment the cells yourself, please refer to the [10X Genomics Nucleus and Cell Segmentation Algorithms](https://www.10xgenomics.com/support/software/xenium-onboard-analysis/latest/algorithms-overview/segmentation) for more information.
 
-![ST Pipeline](docs/ST_workflow.png)
+![ST Pipeline](docs/assets/ST_workflow.png)
 
 ### Best Practices for Software Engineering
 
-In addition to the analysis pipeline, we highlight several good software engineering practices including version control, containarization, linting, and continuous integration. Details on these practices and how to implement them can be found in the [Best Practices for Software Engineering](docs/RSE_best_practices.md) section of the documentation.
+In addition to the analysis pipeline, we highlight several good software engineering practices including version control, containarization, linting, and continuous integration. Details on these practices and how to implement them can be found in the [Best Practices for Software Engineering](docs/3_RSE_best_practices.md) section of the documentation.
 
 ### Author information
 
@@ -38,7 +38,7 @@ After completing this exemplar, students will be able to:
 - Describe the key steps in spatial transcriptomic analysis
 - Analyze spatial transcriptomic data and apply spatial statistical methods
 - Design and build a reproducible analysis pipeline
-- Apply research software engineering (RSE) best practices detailed in the [RSE Best Practices](docs/RSE_best_practices.md) section
+- Apply research software engineering (RSE) best practices detailed in the [RSE Best Practices](docs/3_RSE_best_practices.md) section
 
 <!-- Audience. Think broadly as to who will benefit. -->
 ## Target Audience 🎯
@@ -100,7 +100,7 @@ Although not necessary, we recommend the following skills and knowledge to enhan
          ```
 
 3. Create new virtual environment using `conda` or `venv`
-Full details on how to set up the environment and install necessary packages can be found in the [Installation Guide](docs/installation.md).
+Full details on how to set up the environment and install necessary packages can be found in the [Installation Guide](docs/1_installation.md).
 
       If you are using `venv`, run the following command:
 
@@ -126,7 +126,7 @@ Full details on how to set up the environment and install necessary packages can
 
 4. Update the `config.toml` file with the relevant paths and parameters for your analysis. This file contains configuration settings for the analysis pipeline, such as paths to data files and parameters for various steps in the pipeline.
 
-      Additional details can be found in the [Configuration Management](docs/configuration.md) section of the documentation.
+      Additional details can be found in the [Configuration Management](docs/2_configuration.md) section of the documentation.
 
 5. Run the analysis pipeline by executing the main script.
 
@@ -161,8 +161,6 @@ These dependencies are required to *develop* the exemplar:
 
 <!-- Repository structure. Explain how your code is structured. -->
 ## Project Structure 🗂️
-
-<!-- TODO: NEED TO BE REVISED -->
 
 Overview of code organisation and structure.
 
@@ -209,8 +207,6 @@ Code is organised into logical components:
 ## Roadmap 🗺️
 
 ### Preprocessing & Quality Control
-
-<!-- TODO: NEED TO BE REVISED -->
 
 Goal: Ensure clean, usable spatial gene expression data.
 
@@ -262,20 +258,41 @@ Goal: Quantify spatial patterns and variability utilizing spatial statistics.
 
 We use two different approaches to spatial statistics: Squidpy and MuSpAn.
 
-- Compute spatial autocorrelation (e.g. Moran's I)
+#### Squidpy
 
-### TODO: Differential Expression & Functional Analysis
+- Construct spatial networks
+- Spatial autocorrelation (e.g. Moran's I)
+- Neighborhood Enrichment
 
-Goal: Discover meaningful biology.
+#### MuSpAn
 
-- Spatially variable genes (SVGs)
+- Construct spatial networks
+- Cross-PCF pairwise comparison
+
+There are several additional spatial statistics methods available in MuSpAn, including:
+
+- wPCF pairwise comparison
+- Spatial autocorrelation (Hotspot Analysis)
+- Ripley's K
+- Neighborhood Enrichment
+- Community detection
+- Network filteration
+- Comparing Networks
+
+### Further analysis
+
+We have included several potential downstream analysis methods in this pipeline to discover meaningful biological insights. Below are additional analysis approaches one could use to build on the methods mentioned above.
+
 - DE between regions or conditions
-- Pathway or GO enrichment
+- Pathway analysis (e.g. GSEA, ORA)
+- Spatially variable genes (e.g `SpatialDE`)
+- Drug-to-cell interactions (e.g`Drug2Cell`)
+- Ligand-receptor interactions (e.g `SOAPy`)
+
+and more...
 
 <!-- Data availability (remove this section if no data used) -->
 ## Data 📊
-
-<!-- TODO: NEED TO BE REVISED -->
 
 - Small toy dataset for testing and development (TBD)
 - [Xenium Lung FFPE data](https://www.10xgenomics.com/datasets/ffpe-human-lung-cancer-data-with-human-immuno-oncology-profiling-panel-and-custom-add-on-1-standard)
@@ -283,15 +300,14 @@ Goal: Discover meaningful biology.
 <!-- Best practice notes. -->
 ## Best Practice Notes 📝
 
-<!-- TODO: NEED TO BE REVISED -->
-
-- Git version control
-- Virtual environments (e.g. conda, venv)
-- Code modularity (e.g. functions, classes)
-- Code documentation (e.g. docstrings, comments)
-- Code style (e.g. PEP 8 for Python)
+- Version control (git)
+- Virtual environments
+- Modularity and modularization
+- Code documentation
+- Code style, linters, and code formatters
+- Continuous integration and continuous deployments
 - Code testing
-- Use of continuous integration (pre-commit, ruff) (?)
+- Configuration management with [Pydantic](https://docs.pydantic.dev/latest/)
 
 <!-- Estimate the time it will take for a learner to progress through the exemplar. -->
 ## Estimated Time ⏳

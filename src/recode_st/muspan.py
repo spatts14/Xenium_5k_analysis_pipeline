@@ -45,7 +45,7 @@ def run_muspan(config: MuspanModuleConfig, io_config: IOConfig):
     # Create muspan object
     logger.info("Creating MuSpAn domain object...")
     domain = ms.io.xenium_to_domain(
-        path_to_xenium_data=str(io_config.xenium_path),  # Convert Path to string
+        path_to_xenium_data=str(io_config.xenium_dir),  # Convert Path to string
         cells_from_selection_csv=str(io_config.area_path),  # Convert Path to string
         domain_name=domain_name,
         load_transcripts=True,

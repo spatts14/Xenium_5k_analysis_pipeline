@@ -26,13 +26,13 @@ and their defaults are:
 
 ```toml
 [io]
-base_dir = "."
-data_dir = "data"                      # relative to base_dir
-output_dir = "analysis"                # relative to base_dir
-xenium_dir = "xenium"                  # relative to data_dir
-zarr_dir = "xenium.zarr"               # relative to data_dir
-area_path = "selected_cells_stats.csv" # relative to data_dir
-logging_path = "logs"                  # relative to output_dir
+base_dir = "."                         # Base directory for the project (relative to the current working directory)
+data_dir = "data"                      # Directory where the input data is stored (relative to base_dir)
+output_dir = "analysis"                # Directory where the output will be saved (relative to base_dir)
+xenium_dir = "xenium"                  # Directory containing Xenium data (relative to data_dir)
+zarr_dir = "xenium.zarr"               # Directory where Zarr data will be stored (relative to data_dir)
+area_path = "selected_cells_stats.csv" # Path to the CSV file containing selected cells statistics (relative to data_dir)
+logging_path = "logs"                  # Directory where logs will be saved (relative to output_dir)
 ```
 
 This resolves to the following default directory structure:
@@ -70,6 +70,8 @@ are not locked into this particular directory structure.
 ```toml
 log_level = "INFO"
 seed = 12345
+
+[io]
 base_dir = "."
 
 [modules.format_data]
@@ -89,12 +91,14 @@ module_name = "2_dr"
 ```toml
 log_level = "INFO"
 seed = 12345
-base_dir = "."
-data_dir = "data"
-output_dir = "analysis"
-xenium_dir = "xenium"
-zarr_dir = "xenium.zarr"
-logging_path = "logs"
+
+[io]
+base_dir = "."                         # Base directory for the project (relative to the current working directory)
+data_dir = "data"                      # Directory where the input data is stored (relative to base_dir)
+output_dir = "analysis"                # Directory where the output will be saved (relative to base_dir)
+xenium_dir = "xenium"                  # Directory containing Xenium data (relative to data_dir)
+zarr_dir = "xenium.zarr"               # Directory where Zarr data will be stored (relative to data_dir)
+logging_path = "logs"                  # Directory where logs will be saved (relative to output_dir)
 
 [modules.format_data]
 module_name = "0_format"
@@ -148,35 +152,35 @@ To add new configurable parameters to an existing module:
 
 1. **Update the module config class** in `src/recode_st/config.py`:
 
-   ```python
-   class QualityControlModuleConfig(BaseModuleConfig):
-       """Configuration for the Quality Control module."""
+      ```python
+      class QualityControlModuleConfig(BaseModuleConfig):
+         """Configuration for the Quality Control module."""
 
-       min_counts: int
-       min_cells: int
-       # Add your new parameter here
-       new_parameter: float
-       """Description of what this parameter does."""
-   ```
+         min_counts: int
+         min_cells: int
+         # Add your new parameter here
+         new_parameter: float
+         """Description of what this parameter does."""
+      ```
 
 1. **Update the module function** to use the new parameter:
 
-   ```python
-   def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
-       # Use the new parameter
-       threshold = config.new_parameter
-       # ... rest of function
-   ```
+      ```python
+      def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
+         # Use the new parameter
+         threshold = config.new_parameter
+         # ... rest of function
+      ```
 
 1. **Add the parameter to config files** like `config.toml`:
 
-   ```toml
-   [modules.quality_control]
-   module_name = "1_qc"
-   min_counts = 10
-   min_cells = 5
-   new_parameter = 0.5  # Add your new parameter
-   ```
+      ```toml
+      [modules.quality_control]
+      module_name = "1_qc"
+      min_counts = 10
+      min_cells = 5
+      new_parameter = 0.5  # Add your new parameter
+      ```
 
 ### Creating a New Module
 
@@ -184,70 +188,70 @@ To add a completely new analysis module:
 
 1. **Create the module config class** in `src/recode_st/config.py`:
 
-   ```python
-   class MyNewModuleConfig(BaseModuleConfig):
-       """Configuration for My New Module."""
+      ```python
+      class MyNewModuleConfig(BaseModuleConfig):
+         """Configuration for My New Module."""
 
-       my_parameter: int
-       """Description of this parameter."""
+         my_parameter: int
+         """Description of this parameter."""
 
-       another_parameter: tuple[str, ...]
-       """List of items for analysis."""
-   ```
+         another_parameter: tuple[str, ...]
+         """List of items for analysis."""
+      ```
 
 1. **Add it to ModulesConfig** in the same file:
 
-   ```python
-   class ModulesConfig(BaseModel):
-       # ...existing modules...
+      ```python
+      class ModulesConfig(BaseModel):
+         # ...existing modules...
 
-       my_new_module: MyNewModuleConfig | None = None
-       """Configuration for My New Module."""
-   ```
+         my_new_module: MyNewModuleConfig | None = None
+         """Configuration for My New Module."""
+      ```
 
 1. **Create the module file** `src/recode_st/my_new_module.py`:
 
-   ```python
-   """My new analysis module."""
+      ```python
+      """My new analysis module."""
 
-   from logging import getLogger
-   from recode_st.config import IOConfig, MyNewModuleConfig
+      from logging import getLogger
+      from recode_st.config import IOConfig, MyNewModuleConfig
 
-   logger = getLogger(__name__)
+      logger = getLogger(__name__)
 
-   def run_my_new_module(config: MyNewModuleConfig, io_config: IOConfig):
-       """Run my new analysis."""
-       # Use config parameters
-       param_value = config.my_parameter
-       items = config.another_parameter
+      def run_my_new_module(config: MyNewModuleConfig, io_config: IOConfig):
+         """Run my new analysis."""
+         # Use config parameters
+         param_value = config.my_parameter
+         items = config.another_parameter
 
-       # Create output directory
-       module_dir = io_config.output_dir / config.module_name
-       module_dir.mkdir(exist_ok=True)
+         # Create output directory
+         module_dir = io_config.output_dir / config.module_name
+         module_dir.mkdir(exist_ok=True)
 
-       # Your analysis code here...
-       logger.info(f"Running analysis with parameter: {param_value}")
-   ```
+         # Your analysis code here...
+         logger.info(f"Running analysis with parameter: {param_value}")
+      ```
 
 1. **Add the conditional import** in `src/recode_st/__main__.py`:
 
-   ```python
-   def main(config: Config):
-       # ...existing code...
+      ```python
+      def main(config: Config):
+         # ...existing code...
 
-       if config.modules.my_new_module:
-           from recode_st.my_new_module import run_my_new_module
-           logger.info("Running My New Module")
-           run_my_new_module(config.modules.my_new_module, config.io)
-   ```
+         if config.modules.my_new_module:
+            from recode_st.my_new_module import run_my_new_module
+            logger.info("Running My New Module")
+            run_my_new_module(config.modules.my_new_module, config.io)
+      ```
 
 1. **Add to configuration files**:
 
-   ```toml
-   [modules.my_new_module]
-   module_name = "my_analysis"
-   my_parameter = 42
-   another_parameter = ["item1", "item2", "item3"]
-   ```
+      ```toml
+      [modules.my_new_module]
+      module_name = "my_analysis"
+      my_parameter = 42
+      another_parameter = ["item1", "item2", "item3"]
+      ```
 
 [Pydantic]: https://docs.pydantic.dev/latest/

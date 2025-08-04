@@ -2,8 +2,10 @@
 
 import warnings
 from logging import getLogger
+from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 from recode_st.config import IOConfig, MuspanSpatialStatModuleConfig
 from recode_st.helper_function import seed_everything
@@ -14,52 +16,97 @@ warnings.filterwarnings("ignore")
 logger = getLogger(__name__)
 
 
-def run_muspan_stats(config: MuspanSpatialStatModuleConfig, io_config: IOConfig):
-    """Run Muspan spatial statistics analysis on Xenium data."""
+def calculate_and_plot_cross_pcf(
+    ms,
+    domain,
+    cluster_labels,
+    module_dir,
+    unique_clusters,
+    cell_type_indices=(0, 1),
+    max_R=200,
+    annulus_step=5,
+    annulus_width=25,
+    visualise_output=True,
+):
+    """Calculates and plots the cross-PCF for two selected cell types."""
+    cell_type_indices = list(cell_type_indices)
+
     try:
-        import muspan as ms
-    except ModuleNotFoundError as err:
-        logger.error(
-            "Could not load necessary MuSpAn package. You can obtain this with:\n"
-            "    pip install 'recode_st[muspan] @ git+"
-            "https://github.com/ImperialCollegeLondon/ReCoDe-spatial-transcriptomics.git"
+        cell_type_1 = unique_clusters[cell_type_indices[0]]
+        cell_type_2 = unique_clusters[cell_type_indices[1]]
+    except IndexError:
+        raise ValueError(
+            "Cell type indices are out of range of the unique cluster list."
         )
-        raise err
-    # Set variables from config
-    module_dir = io_config.output_dir / config.module_name
-    muspan_object = config.muspan_object
-    cluster_labels = config.cluster_labels
 
-    # Create output directories if they do not exist
-    module_dir.mkdir(exist_ok=True)
+    logger.info(f"Calculating cross-PCF for {cell_type_1} and {cell_type_2}...")
 
-    # Import data
-    logger.info("Loading MuSpAn object...")
-    domain = ms.io.load_domain(path_to_domain=str(module_dir / muspan_object))
+    # Query populations
+    pop_A = ms.query.query(domain, ("label", cluster_labels), "is", str(cell_type_1))
+    pop_B = ms.query.query(domain, ("label", cluster_labels), "is", str(cell_type_2))
 
-    # Calculate pairwise cross-PCF
-    logger.info("Calculating pairwise cross-PCF for all cell types...")
+    # Calculate cross-PCF
+    r, PCF = ms.spatial_statistics.cross_pair_correlation_function(
+        domain=domain,
+        population_A=pop_A,
+        population_B=pop_B,
+        max_R=max_R,
+        annulus_step=annulus_step,
+        annulus_width=annulus_width,
+        visualise_output=visualise_output,
+    )
 
-    # Define the cell types to be analyzed
-    cluster_labels = domain.labels[cluster_labels]["labels"].tolist()
-    unique_cluster = domain.unique(cluster_labels)
+    # Save PCF plot
+    pcf_plot_path = (
+        module_dir / f"cross_pair_correlation_function_{cell_type_1}_{cell_type_2}.png"
+    )
+    plt.savefig(pcf_plot_path)
+    logger.info(f"Cross-PCF plot saved at {pcf_plot_path}")
 
-    cell_type_1 = unique_cluster[0]  # TODO: how can I move this to the top?
-    cell_type_2 = unique_cluster[1]  # TODO: how can I move this to the top?
+    # Visualize and save cell type points
+    query_1_2 = ms.query.query(
+        domain,
+        ("label", cluster_labels),
+        "in",
+        [str(cell_type_1), str(cell_type_2)],
+    )
 
-    # Create a n x n plot for visualizing the cross-PCF for combination of cell types
-    fig, axes = plt.subplots(len(unique_cluster), len(unique_cluster), figsize=(40, 40))
+    fig, ax = ms.visualise.visualise(
+        domain, color_by=("label", cluster_labels), objects_to_plot=query_1_2
+    )
 
-    # Loop through each combination of cell types
-    for i in range(len(unique_cluster)):
-        for j in range(len(unique_cluster)):
-            pop_A = ms.query.query(
-                domain, ("label", unique_cluster), "is", unique_cluster[i]
-            )
-            pop_B = ms.query.query(
-                domain, ("label", unique_cluster), "is", unique_cluster[j]
-            )
-            r, PCF = ms.spatial_statistics.cross_pair_correlation_function(
+    ax.set_title(f"{cell_type_1} vs {cell_type_2}", fontsize=15)
+    ax.tick_params(axis="both", which="major", labelsize=10)
+    ax.set_xlabel(f"{cell_type_1}", fontsize=15)
+    ax.set_ylabel(f"{cell_type_2}", fontsize=15)
+
+    vis_plot_path = module_dir / f"visualize_{cell_type_1}_{cell_type_2}.png"
+    plt.savefig(vis_plot_path)
+    logger.info(f"Visualization saved at {vis_plot_path}")
+
+
+def calculate_pairwise_cross_pcf(
+    ms,
+    domain,
+    module_dir,
+    cluster_labels: str,
+    unique_clusters: list[str],
+):
+    """Calculates and plots the cross-PCF for all unique unordered cell type pairs."""
+    num_clusters = len(unique_clusters)
+    fig, axes = plt.subplots(num_clusters, num_clusters, figsize=(40, 40))
+
+    for i, cluster_i in enumerate(unique_clusters):
+        for j, cluster_j in enumerate(unique_clusters):
+            if j <= i:
+                axes[i, j].axis("off")  # Optional: remove lower triangle plots
+                continue
+
+            pop_A = ms.query.query(domain, ("label", cluster_labels), "is", cluster_i)
+            pop_B = ms.query.query(domain, ("label", cluster_labels), "is", cluster_j)
+            logger.info(f"Calculating cross-PCF: {cluster_i} vs {cluster_j}")
+
+            r, pcf = ms.spatial_statistics.cross_pair_correlation_function(
                 domain,
                 pop_A,
                 pop_B,
@@ -68,77 +115,69 @@ def run_muspan_stats(config: MuspanSpatialStatModuleConfig, io_config: IOConfig)
                 annulus_width=25,
             )
 
-            # Select the current subplot
             ax = axes[i, j]
+            ax.plot(r, pcf)
+            ax.axhline(2, color="k", linestyle=":")
+            ax.tick_params(axis="both", which="major", labelsize=15)
+            ax.set_ylabel(f"$g_{{{cluster_i},{cluster_j}}}(r)$", fontsize=20)
+            ax.set_xlabel("$r$", fontsize=20)
 
-            # Plot the cross-PCF
-            ax.plot(r, PCF)
-
-            # Add a horizontal line at y=1 to indicate the CSR baseline
-            ax.axhline(1, color="k", linestyle=":")
-
-            # Set the y-axis limit
-            ax.set_ylim([0, 7])
-
-            # Label the y-axis with the cross-PCF notation
-            ax.set_ylabel(f"$g_{{{unique_cluster[i]}{unique_cluster[j]}}}(r)$")
-
-            # Label the x-axis with the distance r
-            ax.set_xlabel("$r$")
-
-    # Adjust the layout to prevent overlap
     plt.tight_layout()
-    plt.savefig(module_dir / "cross_pair_correlation_function_all.png")
-    logger.info("Cross-PCF pairwise for all cell types plot saved.")
+    output_path = Path(module_dir) / "cross_pair_correlation_function_all.png"
+    plt.savefig(output_path)
+    logger.info(f"Cross-PCF matrix plot saved at {output_path}")
 
-    # Cross pair correlation function (cross-PCF)
-    logger.info(f"Calculating cross-PCF for {cell_type_1} and {cell_type_2}...")
-    pop_A = ms.query.query(domain, ("label", cluster_labels), "is", str(cell_type_1))
-    pop_B = ms.query.query(domain, ("label", cluster_labels), "is", str(cell_type_2))
 
-    # Calculate the cross-PCF for points of Celltype D with themselves
-    # max_R: maximum radius to consider
-    # annulus_step: step size for the annulus
-    # annulus_width: width of the annulus
-    # visualise_output: whether to visualise the output
-    r, PCF = ms.spatial_statistics.cross_pair_correlation_function(
+def run_muspan_stats(config: MuspanSpatialStatModuleConfig, io_config: IOConfig):
+    """Run Muspan spatial statistics analysis on Xenium data."""
+    try:
+        import muspan as ms
+    except ModuleNotFoundError as err:
+        logger.error(
+            "Could not load MuSpAn. Install with:\n"
+            "    pip install 'recode_st[muspan]' @ git+https://github.com/ImperialCollegeLondon/ReCoDe-spatial-transcriptomics.git"
+        )
+        raise err
+
+    module_dir = io_config.output_dir / config.module_name
+    module_dir.mkdir(exist_ok=True)
+
+    # Load MuSpAn object
+    logger.info("Loading MuSpAn object...")
+    domain = ms.io.load_domain(path_to_domain=str(module_dir / config.muspan_object))
+
+    # Get cluster labels
+    cluster_labels = config.cluster_labels
+    all_cluster_labels = domain.labels[cluster_labels]["labels"].tolist()
+    unique_clusters = np.unique(all_cluster_labels).astype(str).tolist()
+    logger.info(f"Found {len(unique_clusters)} unique cell types.")
+
+    # Run pairwise analysis for specific pair
+    logger.info("Calculating pairwise cross-PCF for selected cell types...")
+    calculate_and_plot_cross_pcf(
+        ms=ms,
         domain=domain,
-        population_A=pop_A,
-        population_B=pop_B,
-        max_R=200,
-        annulus_step=5,
-        annulus_width=25,
-        visualise_output=True,
+        cluster_labels=cluster_labels,
+        module_dir=module_dir,
+        unique_clusters=unique_clusters,
+        cell_type_indices=(0, 1),
     )
 
-    # Save the cross-PCF plot
-    plt.savefig(
-        module_dir / f"cross_pair_correlation_function_{cell_type_1}_{cell_type_2}.png"
+    # Full pairwise matrix
+    logger.info("Calculating pairwise cross-PCF for all cell types...")
+    calculate_pairwise_cross_pcf(
+        ms=ms,
+        domain=domain,
+        module_dir=module_dir,
+        cluster_labels=cluster_labels,
+        unique_clusters=unique_clusters,
     )
-    logger.info(f"Cross-PCF for {cell_type_1} and {cell_type_2} plotted and saved'")
-
-    # Query points with labels cell_type_1 or cell_type_2
-    query_1_2 = ms.query.query(
-        domain,
-        ("label", cluster_labels),
-        "in",
-        [str(cell_type_1), str(cell_type_2)],
-    )
-
-    ms.visualise.visualise(
-        domain, color_by=("label", cluster_labels), objects_to_plot=query_1_2
-    )
-    # Plot the cross-PCF
-    plt.savefig(module_dir / f"visualize_{cell_type_1}_{cell_type_2}.png")
-    logger.info(f"{cell_type_1} and {cell_type_2} plotted and saved'")
 
 
 if __name__ == "__main__":
-    # Set up logger
     configure_logging()
     logger = getLogger("recode_st.ms_spatial_stat")
 
-    # Set seed
     seed_everything(21122023)
 
     try:

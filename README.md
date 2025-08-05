@@ -70,7 +70,7 @@ Although not necessary, we recommend the following skills and knowledge to enhan
 ### System 💻
 <!-- TODO: NEED TO BE REVISED -->
 - Python 3.10+
-- [Anaconda](https://www.anaconda.com/docs/getting-started/getting-started) or [miniconda](https://www.anaconda.com/docs/getting-started/miniconda/main) required for Mac Intel users, for more details please refer to the [Installation Guide](docs/installation.md)
+- [Anaconda](https://www.anaconda.com/docs/getting-started/getting-started) or [miniconda](https://www.anaconda.com/docs/getting-started/miniconda/main) required for Mac Intel users, for more details please refer to the [Installation Guide](docs/1_installation.md)
 
 <!-- Quick Start Guide. Tell learners how to engage with the exemplar. -->
 ## Getting Started 🚀

@@ -391,7 +391,7 @@ Configuration management is the practice of managing and maintaining the configu
 
 Pydantic allows you to define data models with type annotations, which can be used to validate and parse configuration data. This is particularly useful for managing configuration files, environment variables, and other settings in a structured way.
 
-Pydantic is explained in more detail in the [Configuration Guide](docs/configuration.md) page.
+Pydantic is explained in more detail in the [Configuration Guide](docs/2_configuration.md) page.
 
 ## Code testing
 

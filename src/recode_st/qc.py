@@ -31,6 +31,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
 
     try:
         # Read in .zarr
+        ## NEED TO CHANGE TO LOAD THE CONCATENATED ADATA OBJECT
         logger.info("Loading Xenium data...")
         sdata = sd.read_zarr(io_config.zarr_dir)  # read directly from the zarr store
     except PathNotFoundError as err:

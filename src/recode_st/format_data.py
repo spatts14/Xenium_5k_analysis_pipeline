@@ -70,7 +70,7 @@ def convert_all_xenium(io_config: IOConfig):
                         logger.error(
                             f"Failed loading Xenium data for {roi_name}: {err}"
                         )
-                    continue
+                        continue
 
                     # Save Zarr per ROI
                     roi_zarr_path = zarr_root / f"{roi_name}.zarr"

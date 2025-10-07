@@ -29,11 +29,11 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     module_dir.mkdir(exist_ok=True)
 
     try:
-        # Read in .zarr
-        ## NEED TO CHANGE TO LOAD THE CONCATENATED ADATA OBJECT
         logger.info("Loading Xenium data...")
-        combined_path = io_config.zarr_dir / "all_samples.h5ad"
-        # Read the file
+        combined_path = (
+            io_config.adata_dir / "combined_adata.h5ad"
+        )  # Path to combined AnnData object
+        # Read in combined AnnData object
         adata = sc.read_h5ad(combined_path)  # read directly from the zarr store
     except PathNotFoundError as err:
         logger.error(

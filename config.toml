@@ -9,6 +9,7 @@ data_dir = "data"                      # Directory where the input data is store
 output_dir = "out"                     # Directory where the output will be saved (relative to base_dir)
 xenium_dir = "xenium"                  # Directory containing Xenium data (relative to data_dir)
 zarr_dir = "xenium.zarr"               # Directory where Zarr data will be stored (relative to data_dir)
+adata_dir = "adata"                    # Directory where AnnData objects will be saved (relative to output_data_dir)
 area_path = "selected_cells_stats.csv" # Path to the CSV file containing selected cells statistics (relative to data_dir)
 logging_path = "logs"                  # Directory where logs will be saved (relative to output_dir)
 

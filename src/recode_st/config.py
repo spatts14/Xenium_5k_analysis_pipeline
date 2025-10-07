@@ -152,17 +152,20 @@ class IOConfig(BaseModel):
     data_dir: Path = Path("data")
     """The data directory for all the input files."""
 
-    output_dir: Path = Path("analysis")
+    output_dir: Path = Path("out")
     """The output directory for all the output files."""
 
     xenium_dir: Path = Path("xenium")
     """The directory containing the Xenium input data."""
 
-    output_data_dir: Path = Path("data_out")
+    output_data_dir: Path = Path("data")
     """The subdirectory under output_dir for processed data."""
 
     zarr_dir: Path = Path("xenium.zarr")
-    """The directory containing the Zarr-formatted input data."""
+    """The directory containing the Zarr-formatted input data from each xenium ROI."""
+
+    adata_dir: Path = Path("adata.h5ad")
+    """The directory containing the adata from each xenium ROI."""
 
     area_path: Path = Path("selected_cells_stats.csv")
     """The path to the CSV file containing selected cells statistics."""
@@ -182,6 +185,7 @@ class IOConfig(BaseModel):
         self.output_dir = self.base_dir / self.output_dir
         self.output_data_dir = self.output_dir / self.output_data_dir
         self.zarr_dir = self.output_data_dir / self.zarr_dir
+        self.adata_dir = self.output_data_dir / self.adata_dir
         self.logging_dir = self.output_dir / self.logging_dir
 
         # Ensure directories exists

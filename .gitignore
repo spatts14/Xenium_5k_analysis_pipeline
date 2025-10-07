@@ -149,8 +149,6 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-*/pyvenv.cfg
-xenium_5k/ 
 
 # Spyder project settings
 .spyderproject

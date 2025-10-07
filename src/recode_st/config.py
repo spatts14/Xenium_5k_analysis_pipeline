@@ -172,6 +172,7 @@ class IOConfig(BaseModel):
         """Resolve the relative paths so they are relative to the base directory."""
         self.data_dir = self.base_dir / self.data_dir
         self.output_dir = self.data_dir / self.output_dir
+        self.output_data_dir = self.output_dir / self.output_data_dir
         self.xenium_dir = self.data_dir / self.xenium_dir
         self.zarr_dir = self.data_dir / self.zarr_dir
         self.area_path = self.data_dir / self.area_path

@@ -171,7 +171,7 @@ class IOConfig(BaseModel):
     def resolve_paths(self) -> Self:
         """Resolve the relative paths so they are relative to the base directory."""
         self.data_dir = self.base_dir / self.data_dir
-        self.output_dir = self.base_dir / self.output_dir
+        self.output_dir = self.data_dir / self.output_dir
         self.xenium_dir = self.data_dir / self.xenium_dir
         self.zarr_dir = self.data_dir / self.zarr_dir
         self.area_path = self.data_dir / self.area_path

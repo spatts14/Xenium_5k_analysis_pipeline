@@ -158,6 +158,9 @@ class IOConfig(BaseModel):
     xenium_dir: Path = Path("xenium")
     """The directory containing the Xenium input data."""
 
+    output_data_dir: Path = Path("data_out")
+    """The subdirectory under output_dir for processed data."""
+
     zarr_dir: Path = Path("xenium.zarr")
     """The directory containing the Zarr-formatted input data."""
 
@@ -169,13 +172,16 @@ class IOConfig(BaseModel):
 
     @model_validator(mode="after")
     def resolve_paths(self) -> Self:
-        """Resolve the relative paths so they are relative to the base directory."""
+        """Resolve relative paths so they are absolute relative to base_dir."""
+        # Input paths
         self.data_dir = self.base_dir / self.data_dir
-        self.output_dir = self.data_dir / self.output_dir
-        self.output_data_dir = self.output_dir / self.output_data_dir
         self.xenium_dir = self.data_dir / self.xenium_dir
-        self.zarr_dir = self.data_dir / self.zarr_dir
         self.area_path = self.data_dir / self.area_path
+
+        # Output paths
+        self.output_dir = self.base_dir / self.output_dir
+        self.output_data_dir = self.output_dir / self.output_data_dir
+        self.zarr_dir = self.output_data_dir / self.zarr_dir
         self.logging_dir = self.output_dir / self.logging_dir
 
         # Ensure directories exists

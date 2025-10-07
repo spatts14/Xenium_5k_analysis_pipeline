@@ -6,7 +6,7 @@ seed = 21122023    # Random seed for reproducibility
 [io]
 base_dir = "."                         # Base directory for the project (relative to the current working directory)
 data_dir = "data"                      # Directory where the input data is stored (relative to base_dir)
-output_dir = "analysis"                # Directory where the output will be saved (relative to base_dir)
+output_dir = "out"                     # Directory where the output will be saved (relative to base_dir)
 xenium_dir = "xenium"                  # Directory containing Xenium data (relative to data_dir)
 zarr_dir = "xenium.zarr"               # Directory where Zarr data will be stored (relative to data_dir)
 area_path = "selected_cells_stats.csv" # Path to the CSV file containing selected cells statistics (relative to data_dir)

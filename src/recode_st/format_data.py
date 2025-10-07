@@ -27,17 +27,24 @@ def extract_roi_name(folder_name: str) -> str:
 
 def convert_all_xenium(io_config: IOConfig):
     """Convert all Xenium ROIs into Zarrs and one combined AnnData."""
-    root_path = Path(io_config.xenium_dir)
+    xenium_path = Path(io_config.xenium_dir)
+
     zarr_root = Path(io_config.zarr_dir)
     zarr_root.mkdir(parents=True, exist_ok=True)
 
+    output_data_dir = Path(io_config.output_data_dir)
+    output_data_dir.mkdir(parents=True, exist_ok=True)
+
+    output_adata = output_data_dir / "adata"
+    output_adata.mkdir(parents=True, exist_ok=True)
+
     all_adatas = []
 
-    if not root_path.exists():
-        raise FileNotFoundError(f"Xenium root directory not found: {root_path}")
+    if not xenium_path.exists():
+        raise FileNotFoundError(f"Xenium root directory not found: {xenium_path}")
 
     # Loop over run directories inside Xenium root
-    for run_dir in root_path.iterdir():
+    for run_dir in xenium_path.iterdir():
         if not run_dir.is_dir() or not run_dir.name.lower().startswith("run_"):
             continue
 
@@ -63,7 +70,7 @@ def convert_all_xenium(io_config: IOConfig):
                         logger.error(
                             f"Failed loading Xenium data for {roi_name}: {err}"
                         )
-                        continue
+                    continue
 
                     # Save Zarr per ROI
                     roi_zarr_path = zarr_root / f"{roi_name}.zarr"
@@ -87,7 +94,7 @@ def convert_all_xenium(io_config: IOConfig):
     # Concatenate all adatas
     if all_adatas:
         combined = ad.concat(all_adatas, join="outer", label="ROI", fill_value=0)
-        combined_path = zarr_root / "all_samples.h5ad"
+        combined_path = output_adata / "all_samples.h5ad"
         combined.write(combined_path)
         logger.info(f"Combined AnnData written to {combined_path}")
     else:

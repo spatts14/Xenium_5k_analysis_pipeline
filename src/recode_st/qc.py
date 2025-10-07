@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scanpy as sc
 import seaborn as sns
-import spatialdata as sd
 from zarr.errors import PathNotFoundError
 
 from recode_st.config import IOConfig, QualityControlModuleConfig
@@ -30,21 +29,17 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     module_dir.mkdir(exist_ok=True)
 
     try:
-        # Read in .zarr
         logger.info("Loading Xenium data...")
-        sdata = sd.read_zarr(io_config.zarr_dir)  # read directly from the zarr store
+        combined_path = (
+            io_config.adata_dir / "combined_adata.h5ad"
+        )  # Path to combined AnnData object
+        # Read in combined AnnData object
+        adata = sc.read_h5ad(combined_path)  # read directly from the zarr store
     except PathNotFoundError as err:
-        logger.error(
-            f"File not found (or not a valid Zarr store): {io_config.zarr_dir}"
-        )
+        logger.error(f"File not found (or not a valid AnnData file): {combined_path}")
         raise err
 
     logger.info("Done")
-
-    # # Save anndata object (stored in spatialdata.tables layer)
-    adata = sdata.tables[
-        "table"
-    ]  # contains the count matrix, cell and gene annotations
 
     # $ Calculate and plot metrics
 

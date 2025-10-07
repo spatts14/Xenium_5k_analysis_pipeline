@@ -1,4 +1,4 @@
-name: recode_st
+name: xenium_5k_venv
 channels:
   - conda-forge
   - bioconda

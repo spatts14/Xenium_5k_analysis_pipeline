@@ -1,0 +1,20 @@
+# An example configuration file for recode_st
+
+log_level = "INFO" # Define the logging level here. Options are: DEBUG, INFO, WARNING, ERROR, CRITICAL
+seed = 21122023    # Random seed for reproducibility
+
+[io]
+base_dir = "/Volumes/sep22/home/wet_lab/_Experiments/009_ST_Xenium" # Base directory for the project (relative to the current working directory)
+data_dir = "data"                                                   # Directory where the input data is stored
+output_dir = "out"                                                  # Directory where the output will be saved (relative to data_dir)
+output_data_dir = "data"                                            # Directory where processed data will be saved (relative to output_dir)
+xenium_dir = "xenium"                                               # Directory containing Xenium data (relative to data_dir)
+zarr_dir = "xenium.zarr"                                            # Directory where Zarr data will be stored (relative to data_dir)
+adata_dir = "adata"                                                 # Directory where AnnData objects will be saved (relative to output_data_dir)
+area_path = "selected_cells_stats.csv"                              # Path to the CSV file containing selected cells statistics (relative to data_dir)
+logging_path = "logs"                                               # Directory where logs will be saved (relative to output_dir)
+
+[modules.quality_control]
+module_name = "1_quality_control" # Name of the module - will be used in the output directory name
+min_counts = 10                   # Minimum number of counts required for a cell to pass filtering
+min_cells = 5                     # Minimum number of cells expressed required for a gene to pass filtering

@@ -37,7 +37,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         adata = sc.read_h5ad(combined_path)  # read directly from the zarr store
     except PathNotFoundError as err:
         logger.error(
-            f"File not found (or not a valid Zarr store): {io_config.zarr_dir}"
+            f"File not found (or not a valid AnnData file): {combined_path}"
         )
         raise err
 

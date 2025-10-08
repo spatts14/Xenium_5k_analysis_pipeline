@@ -1,4 +1,4 @@
-"""Quality control module."""
+"""Quality control module - Memory optimized version."""
 
 import warnings
 from logging import getLogger
@@ -9,6 +9,7 @@ import scanpy as sc
 import scipy.sparse as sp
 import scTransform
 import seaborn as sns
+from scipy.sparse import csr_matrix, issparse
 from zarr.errors import PathNotFoundError
 
 from recode_st.config import IOConfig, QualityControlModuleConfig
@@ -35,11 +36,11 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
 
     try:
         logger.info("Loading Xenium data...")
-        combined_path = (
-            io_config.adata_dir / "combined_adata.h5ad"
-        )  # Path to combined AnnData object
-        # Read in combined AnnData object
-        adata = sc.read_h5ad(combined_path)  # read directly from the zarr store
+        combined_path = io_config.adata_dir / "combined_adata.h5ad"
+
+        # Read the file normally - we need the data in memory for QC calculations
+        adata = sc.read_h5ad(combined_path)
+
     except PathNotFoundError as err:
         logger.error(f"File not found (or not a valid AnnData file): {combined_path}")
         raise err
@@ -65,22 +66,22 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
 
     # Calculate averages
     avg_total_counts = np.mean(adata.obs["total_counts"])
-    logger.info(f"Average number of transcripts per cell: {avg_total_counts}")
+    logger.info(f"Average number of transcripts per cell: {avg_total_counts:.2f}")
 
     avg_total_unique_counts = np.mean(adata.obs["n_genes_by_counts"])
-    logger.info(f"Average unique transcripts per cell: {avg_total_unique_counts}")
+    logger.info(f"Average unique transcripts per cell: {avg_total_unique_counts:.2f}")
 
     area_max = np.max(adata.obs["cell_area"])
     area_min = np.min(adata.obs["cell_area"])
-    logger.info(f"Max cell area: {area_max}")
-    logger.info(f"Min cell area: {area_min}")
+    logger.info(f"Max cell area: {area_max:.2f}")
+    logger.info(f"Min cell area: {area_min:.2f}")
 
     # Plot the summary metrics
     plot_metrics(module_dir, adata)
 
     # $ QC data #
 
-    # Filter cells
+    # Filter cells and genes
     logger.info("Filtering cells and genes...")
     sc.pp.filter_cells(adata, min_counts=min_counts)
     sc.pp.filter_genes(adata, min_cells=min_cells)
@@ -133,6 +134,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         raise ValueError(f"Normalization approach {norm_approach} not recognized")
 
     # Save data
+    logger.info("Saving filtered and normalized data...")
     adata.write_h5ad(module_dir / "adata.h5ad")
     logger.info(f"Data saved to {module_dir / 'adata.h5ad'}")
     logger.info("Quality control completed successfully.")
@@ -163,8 +165,10 @@ def plot_metrics(module_dir, adata, norm_approach=None):
     Returns:
         None: The function saves the plot to disk and logs the output location.
     """
+    # Create 4 subplots in a row
     fig, axs = plt.subplots(1, 4, figsize=(15, 4))
 
+    # Plot 1: Total transcripts per cell
     axs[0].set_title("Total transcripts per cell")
     sns.histplot(
         adata.obs["total_counts"],
@@ -172,6 +176,7 @@ def plot_metrics(module_dir, adata, norm_approach=None):
         ax=axs[0],
     )
 
+    # Plot 2: Number of unique genes detected per cell
     axs[1].set_title("Unique transcripts per cell")
     sns.histplot(
         adata.obs["n_genes_by_counts"],
@@ -179,6 +184,7 @@ def plot_metrics(module_dir, adata, norm_approach=None):
         ax=axs[1],
     )
 
+    # Plot 3: Cell area distribution
     axs[2].set_title("Area of segmented cells")
     sns.histplot(
         adata.obs["cell_area"],
@@ -186,6 +192,7 @@ def plot_metrics(module_dir, adata, norm_approach=None):
         ax=axs[2],
     )
 
+    # Plot 4: Ratio of nucleus to cell area
     axs[3].set_title("Nucleus ratio")
     sns.histplot(
         adata.obs["nucleus_area"] / adata.obs["cell_area"],
@@ -207,16 +214,14 @@ def plot_metrics(module_dir, adata, norm_approach=None):
     output_path = module_dir / filename
     plt.savefig(output_path, dpi=300)
     plt.close()
-
     logger.info(f"Saved plots to {output_path}")
-
 
 if __name__ == "__main__":
     # Set up logger
     configure_logging()
     logger = getLogger("recode_st.1_qc")
 
-    # Set seed
+    # Set seed for reproducibility
     seed_everything(21122023)
 
     run_qc(

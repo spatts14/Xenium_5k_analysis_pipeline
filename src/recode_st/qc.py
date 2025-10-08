@@ -9,7 +9,6 @@ import scanpy as sc
 import scipy.sparse as sp
 import scTransform
 import seaborn as sns
-from scipy.sparse import csr_matrix, issparse
 from zarr.errors import PathNotFoundError
 
 from recode_st.config import IOConfig, QualityControlModuleConfig
@@ -140,7 +139,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info("Quality control completed successfully.")
 
 
-def plot_metrics(module_dir, adata, norm_approach=None):
+def plot_metrics(module_dir, adata):
     """Generates and saves histograms summarizing key cell metrics.
 
     This function creates a 1x4 grid of histograms visualizing:
@@ -149,72 +148,46 @@ def plot_metrics(module_dir, adata, norm_approach=None):
         3. Area of segmented cells
         4. Nucleus-to-cell area ratio
 
-    The resulting figure is saved as 'cell_summary_histograms.png'
-    in the specified module directory.
-
     Args:
         module_dir (Path or str): Directory path where the output plot will be saved.
-        adata (anndata.AnnData): Annotated data matrix with cell metrics stored in
-            `adata.obs`. Must contain the columns:
+        adata (anndata.AnnData): Annotated data matrix with cell metrics
+        stored in `adata.obs`.
+            Must contain the columns:
             - 'total_counts'
             - 'n_genes_by_counts'
             - 'cell_area'
             - 'nucleus_area'
-        norm_approach (str, optional): Normalization approach used.
 
     Returns:
-        None: The function saves the plot to disk and logs the output location.
+        None
     """
-    # Create 4 subplots in a row
+    # Create 4 subplots
     fig, axs = plt.subplots(1, 4, figsize=(15, 4))
 
-    # Plot 1: Total transcripts per cell
     axs[0].set_title("Total transcripts per cell")
-    sns.histplot(
-        adata.obs["total_counts"],
-        kde=False,
-        ax=axs[0],
-    )
+    sns.histplot(adata.obs["total_counts"], kde=False, ax=axs[0])
 
-    # Plot 2: Number of unique genes detected per cell
     axs[1].set_title("Unique transcripts per cell")
-    sns.histplot(
-        adata.obs["n_genes_by_counts"],
-        kde=False,
-        ax=axs[1],
-    )
+    sns.histplot(adata.obs["n_genes_by_counts"], kde=False, ax=axs[1])
 
-    # Plot 3: Cell area distribution
     axs[2].set_title("Area of segmented cells")
-    sns.histplot(
-        adata.obs["cell_area"],
-        kde=False,
-        ax=axs[2],
-    )
+    sns.histplot(adata.obs["cell_area"], kde=False, ax=axs[2])
 
-    # Plot 4: Ratio of nucleus to cell area
     axs[3].set_title("Nucleus ratio")
     sns.histplot(
-        adata.obs["nucleus_area"] / adata.obs["cell_area"],
-        kde=False,
-        ax=axs[3],
+        adata.obs["nucleus_area"] / adata.obs["cell_area"], kde=False, ax=axs[3]
     )
 
-    # Add an overall figure title if norm_approach is provided
-    if norm_approach:
-        fig.suptitle(f"Normalized using {norm_approach}", fontsize=16)
+    fig.suptitle("QC meterics pre-normalization", fontsize=16)
 
-    plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for suptitle
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
 
-    # Create filename based on normalization approach
-    filename = "cell_summary_histograms.png"
-    if norm_approach:
-        filename = f"cell_summary_histograms_{norm_approach}.png"
-
-    output_path = module_dir / filename
+    # Save figure
+    output_path = module_dir / "cell_summary_histograms.png"
     plt.savefig(output_path, dpi=300)
     plt.close()
     logger.info(f"Saved plots to {output_path}")
+
 
 if __name__ == "__main__":
     # Set up logger

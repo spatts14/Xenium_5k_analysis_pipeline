@@ -6,6 +6,7 @@ from logging import getLogger
 import matplotlib.pyplot as plt
 import numpy as np
 import scanpy as sc
+import scipy.sparse as sp
 import scTransform
 import seaborn as sns
 from zarr.errors import PathNotFoundError
@@ -25,6 +26,8 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     module_dir = io_config.output_dir / config.module_name
     min_cells = config.min_cells
     min_counts = config.min_counts
+    min_cell_area = config.min_cell_area
+    max_cell_area = config.max_cell_area
     norm_approach = config.norm_approach
 
     # Create output directories if they do not exist
@@ -82,6 +85,14 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     sc.pp.filter_cells(adata, min_counts=min_counts)
     sc.pp.filter_genes(adata, min_cells=min_cells)
 
+    # Filter cells by cell area
+    logger.info(f"Filtering cells with area outside {min_cell_area}-{max_cell_area}")
+    adata = adata[
+        (adata.obs["cell_area"] >= min_cell_area)
+        & (adata.obs["cell_area"] <= max_cell_area),
+        :,
+    ].copy()
+
     # Normalize data
     logger.info(f"Normalize data using {norm_approach}...")
     adata.layers["counts"] = adata.X.copy()  # make copy of raw data
@@ -90,7 +101,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         # scRNAseq approach
         sc.pp.normalize_total(adata, inplace=True)  # normalize data
         sc.pp.log1p(adata)  # Log transform data
-    elif norm_approach == "sctransform":
+    elif norm_approach == "sctransform":  # ? Should I be log transforming after this?
         # scTransform approach
         vst_out = scTransform.vst(
             adata.X, gene_names=adata.var_names, cell_names=adata.obs_names
@@ -99,12 +110,22 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     elif norm_approach == "cell_area":
         # Check if cell area is available
         if "cell_area" in adata.obs.columns:
-            # Normalize by cell area
-            adata.X = adata.X / adata.obs["cell_area"].values[:, None]
+            cell_area_inv = 1 / adata.obs["cell_area"].values  # shape (n_cells,)
+
+            if sp.issparse(adata.X):
+                # Sparse-safe multiplication
+                scaling = sp.diags(cell_area_inv)
+                adata.X = scaling.dot(adata.X)
+            else:
+                # Dense case
+                adata.X = adata.X * cell_area_inv[:, None]
+
             # Log transform
             sc.pp.log1p(adata)
         else:
-            print("Cell area not found in adata.obs")
+            logger.warning(
+                "Cell area not found in adata.obs; skipping normalization by cell area"
+            )
     elif norm_approach == "none":
         # No normalization
         logger.info("No normalization applied.")

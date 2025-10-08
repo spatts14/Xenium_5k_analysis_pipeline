@@ -23,6 +23,12 @@ class QualityControlModuleConfig(BaseModuleConfig):
     min_cells: int
     """Minimum number of cells expressed required for a gene to pass filtering"""
 
+    min_cell_area: int
+    """Minimum area to filter cells."""
+
+    max_cell_area: int
+    """Minimum area to filter cells."""
+
     norm_approach: Literal["scanpy_log", "sctransform", "cell_area", "none"] = (
         "cell_area"
     )

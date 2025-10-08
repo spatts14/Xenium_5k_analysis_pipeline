@@ -83,7 +83,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     sc.pp.filter_genes(adata, min_cells=min_cells)
 
     # Normalize data
-    logger.info("Normalize data using {norm_approach}...")
+    logger.info(f"Normalize data using {norm_approach}...")
     adata.layers["counts"] = adata.X.copy()  # make copy of raw data
 
     if norm_approach == "scanpy_log":

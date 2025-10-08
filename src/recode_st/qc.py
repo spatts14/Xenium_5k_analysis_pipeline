@@ -76,7 +76,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info(f"Min cell area: {area_min:.2f}")
 
     # Plot the summary metrics
-    plot_metrics(module_dir, adata, norm_approach)
+    plot_metrics(module_dir, adata)
 
     # $ QC data #
 
@@ -139,7 +139,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info("Quality control completed successfully.")
 
 
-def plot_metrics(module_dir, adata, config: QualityControlModuleConfig):
+def plot_metrics(module_dir, adata):
     """Generates and saves histograms summarizing key cell metrics.
 
     This function creates a 1x4 grid of histograms visualizing:
@@ -147,11 +147,6 @@ def plot_metrics(module_dir, adata, config: QualityControlModuleConfig):
         2. Unique transcripts per cell
         3. Area of segmented cells
         4. Nucleus-to-cell area ratio
-
-    The resulting figure is saved as 'cell_summary_histograms.png'
-    in the specified module directory. If a normalization approach is
-    defined in config.norm_approach, it is appended to the filename
-    and used in the plot title.
 
     Args:
         module_dir (Path or str): Directory path where the output plot will be saved.
@@ -162,14 +157,10 @@ def plot_metrics(module_dir, adata, config: QualityControlModuleConfig):
             - 'n_genes_by_counts'
             - 'cell_area'
             - 'nucleus_area'
-        config (QualityControlModuleConfig): Configuration object containing
-            the normalization approach used.
 
     Returns:
         None
     """
-    norm_approach = config.norm_approach
-
     # Create 4 subplots
     fig, axs = plt.subplots(1, 4, figsize=(15, 4))
 
@@ -187,15 +178,12 @@ def plot_metrics(module_dir, adata, config: QualityControlModuleConfig):
         adata.obs["nucleus_area"] / adata.obs["cell_area"], kde=False, ax=axs[3]
     )
 
-    fig.suptitle(f"Normalized using {norm_approach}", fontsize=16)
+    fig.suptitle("QC meterics pre-normalization", fontsize=16)
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
 
-    # Save figure, append norm_approach if available
-    safe_norm = str(norm_approach).replace(" ", "_").replace("/", "_")
-    filename = f"cell_summary_histograms_{safe_norm}.png"
-
-    output_path = module_dir / filename
+    # Save figure
+    output_path = module_dir / "cell_summary_histograms.png"
     plt.savefig(output_path, dpi=300)
     plt.close()
     logger.info(f"Saved plots to {output_path}")

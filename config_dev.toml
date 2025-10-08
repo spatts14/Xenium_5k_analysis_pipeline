@@ -18,3 +18,6 @@ logging_path = "logs"                                               # Directory 
 module_name = "1_quality_control" # Name of the module - will be used in the output directory name
 min_counts = 10                   # Minimum number of counts required for a cell to pass filtering
 min_cells = 5                     # Minimum number of cells expressed required for a gene to pass filtering
+min_cell_area = 50                # Minimum cell area to filter cells required for a cell to pass filtering
+max_cell_area = 1000              # Maximum cell area to filter cells required for a cell to pass filtering
+norm_approach = "cell_area"       # Normalization approach to use

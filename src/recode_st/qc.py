@@ -6,6 +6,8 @@ from logging import getLogger
 import matplotlib.pyplot as plt
 import numpy as np
 import scanpy as sc
+import scipy.sparse as sp
+import scTransform
 import seaborn as sns
 from scipy.sparse import csr_matrix, issparse
 from zarr.errors import PathNotFoundError
@@ -25,6 +27,9 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     module_dir = io_config.output_dir / config.module_name
     min_cells = config.min_cells
     min_counts = config.min_counts
+    min_cell_area = config.min_cell_area
+    max_cell_area = config.max_cell_area
+    norm_approach = config.norm_approach
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -81,26 +86,52 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     sc.pp.filter_cells(adata, min_counts=min_counts)
     sc.pp.filter_genes(adata, min_cells=min_cells)
 
+    # Filter cells by cell area
+    logger.info(f"Filtering cells with area outside {min_cell_area}-{max_cell_area}")
+    adata = adata[
+        (adata.obs["cell_area"] >= min_cell_area)
+        & (adata.obs["cell_area"] <= max_cell_area),
+        :,
+    ].copy()
+
     # Normalize data
-    logger.info("Normalize data...")
+    logger.info(f"Normalize data using {norm_approach}...")
+    adata.layers["counts"] = adata.X.copy()  # make copy of raw data
 
-    # Store raw counts efficiently in a sparse format
-    # Sparse matrices only store non-zero values, saving lots of memory
-    # Convert to CSR (Compressed Sparse Row) format if not already sparse
+    if norm_approach == "scanpy_log":
+        # scRNAseq approach
+        sc.pp.normalize_total(adata, inplace=True)  # normalize data
+        sc.pp.log1p(adata)  # Log transform data
+    elif norm_approach == "sctransform":  # ? Should I be log transforming after this?
+        # scTransform approach
+        vst_out = scTransform.vst(
+            adata.X, gene_names=adata.var_names, cell_names=adata.obs_names
+        )
+        adata.X = vst_out["y"]  # Use Pearson residuals as normalized expression
+    elif norm_approach == "cell_area":
+        # Check if cell area is available
+        if "cell_area" in adata.obs.columns:
+            cell_area_inv = 1 / adata.obs["cell_area"].values  # shape (n_cells,)
 
-    if issparse(adata.X):
-        # Already sparse - just copy it
-        adata.layers["counts"] = adata.X.copy()
+            if sp.issparse(adata.X):
+                # Sparse-safe multiplication
+                scaling = sp.diags(cell_area_inv)
+                adata.X = scaling.dot(adata.X)
+            else:
+                # Dense case
+                adata.X = adata.X * cell_area_inv[:, None]
+
+            # Log transform
+            sc.pp.log1p(adata)
+        else:
+            logger.warning(
+                "Cell area not found in adata.obs; skipping normalization by cell area"
+            )
+    elif norm_approach == "none":
+        # No normalization
+        logger.info("No normalization applied.")
     else:
-        # Convert dense matrix to sparse format before copying
-        # This saves memory because count data has many zeros
-        adata.layers["counts"] = csr_matrix(adata.X)
-
-    # Normalize: converts counts to proportions (each cell sums to same total)
-    sc.pp.normalize_total(adata, inplace=True)
-
-    # Log transform: log(x + 1) transformation for better distribution
-    sc.pp.log1p(adata)
+        raise ValueError(f"Normalization approach {norm_approach} not recognized")
 
     # Save data
     logger.info("Saving filtered and normalized data...")
@@ -109,7 +140,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info("Quality control completed successfully.")
 
 
-def plot_metrics(module_dir, adata):
+def plot_metrics(module_dir, adata, norm_approach=None):
     """Generates and saves histograms summarizing key cell metrics.
 
     This function creates a 1x4 grid of histograms visualizing:
@@ -129,6 +160,7 @@ def plot_metrics(module_dir, adata):
             - 'n_genes_by_counts'
             - 'cell_area'
             - 'nucleus_area'
+        norm_approach (str, optional): Normalization approach used.
 
     Returns:
         None: The function saves the plot to disk and logs the output location.
@@ -168,18 +200,21 @@ def plot_metrics(module_dir, adata):
         ax=axs[3],
     )
 
-    # Adjust spacing between plots and save
-    plt.tight_layout()
-    plt.savefig(
-        module_dir / "cell_summary_histograms.png",
-        dpi=300,
-    )
+    # Add an overall figure title if norm_approach is provided
+    if norm_approach:
+        fig.suptitle(f"Normalized using {norm_approach}", fontsize=16)
 
-    # Close the plot to free up memory
+    plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for suptitle
+
+    # Create filename based on normalization approach
+    filename = "cell_summary_histograms.png"
+    if norm_approach:
+        filename = f"cell_summary_histograms_{norm_approach}.png"
+
+    output_path = module_dir / filename
+    plt.savefig(output_path, dpi=300)
     plt.close()
-
-    logger.info(f"Saved plots to {module_dir / 'cell_summary_histograms.png'}")
-
+    logger.info(f"Saved plots to {output_path}")
 
 if __name__ == "__main__":
     # Set up logger

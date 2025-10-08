@@ -117,7 +117,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info("Quality control completed successfully.")
 
 
-def plot_metrics(module_dir, adata):
+def plot_metrics(module_dir, adata, norm_approach=None):
     """Generates and saves histograms summarizing key cell metrics.
 
     This function creates a 1x4 grid of histograms visualizing:
@@ -137,6 +137,7 @@ def plot_metrics(module_dir, adata):
             - 'n_genes_by_counts'
             - 'cell_area'
             - 'nucleus_area'
+        norm_approach (str, optional): Normalization approach used.
 
     Returns:
         None: The function saves the plot to disk and logs the output location.
@@ -171,14 +172,22 @@ def plot_metrics(module_dir, adata):
         ax=axs[3],
     )
 
-    # Adjust layout and save the figure
-    plt.tight_layout()
-    plt.savefig(
-        module_dir / "cell_summary_histograms.png",
-        dpi=300,
-    )
+    # Add an overall figure title if norm_approach is provided
+    if norm_approach:
+        fig.suptitle(f"Normalized using {norm_approach}", fontsize=16)
+
+    plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for suptitle
+
+    # Create filename based on normalization approach
+    filename = "cell_summary_histograms.png"
+    if norm_approach:
+        filename = f"cell_summary_histograms_{norm_approach}.png"
+
+    output_path = module_dir / filename
+    plt.savefig(output_path, dpi=300)
     plt.close()
-    logger.info(f"Saved plots to {module_dir / 'cell_summary_histograms.png'}")
+
+    logger.info(f"Saved plots to {output_path}")
 
 
 if __name__ == "__main__":

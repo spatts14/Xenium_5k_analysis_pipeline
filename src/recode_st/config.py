@@ -23,6 +23,13 @@ class QualityControlModuleConfig(BaseModuleConfig):
     min_cells: int
     """Minimum number of cells expressed required for a gene to pass filtering"""
 
+    norm_approach: Literal["scanpy_log", "sctransform", "cell_area", "none"] = (
+        "cell_area"
+    )
+    """Normalization approach to use: 'scanpy_log' for Scanpy log normalization,
+    'sctransform' for SCTransform normalization, or
+    'cell_area' for normalization by cell area."""
+
 
 class DimensionReductionModuleConfig(BaseModuleConfig):
     """Configuration for the Quality Control module."""

@@ -6,6 +6,7 @@ from logging import getLogger
 import matplotlib.pyplot as plt
 import numpy as np
 import scanpy as sc
+import scTransform
 import seaborn as sns
 from zarr.errors import PathNotFoundError
 
@@ -24,6 +25,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     module_dir = io_config.output_dir / config.module_name
     min_cells = config.min_cells
     min_counts = config.min_counts
+    norm_approach = config.norm_approach
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -81,10 +83,33 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     sc.pp.filter_genes(adata, min_cells=min_cells)
 
     # Normalize data
-    logger.info("Normalize data...")
+    logger.info("Normalize data using {norm_approach}...")
     adata.layers["counts"] = adata.X.copy()  # make copy of raw data
-    sc.pp.normalize_total(adata, inplace=True)  # normalize data
-    sc.pp.log1p(adata)  # Log transform data
+
+    if norm_approach == "scanpy_log":
+        # scRNAseq approach
+        sc.pp.normalize_total(adata, inplace=True)  # normalize data
+        sc.pp.log1p(adata)  # Log transform data
+    elif norm_approach == "sctransform":
+        # scTransform approach
+        vst_out = scTransform.vst(
+            adata.X, gene_names=adata.var_names, cell_names=adata.obs_names
+        )
+        adata.X = vst_out["y"]  # Use Pearson residuals as normalized expression
+    elif norm_approach == "cell_area":
+        # Check if cell area is available
+        if "cell_area" in adata.obs.columns:
+            # Normalize by cell area
+            adata.X = adata.X / adata.obs["cell_area"].values[:, None]
+            # Log transform
+            sc.pp.log1p(adata)
+        else:
+            print("Cell area not found in adata.obs")
+    elif norm_approach == "none":
+        # No normalization
+        logger.info("No normalization applied.")
+    else:
+        raise ValueError(f"Normalization approach {norm_approach} not recognized")
 
     # Save data
     adata.write_h5ad(module_dir / "adata.h5ad")

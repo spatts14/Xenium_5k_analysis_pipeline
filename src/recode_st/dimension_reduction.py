@@ -9,6 +9,7 @@ import scanpy as sc
 import squidpy as sq
 
 from recode_st.config import DimensionReductionModuleConfig, IOConfig
+from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
 
 warnings.filterwarnings("ignore")
@@ -26,9 +27,7 @@ def run_dimension_reduction(
     n_neighbors = config.n_neighbors
     resolution = config.resolution
     cluster_name = config.cluster_name
-    norm_approach = (
-        config.norm_approach if hasattr(config, "norm_approach") else "cell_area"
-    )
+    norm_approach = config.norm_approach
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -37,53 +36,19 @@ def run_dimension_reduction(
     sc.settings.figdir = module_dir
 
     # Import data
-    logger.info("Loading Xenium data...")
+    logger.info(f"Loading Xenium data normalized with {norm_approach}...")
     adata = sc.read_h5ad(
         io_config.output_dir / "1_quality_control" / f"adata_{norm_approach}.h5ad"
     )
 
-    # Set your target size
-    n_total = 5000  # total cells you want in your dev set
-
-    # Calculate proportional samples per ROI
-    roi_counts = adata.obs["ROI"].value_counts()
-    sampled_indices = []
-
-    for roi in adata.obs["ROI"].unique():
-        roi_mask = adata.obs["ROI"] == roi
-        roi_data = adata[roi_mask]
-
-        # Proportional to original ROI size
-        n_roi_sketch = int(n_total * (roi_counts[roi] / len(adata)))
-        n_roi_sketch = max(50, n_roi_sketch)  # ensure minimum samples per ROI
-        n_roi_sketch = min(n_roi_sketch, len(roi_data))  # don't exceed available cells
-
-        # Geometric sketch within this ROI
-        if n_roi_sketch >= len(roi_data):
-            # Take all cells if sketch size >= available cells
-            roi_sketch_local = np.arange(len(roi_data))
-        else:
-            roi_sketch_local = geosketch.gs(roi_data.X, n_roi_sketch, replace=False)
-
-        # Convert local indices to global indices
-        global_indices = np.where(roi_mask)[0][roi_sketch_local]
-        sampled_indices.extend(global_indices)
-
-    adata = adata[
-        sampled_indices, :
-    ].copy()  # replace adata with the subsampled version for dev
-
-    # Verify distribution
-    print(adata.obs["ROI"].value_counts().sort_index())
-    print(f"Total cells: {len(adata)}")
-
-    # Highly variable genes
-    logger.info("Selecting highly variable genes...")
-    sc.pp.highly_variable_genes(
-        adata,
-        n_top_genes=2000,  # select top highly variable genes
-        # batch_key='run'
-    )
+    #! Not sure if I need this
+    # # Highly variable genes
+    # logger.info("Selecting highly variable genes...")
+    # sc.pp.highly_variable_genes(
+    #     adata,
+    #     n_top_genes=2000,  # select top highly variable genes
+    #     # batch_key='run'
+    # )
 
     # Perform dimension reduction analysis
     logger.info("Compute PCA...")
@@ -96,6 +61,59 @@ def run_dimension_reduction(
         save=f"_{config.module_name}.png",
     )
     logger.info(f"PCA Variance plot saved to {sc.settings.figdir}")
+
+    logger.info("Subsample data for dev...")
+    print(f"Original size: {len(adata)} cells")
+
+    # Set your target size
+    n_total = 10000  # total cells you want in your dev set
+
+    # Compute PCA if not already present
+    if "X_pca" not in adata.obsm:
+        print("PCA not computed. Computing PCA...")
+        sc.pp.pca(adata, n_comps=50)  # adjust n_comps as needed
+
+    # Calculate proportional samples per ROI
+    roi_counts = adata.obs["ROI"].value_counts()
+    sampled_indices = []
+
+    print(f"Sketching {n_total} cells across {len(roi_counts)} ROIs...")
+
+    for roi in adata.obs["ROI"].unique():
+        roi_mask = adata.obs["ROI"] == roi
+        roi_data = adata[roi_mask]
+
+        # Proportional to original ROI size
+        n_roi_sketch = int(n_total * (roi_counts[roi] / len(adata)))
+        n_roi_sketch = max(50, n_roi_sketch)  # ensure minimum samples per ROI
+        n_roi_sketch = min(n_roi_sketch, len(roi_data))  # don't exceed available cells
+
+        print(f"  ROI {roi}: sketching {n_roi_sketch} from {len(roi_data)} cells")
+
+        # Geometric sketch within this ROI
+        if n_roi_sketch >= len(roi_data):
+            # Take all cells if sketch size >= available cells
+            roi_sketch_local = np.arange(len(roi_data))
+        else:
+            # Use PCA representation (already dense)
+            roi_sketch_local = geosketch.gs(
+                roi_data.obsm["X_pca"], n_roi_sketch, replace=False
+            )
+
+        # Convert local indices to global indices
+        global_indices = np.where(roi_mask)[0][roi_sketch_local]
+        sampled_indices.extend(global_indices)
+
+    adata = adata[
+        sampled_indices, :
+    ].copy()  # replace adata with the subsampled version for dev
+
+    # Verify distribution
+    print("\n Sketching Results")
+    print(f"Sketched size: {len(adata)} cells")
+    print(f"Reduction: {100 * (1 - len(adata) / len(adata)):.1f}%")
+    print("\nCells per ROI:")
+    print(adata.obs["ROI"].value_counts().sort_index())
 
     logger.info("Compute neighbors...")
     sc.pp.neighbors(
@@ -119,11 +137,30 @@ def run_dimension_reduction(
         color=[
             "total_counts",
             "n_genes_by_counts",
+            "ROI",
             cluster_name,
         ],
         wspace=0.4,
         show=False,
-        save=f"_{config.module_name}.png",  # save the figure with the module name
+        save=f"_{config.module_name}_{norm_approach}.png",  # save figure
+        frameon=False,
+    )
+
+    sc.pl.umap(
+        adata,
+        color=[
+            "PTPRC",  # immune cells
+            "CD3E",  # T cells
+            "CD68",  # macrophages
+            "EPCAM",  # epithelial cells
+            "COL1A1",  # collagen
+            "PDGFRA",  # fibroblasts
+            "ACTA2",  # smooth muscle cells
+            "VWF",  # endothelial cells
+        ],
+        wspace=0.4,
+        show=False,
+        save=f"_{config.module_name}_cell_markers.png",  # save figure
         frameon=False,
     )
     logger.info(f"UMAP plot saved to {sc.settings.figdir}")
@@ -153,7 +190,7 @@ if __name__ == "__main__":
     logger = getLogger("recode_st.2_dimension_reduction")
 
     # Set seed
-    # seed_everything(21122023)
+    seed_everything(6)
 
     try:
         run_dimension_reduction(

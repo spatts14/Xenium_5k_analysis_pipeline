@@ -75,6 +75,49 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info(f"Max cell area: {area_max:.2f}")
     logger.info(f"Min cell area: {area_min:.2f}")
 
+    # Minimum transcripts per cell
+    min_transcripts = adata.obs["total_counts"].min()
+    num_cells_with_min = (adata.obs["total_counts"] == min_transcripts).sum()
+
+    logger.info(f"Minimum number of transcripts per cell: {min_transcripts}")
+    logger.info(f"Number of cells with that minimum: {num_cells_with_min}")
+
+    # Minimum genes per cell
+    min_genes = adata.obs["n_genes_by_counts"].min()
+    num_cells_with_min_genes = (adata.obs["n_genes_by_counts"] == min_genes).sum()
+
+    logger.info(f"Minimum number of genes per cell: {min_genes}")
+    logger.info(f"Number of cells with that minimum: {num_cells_with_min_genes}")
+
+    # Maximum transcripts per cell
+    max_transcripts = adata.obs["total_counts"].max()
+    num_cells_with_max = (adata.obs["total_counts"] == max_transcripts).sum()
+    logger.info(f"Maximum number of transcripts per cell: {max_transcripts}")
+    logger.info(f"Number of cells with that maximum: {num_cells_with_max}")
+
+    # Maximum genes per cell
+    max_genes = adata.obs["n_genes_by_counts"].max()
+    num_cells_with_max_genes = (adata.obs["n_genes_by_counts"] == max_genes).sum()
+    logger.info(f"Maximum number of genes per cell: {max_genes}")
+    logger.info(f"Number of cells with that maximum: {num_cells_with_max_genes}")
+
+    # Scatter plot of number of genes vs total counts
+    sns.set_theme(style="white")
+    plt.figure(figsize=(6, 5))
+    plt.scatter(
+        adata.obs["n_genes_by_counts"],
+        adata.obs["total_counts"],
+        # hue="ROI",
+        s=10,  # size of points
+        alpha=0.5,  # transparency
+    )
+    plt.xlabel("Number of genes detected per cell")
+    plt.ylabel("Total transcripts per cell")
+    plt.title("QC: Genes vs Total Counts per Cell")
+    plt.grid(False)
+    plt.savefig(module_dir / "qc_genes_vs_total_counts_pre_filter.png", dpi=300)
+    plt.close()
+
     # Plot the summary metrics
     plot_metrics(module_dir, adata)
 
@@ -82,8 +125,24 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
 
     # Filter cells and genes
     logger.info("Filtering cells and genes...")
+    # Number of cells and genes before filtering
+    n_cells_before = adata.n_obs
+    n_genes_before = adata.n_vars
+
+    # Apply filters
     sc.pp.filter_cells(adata, min_counts=min_counts)
     sc.pp.filter_genes(adata, min_cells=min_cells)
+
+    # Number of cells and genes after filtering
+    n_cells_after = adata.n_obs
+    n_genes_after = adata.n_vars
+
+    # How many were removed
+    cells_removed = n_cells_before - n_cells_after
+    genes_removed = n_genes_before - n_genes_after
+
+    print(f"Cells removed: {cells_removed} ({cells_removed / n_cells_before:.1%})")
+    print(f"Genes removed: {genes_removed} ({genes_removed / n_genes_before:.1%})")
 
     # Filter cells by cell area
     logger.info(f"Filtering cells with area outside {min_cell_area}-{max_cell_area}")
@@ -92,6 +151,34 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         & (adata.obs["cell_area"] <= max_cell_area),
         :,
     ].copy()
+
+    # Number of cells and genes after filtering
+    n_cells_after_area = adata.n_obs
+    n_genes_after_area = adata.n_vars
+
+    # How many were removed
+    cells_removed = n_cells_after - n_cells_after_area
+    genes_removed = n_genes_after - n_genes_after_area
+
+    print(f"Cells removed: {cells_removed} ({cells_removed / n_cells_before:.1%})")
+    print(f"Genes removed: {genes_removed} ({genes_removed / n_genes_before:.1%})")
+
+    # Scatter plot of number of genes vs total counts after filtering
+    sns.set_theme(style="white")
+    plt.figure(figsize=(6, 5))
+    plt.scatter(
+        adata.obs["n_genes_by_counts"],
+        adata.obs["total_counts"],
+        # hue="ROI",
+        s=10,  # size of points
+        alpha=0.5,  # transparency
+    )
+    plt.xlabel("Number of genes detected per cell")
+    plt.ylabel("Total transcripts per cell")
+    plt.title("QC: Genes vs Total Counts per Cell")
+    plt.grid(False)
+    plt.savefig(module_dir / "qc_genes_vs_total_counts_post_filter.png", dpi=300)
+    plt.close()
 
     # Normalize data
     logger.info(f"Normalize data using {norm_approach}...")

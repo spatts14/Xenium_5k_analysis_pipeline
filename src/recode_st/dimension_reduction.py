@@ -24,6 +24,9 @@ def run_dimension_reduction(
     n_neighbors = config.n_neighbors
     resolution = config.resolution
     cluster_name = config.cluster_name
+    norm_approach = (
+        config.norm_approach if hasattr(config, "norm_approach") else "cell_area"
+    )
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -33,7 +36,9 @@ def run_dimension_reduction(
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "1_quality_control" / "adata.h5ad")
+    adata = sc.read_h5ad(
+        io_config.output_dir / "1_quality_control" / f"adata_{norm_approach}.h5ad"
+    )
 
     # Highly variable genes
     logger.info("Selecting highly variable genes...")

@@ -28,6 +28,7 @@ def run_dimension_reduction(
     resolution = config.resolution
     cluster_name = config.cluster_name
     norm_approach = config.norm_approach
+    subsample_data = config.subsample_data
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -62,58 +63,68 @@ def run_dimension_reduction(
     )
     logger.info(f"PCA Variance plot saved to {sc.settings.figdir}")
 
-    logger.info("Subsample data for dev...")
-    print(f"Original size: {len(adata)} cells")
+    if subsample_data is True:
+        logger.info("Subsample data for dev...")
+        orig_size = len(adata)
+        logger.info(f"Original size: {orig_size} cells")
 
-    # Set your target size
-    n_total = 10000  # total cells you want in your dev set
+        # Set your target size
+        n_total = 10000  # total cells you want in your dev set
 
-    # Compute PCA if not already present
-    if "X_pca" not in adata.obsm:
-        print("PCA not computed. Computing PCA...")
-        sc.pp.pca(adata, n_comps=50)  # adjust n_comps as needed
+        # Compute PCA if not already present
+        if "X_pca" not in adata.obsm:
+            logger.info("PCA not computed. Computing PCA...")
+            sc.pp.pca(adata, n_comps=50)  # adjust n_comps as needed
 
-    # Calculate proportional samples per ROI
-    roi_counts = adata.obs["ROI"].value_counts()
-    sampled_indices = []
+        # Calculate proportional samples per ROI
+        roi_counts = adata.obs["ROI"].value_counts()
+        sampled_indices = []
 
-    print(f"Sketching {n_total} cells across {len(roi_counts)} ROIs...")
+        logger.info(f"Sketching {n_total} cells across {len(roi_counts)} ROIs...")
 
-    for roi in adata.obs["ROI"].unique():
-        roi_mask = adata.obs["ROI"] == roi
-        roi_data = adata[roi_mask]
+        for roi in adata.obs["ROI"].unique():
+            roi_mask = adata.obs["ROI"] == roi
+            roi_data = adata[roi_mask]
 
-        # Proportional to original ROI size
-        n_roi_sketch = int(n_total * (roi_counts[roi] / len(adata)))
-        n_roi_sketch = max(50, n_roi_sketch)  # ensure minimum samples per ROI
-        n_roi_sketch = min(n_roi_sketch, len(roi_data))  # don't exceed available cells
+            # Proportional to original ROI size
+            n_roi_sketch = int(n_total * (roi_counts[roi] / len(adata)))
+            n_roi_sketch = max(50, n_roi_sketch)  # ensure minimum samples per ROI
+            n_roi_sketch = min(
+                n_roi_sketch, len(roi_data)
+            )  # don't exceed available cells
 
-        print(f"  ROI {roi}: sketching {n_roi_sketch} from {len(roi_data)} cells")
-
-        # Geometric sketch within this ROI
-        if n_roi_sketch >= len(roi_data):
-            # Take all cells if sketch size >= available cells
-            roi_sketch_local = np.arange(len(roi_data))
-        else:
-            # Use PCA representation (already dense)
-            roi_sketch_local = geosketch.gs(
-                roi_data.obsm["X_pca"], n_roi_sketch, replace=False
+            logger.info(
+                f"  ROI {roi}: sketching {n_roi_sketch} from {len(roi_data)} cells"
             )
 
-        # Convert local indices to global indices
-        global_indices = np.where(roi_mask)[0][roi_sketch_local]
-        sampled_indices.extend(global_indices)
+            # Geometric sketch within this ROI
+            if n_roi_sketch >= len(roi_data):
+                # Take all cells if sketch size >= available cells
+                roi_sketch_local = np.arange(len(roi_data))
+            else:
+                # Use PCA representation (already dense)
+                roi_sketch_local = geosketch.gs(
+                    roi_data.obsm["X_pca"], n_roi_sketch, replace=False
+                )
 
-    adata = adata[
-        sampled_indices, :
-    ].copy()  # replace adata with the subsampled version for dev
+            # Convert local indices to global indices
+            global_indices = np.where(roi_mask)[0][roi_sketch_local]
+            sampled_indices.extend(global_indices)
 
-    # Verify distribution
-    print("\n Sketching Results")
-    print(f"Sketched size: {len(adata)} cells")
-    print(f"Reduction: {100 * (1 - len(adata) / len(adata)):.1f}%")
-    print("\nCells per ROI:")
-    print(adata.obs["ROI"].value_counts().sort_index())
+        adata = adata[
+            sampled_indices, :
+        ].copy()  # replace adata with the subsampled version for dev
+
+        adata.write_h5ad(module_dir / f"adata_sketch_{norm_approach}.h5ad")
+
+        # Verify distribution
+        logger.info("\n Sketching Results")
+        logger.info(f"Sketched size: {len(adata)} cells")
+        logger.info(f"Reduction: {100 * (1 - len(adata) / orig_size):.1f}%")
+        logger.info("\nCells per ROI:")
+        logger.info(adata.obs["ROI"].value_counts().sort_index())
+    else:
+        logger.info("Skipping sub-sampling data for dev...")
 
     logger.info("Compute neighbors...")
     sc.pp.neighbors(
@@ -160,7 +171,7 @@ def run_dimension_reduction(
         ],
         wspace=0.4,
         show=False,
-        save=f"_{config.module_name}_cell_markers.png",  # save figure
+        save=f"_{config.module_name}_cell_markers_{norm_approach}.png",  # save figure
         frameon=False,
     )
     logger.info(f"UMAP plot saved to {sc.settings.figdir}")

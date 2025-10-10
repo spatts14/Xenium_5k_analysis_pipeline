@@ -8,7 +8,10 @@ import pandas as pd
 base_dir = Path(
     "/Volumes/sep22/home/wet_lab/_Experiments/009_ST_Xenium/data/xenium/run_1/20251001__141239__SP25164_SARA_PATTI_RUN_1"
 )
-output_dir = Path("/Volumes/sep22/home/wet_lab/_Experiments/009_ST_Xenium/out/data")
+output_dir = Path(
+    "/Volumes/sep22/home/wet_lab/_Experiments/009_ST_Xenium/out/data/summary_metrics"
+)
+output_dir.mkdir(parents=True, exist_ok=True)
 
 # List to store dataframes
 dfs = []
@@ -36,10 +39,12 @@ if dfs:
     # Concatenate by shared columns (intersection of all columns)
     combined_df = pd.concat(dfs, axis=0, ignore_index=True, join="inner")
 
-    # Extract cohort from region_name
+    # Extract Condition from region_name
     if "region_name" in combined_df.columns:
-        combined_df["cohort"] = combined_df["region_name"].str.split("_").str[0]
-        print(f"\n Cohort column added: {combined_df['cohort'].unique().tolist()}")
+        combined_df["Condition"] = combined_df["region_name"].str.split("_").str[0]
+        print(
+            f"\n Condition column added: {combined_df['Condition'].unique().tolist()}"
+        )
     else:
         print("\nWarning: 'region_name' column not found")
 

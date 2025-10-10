@@ -3,6 +3,8 @@
 import warnings
 from logging import getLogger
 
+import geosketch
+import numpy as np
 import scanpy as sc
 import squidpy as sq
 
@@ -39,6 +41,41 @@ def run_dimension_reduction(
     adata = sc.read_h5ad(
         io_config.output_dir / "1_quality_control" / f"adata_{norm_approach}.h5ad"
     )
+
+    # Set your target size
+    n_total = 5000  # total cells you want in your dev set
+
+    # Calculate proportional samples per ROI
+    roi_counts = adata.obs["ROI"].value_counts()
+    sampled_indices = []
+
+    for roi in adata.obs["ROI"].unique():
+        roi_mask = adata.obs["ROI"] == roi
+        roi_data = adata[roi_mask]
+
+        # Proportional to original ROI size
+        n_roi_sketch = int(n_total * (roi_counts[roi] / len(adata)))
+        n_roi_sketch = max(50, n_roi_sketch)  # ensure minimum samples per ROI
+        n_roi_sketch = min(n_roi_sketch, len(roi_data))  # don't exceed available cells
+
+        # Geometric sketch within this ROI
+        if n_roi_sketch >= len(roi_data):
+            # Take all cells if sketch size >= available cells
+            roi_sketch_local = np.arange(len(roi_data))
+        else:
+            roi_sketch_local = geosketch.gs(roi_data.X, n_roi_sketch, replace=False)
+
+        # Convert local indices to global indices
+        global_indices = np.where(roi_mask)[0][roi_sketch_local]
+        sampled_indices.extend(global_indices)
+
+    adata = adata[
+        sampled_indices, :
+    ].copy()  # replace adata with the subsampled version for dev
+
+    # Verify distribution
+    print(adata.obs["ROI"].value_counts().sort_index())
+    print(f"Total cells: {len(adata)}")
 
     # Highly variable genes
     logger.info("Selecting highly variable genes...")

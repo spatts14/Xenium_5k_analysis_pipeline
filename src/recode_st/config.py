@@ -40,6 +40,8 @@ class QualityControlModuleConfig(BaseModuleConfig):
 class DimensionReductionModuleConfig(BaseModuleConfig):
     """Configuration for the Quality Control module."""
 
+    subsample_data: bool = False
+    """Whether to subsample the data for development purposes."""
     n_comps: int
     """number of principal components to compute"""
     n_neighbors: int
@@ -48,6 +50,10 @@ class DimensionReductionModuleConfig(BaseModuleConfig):
     """resolution for leiden clustering"""
     cluster_name: str
     """Name of the cluster column in adata.obs."""
+    norm_approach: Literal["scanpy_log", "sctransform", "cell_area", "none"] = (
+        "cell_area"
+    )
+    """Normalization approach to use."""
 
 
 class AnnotateModuleConfig(BaseModuleConfig):

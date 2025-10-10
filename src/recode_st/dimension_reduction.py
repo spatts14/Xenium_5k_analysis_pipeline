@@ -7,7 +7,6 @@ import scanpy as sc
 import squidpy as sq
 
 from recode_st.config import DimensionReductionModuleConfig, IOConfig
-from recode_st.helper_function import seed_everything
 from recode_st.logging_config import configure_logging
 
 warnings.filterwarnings("ignore")
@@ -34,22 +33,34 @@ def run_dimension_reduction(
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "1_qc" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "1_quality_control" / "adata.h5ad")
+
+    # Highly variable genes
+    logger.info("Selecting highly variable genes...")
+    sc.pp.highly_variable_genes(
+        adata,
+        n_top_genes=2000,  # select top highly variable genes
+        # batch_key='run'
+    )
 
     # Perform dimension reduction analysis
     logger.info("Compute PCA...")
-    sc.pp.pca(adata, n_comps=n_comps)  # compute principal components
+    sc.pp.pca(adata, n_comps=50)  # Number of PC calculated compute principal components
     sc.pl.pca_variance_ratio(
         adata,
         log=True,
-        n_pcs=50,
+        n_pcs=50,  # Number of PCs shown in the plot
         show=False,
         save=f"_{config.module_name}.png",
     )
     logger.info(f"PCA Variance plot saved to {sc.settings.figdir}")
 
     logger.info("Compute neighbors...")
-    sc.pp.neighbors(adata, n_neighbors=n_neighbors)  # compute a neighborhood graph
+    sc.pp.neighbors(
+        adata,
+        n_neighbors=n_neighbors,  # compute a neighborhood graph
+        n_pcs=n_comps,  # For 5K panel, 30-50 PCs is typical
+    )
 
     logger.info("Create UMAPs and cluster cells..")
     sc.tl.umap(adata)  # calculate umap
@@ -57,7 +68,7 @@ def run_dimension_reduction(
         adata,
         resolution=resolution,  # choose resolution for clustering
         key_added=cluster_name,
-    )  # name leiden clusters
+    )  # name clusters
 
     # plot UMAP
     logger.info("Plotting UMAPs...")
@@ -77,14 +88,16 @@ def run_dimension_reduction(
 
     # plot visualization of leiden clusters
     logger.info(f"Plotting {cluster_name} clusters...")
-    sq.pl.spatial_scatter(
-        adata,
-        library_id="spatial",
-        shape=None,
-        color=[cluster_name],
-        wspace=0.4,
-        save=module_dir / f"{cluster_name}_spatial.png",
-    )
+    for roi in adata.obs["ROI"].unique():
+        subset = adata[adata.obs["ROI"] == roi]
+        sq.pl.spatial_scatter(
+            subset,
+            library_id="spatial",
+            shape=None,
+            color=[cluster_name],
+            wspace=0.4,
+            save=module_dir / f"{cluster_name}_{roi}_spatial.png",
+        )
     logger.info(f"{cluster_name} spatial scatter plot saved to {module_dir}")
 
     # Save anndata object
@@ -98,7 +111,7 @@ if __name__ == "__main__":
     logger = getLogger("recode_st.2_dimension_reduction")
 
     # Set seed
-    seed_everything(21122023)
+    # seed_everything(21122023)
 
     try:
         run_dimension_reduction(

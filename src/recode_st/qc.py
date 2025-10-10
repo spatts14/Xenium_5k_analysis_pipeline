@@ -134,8 +134,8 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
 
     # Save data
     logger.info("Saving filtered and normalized data...")
-    adata.write_h5ad(module_dir / "adata.h5ad")
-    logger.info(f"Data saved to {module_dir / 'adata.h5ad'}")
+    adata.write_h5ad(module_dir / f"adata_{norm_approach}.h5ad")
+    logger.info(f"Data saved to {module_dir / f'adata_{norm_approach}.h5ad'}")
     logger.info("Quality control completed successfully.")
 
 

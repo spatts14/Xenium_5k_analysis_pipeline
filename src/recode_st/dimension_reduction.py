@@ -55,7 +55,7 @@ def subsampled_data(
     logger = logging.getLogger(__name__)
     sketch_path = module_dir / f"adata_sketch_{norm_approach}.h5ad"
 
-    if subsample_data:
+    if subsample_data is True:
         logger.info("Subsampling data for dev...")
         orig_size = len(adata)
         logger.info(f"Original size: {orig_size} cells")
@@ -142,29 +142,29 @@ def run_dimension_reduction(
     # logger.info("Selecting highly variable genes...")
     # sc.pp.highly_variable_genes(
     #     adata,
-    #     n_top_genes=2000,  # select top highly variable genes
+    #     n_top_genes=3000,  # select top highly variable genes
     #     # batch_key='run'
     # )
 
-    # # Perform dimension reduction analysis
-    # logger.info("Compute PCA...")
-    # sc.pp.pca(adata, n_comps=50)
-    # sc.pl.pca_variance_ratio(
-    #     adata,
-    #     log=True,
-    #     n_pcs=50,  # Number of PCs shown in the plot
-    #     show=False,
-    #     save=f"_{config.module_name}.png",
-    # )
-    # logger.info(f"PCA Variance plot saved to {sc.settings.figdir}")
-
-    adata = subsampled_data(
-        adata=adata,
-        subsample_data=False,  # or False if youve already run it once
-        module_dir=module_dir,
-        norm_approach="cell_area",
-        n_total=10000,
+    # Perform dimension reduction analysis
+    logger.info("Compute PCA...")
+    sc.pp.pca(adata, n_comps=50)
+    sc.pl.pca_variance_ratio(
+        adata,
+        log=True,
+        n_pcs=50,  # Number of PCs shown in the plot
+        show=False,
+        save=f"_{config.module_name}.png",
     )
+    logger.info(f"PCA Variance plot saved to {sc.settings.figdir}")
+
+    # adata = subsampled_data(
+    #     adata=adata,
+    #     subsample_data=False,  # or False if youve already run it once
+    #     module_dir=module_dir,
+    #     norm_approach="cell_area",
+    #     n_total=10000,
+    # )
 
     logger.info("Compute neighbors...")
     sc.pp.neighbors(

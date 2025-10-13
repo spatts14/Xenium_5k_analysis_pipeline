@@ -83,8 +83,15 @@ def convert_all_xenium(io_config: IOConfig):
                     # Extract AnnData and add labels
                     try:
                         adata = sdata.tables["table"]
-                        adata.obs["ROI"] = roi_name
-                        adata.obs["batch"] = run_name
+                        adata.obs["ROI"] = roi_name  # add ROI name
+                        adata.obs["batch"] = run_name  # add run/date name
+                        adata.obs[
+                            "condition"
+                        ] = (  # Add condition "IPF", "COPD", "PM08", "Unknown"
+                            roi_name.split("_")[0]
+                            if roi_name.split("_")[0] in ["IPF", "COPD", "PM08"]
+                            else "Unknown"
+                        )
                         all_adatas.append(adata)
                     except KeyError:
                         logger.warning(

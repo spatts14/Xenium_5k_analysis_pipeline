@@ -197,22 +197,6 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         sc.pp.normalize_total(adata, inplace=True)  # normalize data
         sc.pp.log1p(adata)  # Log transform data
         logger.info(adata.X.shape)
-        # After log normalization, before scaling
-
-        #! Calculate how values are distributed
-        scaled_test = (adata.X - np.mean(adata.X, axis=0)) / np.std(adata.X, axis=0)
-        print(f"99th percentile: {np.percentile(np.abs(scaled_test), 99)}")
-        print(f"99.9th percentile: {np.percentile(np.abs(scaled_test), 99.9)}")
-
-        #! Visualize
-        plt.hist(scaled_test.flatten(), bins=100)
-        plt.xlabel("Scaled expression values")
-        plt.ylabel("Frequency")
-        plt.title("Distribution of scaled expression values (pre-scaling)")
-        plt.grid(False)
-        plt.savefig(module_dir / "distribution_pre_scaling.png", dpi=300)
-        plt.close()
-
         sc.pp.scale(adata, max_value=10)  # Scale data; how do I choose max_value?
     elif norm_approach == "sctransform":
         # scTransform approach

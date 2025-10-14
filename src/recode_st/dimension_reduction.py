@@ -11,8 +11,6 @@ import scanpy as sc
 import squidpy as sq
 
 from recode_st.config import DimensionReductionModuleConfig, IOConfig
-from recode_st.helper_function import seed_everything
-from recode_st.logging_config import configure_logging
 
 warnings.filterwarnings("ignore")
 
@@ -224,22 +222,3 @@ def run_dimension_reduction(
     # Save anndata object
     adata.write_h5ad(module_dir / "adata.h5ad")
     logger.info(f"Data saved to {module_dir / 'adata.h5ad'}")
-
-
-if __name__ == "__main__":
-    # Set up logger
-    configure_logging()
-    logger = getLogger("recode_st.2_dimension_reduction")
-
-    # Set seed
-    seed_everything(
-        19960915
-    )  #! This is not working, I change the see in config_dev.toml but it stays the same
-
-    try:
-        run_dimension_reduction(
-            DimensionReductionModuleConfig(module_name="2_dimension_reduction"),
-            IOConfig(),
-        )
-    except FileNotFoundError as err:
-        logger.error(f"File not found: {err}")

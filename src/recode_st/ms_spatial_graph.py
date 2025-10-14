@@ -7,8 +7,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from recode_st.config import IOConfig, MuspanSpatialGraphModuleConfig
-from recode_st.helper_function import seed_everything
-from recode_st.logging_config import configure_logging
 
 warnings.filterwarnings("ignore")
 
@@ -406,31 +404,3 @@ def plot_proximity_networks(domain, module_dir, color_map, distance_list):
     plt.tight_layout()
     plt.savefig(module_dir / "muspan_proximity_point.png")
     logger.info("Proximity networks (point-like objects) plotted and saved")
-
-
-if __name__ == "__main__":
-    # Set up logger
-    configure_logging()
-    logger = getLogger("recode_st.ms_spatial_graph")
-
-    # Set seed
-    seed_everything(21122023)
-
-    try:
-        run_muspan_graph(
-            MuspanSpatialGraphModuleConfig(
-                module_name="6_muspan",
-                muspan_object="muspan_object.muspan",
-                min_edge_distance=0,
-                max_edge_distance=45,
-                distance_list=(10, 20, 50),
-                min_edge_distance_shape=0,
-                max_edge_distance_shape=1,
-                k_list=(2, 5, 10, 15),
-            ),
-            IOConfig(),
-        )
-    except FileNotFoundError as err:
-        logger.error(f"File not found: {err}")
-    except ModuleNotFoundError as err:
-        logger.error(f"Module not found: {err}")

@@ -8,7 +8,6 @@ import anndata as ad
 from spatialdata_io import xenium
 
 from recode_st.config import IOConfig
-from recode_st.logging_config import configure_logging
 
 warnings.filterwarnings("ignore")
 
@@ -112,9 +111,3 @@ def run_format(io_config: IOConfig):
     """Run the formatting module across multiple ROIs."""
     convert_all_xenium(io_config)
     logger.info("Finished formatting all ROIs.")
-
-
-if __name__ == "__main__":
-    configure_logging()
-    logger = getLogger("recode_st.0_format")
-    run_format(IOConfig())

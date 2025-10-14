@@ -129,7 +129,12 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     n_cells_before = adata.n_obs
     n_genes_before = adata.n_vars
 
-    # Apply filters
+    # Apply filters to remove low-quality cells and genes
+    # Filter cells with very low transcript counts (e.g., < 10-20 transcripts)
+    # These are likely segmentation artifacts
+    logger.info(
+        f"Removing cells with < {min_counts} counts and genes in < {min_cells} cells"
+    )
     sc.pp.filter_cells(adata, min_counts=min_counts)
     sc.pp.filter_genes(adata, min_cells=min_cells)
 
@@ -144,7 +149,8 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     print(f"Cells removed: {cells_removed} ({cells_removed / n_cells_before:.1%})")
     print(f"Genes removed: {genes_removed} ({genes_removed / n_genes_before:.1%})")
 
-    # Filter cells by cell area
+    # Remove cells that are too small (< 20-50 μm²) or too large (> 500-1000 μm²)
+    # These often represent segmentation errors or debris
     logger.info(f"Filtering cells with area outside {min_cell_area}-{max_cell_area}")
     adata = adata[
         (adata.obs["cell_area"] >= min_cell_area)
@@ -152,7 +158,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         :,
     ].copy()
 
-    # Number of cells and genes after filtering
+    # Number of cells and genes after area filtering
     n_cells_after_area = adata.n_obs
     n_genes_after_area = adata.n_vars
 
@@ -180,6 +186,8 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     plt.savefig(module_dir / "qc_genes_vs_total_counts_post_filter.png", dpi=300)
     plt.close()
 
+    logger.info(f"adata shape after area filtering: {adata.shape}")
+
     # Normalize data
     logger.info(f"Normalize data using {norm_approach}...")
     adata.layers["counts"] = adata.X.copy()  # make copy of raw data
@@ -188,12 +196,32 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         # scRNAseq approach
         sc.pp.normalize_total(adata, inplace=True)  # normalize data
         sc.pp.log1p(adata)  # Log transform data
-    elif norm_approach == "sctransform":  # ? Should I be log transforming after this?
+        logger.info(adata.X.shape)
+        # After log normalization, before scaling
+
+        #! Calculate how values are distributed
+        scaled_test = (adata.X - np.mean(adata.X, axis=0)) / np.std(adata.X, axis=0)
+        print(f"99th percentile: {np.percentile(np.abs(scaled_test), 99)}")
+        print(f"99.9th percentile: {np.percentile(np.abs(scaled_test), 99.9)}")
+
+        #! Visualize
+        plt.hist(scaled_test.flatten(), bins=100)
+        plt.xlabel("Scaled expression values")
+        plt.ylabel("Frequency")
+        plt.title("Distribution of scaled expression values (pre-scaling)")
+        plt.grid(False)
+        plt.savefig(module_dir / "distribution_pre_scaling.png", dpi=300)
+        plt.close()
+
+        sc.pp.scale(adata, max_value=10)  # Scale data; how do I choose max_value?
+    elif norm_approach == "sctransform":
         # scTransform approach
         vst_out = scTransform.vst(
             adata.X, gene_names=adata.var_names, cell_names=adata.obs_names
         )
         adata.X = vst_out["y"]  # Use Pearson residuals as normalized expression
+        # DO NOT add log transformation - already variance-stabilized
+        # DO NOT add scaling - already scaled
     elif norm_approach == "cell_area":
         # Check if cell area is available
         if "cell_area" in adata.obs.columns:
@@ -207,8 +235,9 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
                 # Dense case
                 adata.X = adata.X * cell_area_inv[:, None]
 
-            # Log transform
-            sc.pp.log1p(adata)
+            # Log transform and scale after area normalization
+            sc.pp.log1p(adata)  # Log transform
+            sc.pp.scale(adata, max_value=10)  # Scale data; how do I choose max_value?
         else:
             logger.warning(
                 "Cell area not found in adata.obs; skipping normalization by cell area"

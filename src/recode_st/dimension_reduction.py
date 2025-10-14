@@ -42,15 +42,6 @@ def run_dimension_reduction(
         io_config.output_dir / "1_quality_control" / f"adata_{norm_approach}.h5ad"
     )
 
-    #! Not sure if I need this
-    # # Highly variable genes
-    # logger.info("Selecting highly variable genes...")
-    # sc.pp.highly_variable_genes(
-    #     adata,
-    #     n_top_genes=2000,  # select top highly variable genes
-    #     # batch_key='run'
-    # )
-
     # Perform dimension reduction analysis
     logger.info("Compute PCA...")
     sc.pp.pca(adata, n_comps=50)  # Number of PC calculated compute principal components

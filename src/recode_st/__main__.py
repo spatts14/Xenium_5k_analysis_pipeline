@@ -16,10 +16,10 @@ def main(config: Config):
 
     configure_logging(config.io.logging_dir, config.log_level)
 
+    logger.info("Starting recode_st pipeline...")
+
     logger.info("Seeding everything...")
     seed_everything(config.seed)
-
-    logger.info("Starting recode_st pipeline...")
 
     if config.modules.format_data:
         from recode_st.format_data import run_format

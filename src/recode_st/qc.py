@@ -12,8 +12,6 @@ import seaborn as sns
 from zarr.errors import PathNotFoundError
 
 from recode_st.config import IOConfig, QualityControlModuleConfig
-from recode_st.helper_function import seed_everything
-from recode_st.logging_config import configure_logging
 
 warnings.filterwarnings("ignore")
 
@@ -287,21 +285,3 @@ def plot_metrics(module_dir, adata):
     plt.savefig(output_path, dpi=300)
     plt.close()
     logger.info(f"Saved plots to {output_path}")
-
-
-if __name__ == "__main__":
-    # Set up logger
-    configure_logging()
-    logger = getLogger("recode_st.1_qc")
-
-    # Set seed for reproducibility
-    seed_everything(21122023)
-
-    run_qc(
-        QualityControlModuleConfig(
-            module_name="1_quality_control",
-            min_counts=10,
-            min_cells=5,
-        ),
-        IOConfig(),
-    )

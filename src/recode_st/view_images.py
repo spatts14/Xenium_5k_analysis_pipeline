@@ -8,8 +8,6 @@ import scanpy as sc
 import squidpy as sq
 
 from recode_st.config import IOConfig, ViewImagesModuleConfig
-from recode_st.helper_function import seed_everything
-from recode_st.logging_config import configure_logging
 
 warnings.filterwarnings("ignore")
 
@@ -60,23 +58,3 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
     adata.write_h5ad(module_dir / "adata.h5ad")
     logger.info(f"Data saved to {module_dir / 'adata.h5ad'}")
     logger.info("Imaging module completed successfully.")
-
-
-if __name__ == "__main__":
-    # Set up logger
-    configure_logging()
-    logger = getLogger("recode_st.4_view_images")
-
-    # Set seed
-    seed_everything(21122023)
-
-    try:
-        run_view_images(
-            ViewImagesModuleConfig(
-                module_name="4_view_images",
-                gene_list=("EPCAM", "CD3D", "CD68", "PTPRC", "ACTA2"),
-            ),
-            IOConfig(),
-        )
-    except FileNotFoundError as err:
-        logger.error(f"File not found: {err}")

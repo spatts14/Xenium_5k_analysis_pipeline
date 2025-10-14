@@ -7,8 +7,6 @@ import scanpy as sc
 import squidpy as sq
 
 from recode_st.config import IOConfig, SpatialStatisticsModuleConfig
-from recode_st.helper_function import seed_everything
-from recode_st.logging_config import configure_logging
 
 warnings.filterwarnings("ignore")
 
@@ -104,19 +102,3 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
     adata.write_h5ad(module_dir / "adata.h5ad")
     logger.info(f"Data saved to {module_dir / 'adata.h5ad'}")
     logger.info("Spatial statistics module completed successfully.")
-
-
-if __name__ == "__main__":
-    # Set up logger
-    configure_logging()
-    logger = getLogger("recode_st.5_spatial_statistics")
-
-    # Set seed
-    seed_everything(21122023)
-
-    try:
-        run_spatial_statistics(
-            SpatialStatisticsModuleConfig(module_name="5_spatial_stats"), IOConfig()
-        )
-    except FileNotFoundError as err:
-        logger.error(f"File not found: {err}")

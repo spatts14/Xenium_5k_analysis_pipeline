@@ -8,8 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from recode_st.config import IOConfig, MuspanSpatialStatModuleConfig
-from recode_st.helper_function import seed_everything
-from recode_st.logging_config import configure_logging
 
 warnings.filterwarnings("ignore")
 
@@ -172,22 +170,3 @@ def run_muspan_stats(config: MuspanSpatialStatModuleConfig, io_config: IOConfig)
         cluster_labels=cluster_labels,
         unique_clusters=unique_clusters,
     )
-
-
-if __name__ == "__main__":
-    configure_logging()
-    logger = getLogger("recode_st.ms_spatial_stat")
-
-    seed_everything(21122023)
-
-    try:
-        run_muspan_stats(
-            MuspanSpatialStatModuleConfig(
-                module_name="6_muspan",
-                muspan_object="muspan_object.muspan",
-                cluster_labels="cell_type",
-            ),
-            IOConfig(),
-        )
-    except FileNotFoundError as err:
-        logger.error(f"File not found: {err}")

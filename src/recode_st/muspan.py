@@ -7,8 +7,6 @@ import matplotlib.pyplot as plt
 import scanpy as sc
 
 from recode_st.config import IOConfig, MuspanModuleConfig
-from recode_st.helper_function import seed_everything
-from recode_st.logging_config import configure_logging
 
 warnings.filterwarnings("ignore")
 
@@ -238,17 +236,3 @@ def map_cell_types_to_domain(adata, domain, adata_cell_id, cluster_labels):
 
     # Return muspan domain with cell types mapped
     return domain
-
-
-if __name__ == "__main__":
-    # Set up logger
-    configure_logging()
-    logger = getLogger("recode_st.6_muspan")  # re-name the logger to match the module
-
-    # Set seed
-    seed_everything(21122023)
-
-    try:
-        run_muspan(MuspanModuleConfig(module_name="6_muspan"), IOConfig())
-    except FileNotFoundError as err:
-        logger.error(f"File not found: {err}")

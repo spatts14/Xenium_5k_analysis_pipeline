@@ -8,8 +8,6 @@ import pandas as pd
 import scanpy as sc
 
 from recode_st.config import AnnotateModuleConfig, IOConfig
-from recode_st.helper_function import seed_everything
-from recode_st.logging_config import configure_logging
 
 warnings.filterwarnings("ignore")
 
@@ -134,17 +132,3 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     adata.write_h5ad(module_dir / "adata.h5ad")
     logger.info(f"Data saved to {module_dir / 'adata.h5ad'}")
     logger.info("Annotation module completed successfully.")
-
-
-if __name__ == "__main__":
-    # Set up logger
-    configure_logging()
-    logger = getLogger("recode_st.3_annotate")  # re-name the logger to match the module
-
-    # Set seed
-    seed_everything(21122023)
-
-    try:
-        run_annotate(AnnotateModuleConfig(module_name="3_annotate"), IOConfig())
-    except FileNotFoundError as err:
-        logger.error(f"File not found: {err}")

@@ -14,8 +14,21 @@ class BaseModuleConfig(BaseModel):
     """The name of the module."""
 
 
+class SubsampleModuleConfig(BaseModuleConfig):
+    """Configuration for the Subsample module."""
+
+    n_cells: int
+    """Total number of cells to include in the subsampled dataset."""
+
+    replace: bool = False
+    """Whether to sample with replacement."""
+
+
 class QualityControlModuleConfig(BaseModuleConfig):
     """Configuration for the Quality Control module."""
+
+    subsample_data: bool = False
+    """Whether to subsample the data for development purposes."""
 
     min_counts: int
     """Minimum number of counts required for a cell to pass filtering."""
@@ -35,16 +48,6 @@ class QualityControlModuleConfig(BaseModuleConfig):
     """Normalization approach to use: 'scanpy_log' for Scanpy log normalization,
     'sctransform' for SCTransform normalization, or
     'cell_area' for normalization by cell area."""
-
-
-class SubsampleModuleConfig(BaseModuleConfig):
-    """Configuration for the Subsample module."""
-
-    n_cells: int
-    """Total number of cells to include in the subsampled dataset."""
-
-    replace: bool = False
-    """Whether to sample with replacement."""
 
 
 class DimensionReductionModuleConfig(BaseModuleConfig):
@@ -215,7 +218,7 @@ class IOConfig(BaseModel):
 
         # Output paths
         self.output_dir = self.base_dir / self.output_dir
-        self.output_data_dir = self.output_dir / self.output_data_dir
+        self.output_data_dir = self.data_dir / self.output_data_dir
         self.zarr_dir = self.output_data_dir / self.zarr_dir
         self.adata_dir = self.output_data_dir / self.adata_dir
         self.logging_dir = self.output_dir / self.logging_dir

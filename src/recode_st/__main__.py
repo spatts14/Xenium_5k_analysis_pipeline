@@ -27,6 +27,12 @@ def main(config: Config):
         logger.info("Running Module 0 - Format")
         run_format(config.io)
 
+    if config.modules.subsample_data:
+        from recode_st.subsample_data import run_subsampled_data
+
+        logger.info("Running Optional Module - Subsample data")
+        run_subsampled_data(config.modules.subsample_data, config.io)
+
     if config.modules.quality_control:
         from recode_st.qc import run_qc
 

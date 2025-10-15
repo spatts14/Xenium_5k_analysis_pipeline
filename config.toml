@@ -14,6 +14,9 @@ adata_dir = "adata"                                                 # Directory 
 area_path = "selected_cells_stats.csv"                              # Path to the CSV file containing selected cells statistics (relative to data_dir)
 logging_path = "logs"                                               # Directory where logs will be saved (relative to output_dir)
 
+[modules.subsample_data]
+module_name = "subsample_data" # Name of the module - will be used in
+
 [modules.quality_control]
 module_name = "1_quality_control" # Name of the module - will be used in the output directory name
 min_counts = 10                   # Minimum number of counts required for a cell to pass filtering

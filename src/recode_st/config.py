@@ -37,6 +37,17 @@ class QualityControlModuleConfig(BaseModuleConfig):
     'cell_area' for normalization by cell area."""
 
 
+class SubsampleModuleConfig(BaseModuleConfig):
+    """Configuration for the Subsample module."""
+
+    subsample_data: bool = False
+    """Whether to subsample the data for development purposes."""
+    norm_approach: Literal["scanpy_log", "sctransform", "cell_area", "none"] = (
+        "cell_area"
+    )
+    """Normalization approach to use."""
+
+
 class DimensionReductionModuleConfig(BaseModuleConfig):
     """Configuration for the Quality Control module."""
 
@@ -136,6 +147,9 @@ class ModulesConfig(BaseModel):
 
     format_data: FormatDataModuleConfig | None = None
     """Configuration for the Format Data module."""
+
+    subsample_data: SubsampleModuleConfig | None = None
+    """Configuration for the Subsample module."""
 
     quality_control: QualityControlModuleConfig | None = None
     """Configuration for the Quality Control module."""

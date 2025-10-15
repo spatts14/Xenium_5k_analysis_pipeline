@@ -32,7 +32,7 @@ def run_subsampled_data(
     # Import data
     try:
         logger.info("Loading Xenium data...")
-        combined_path = io_config.adata_dir / "combined_adata.h5ad"
+        combined_path = io_config.adata_dir / "all_samples.h5ad"
 
         # Read the file normally - we need the data in memory for QC calculations
         adata = sc.read_h5ad(combined_path)

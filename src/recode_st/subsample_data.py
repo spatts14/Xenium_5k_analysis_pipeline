@@ -43,6 +43,8 @@ def run_subsampled_data(
 
     logger.info("Xenium data loaded.")
 
+    logger.info(f"Dataset contains {len(adata)} cells prior to subsetting.")
+
     logger.info("Subsampling data by ROI...")
     # Subsample data
     adata = subsample_by_roi(
@@ -53,6 +55,7 @@ def run_subsampled_data(
         replace=config.replace,
     )
     logger.info("Subsampling complete.")
+    logger.info(f"Subsampled dataset contains {len(adata)} cells.")
 
     # Save anndata object
     adata.write_h5ad(module_dir / "adata.h5ad")

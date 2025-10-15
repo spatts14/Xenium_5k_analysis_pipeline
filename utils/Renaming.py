@@ -221,10 +221,10 @@ def main(argv=None):
     args = p.parse_args(argv)
 
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, format='%(levelname)s: %(message)s')
-
+    logging.info('Starting Renaming.py')
     for subdir_name in os.listdir(os.path.abspath(args.data_dir)):
         subdir = os.path.join(os.path.abspath(args.data_dir), subdir_name)
-        
+
         data_dir = Path(os.path.abspath(subdir))
         if not data_dir.exists():
             logging.error('Data directory does not exist: %s', data_dir)
@@ -337,7 +337,7 @@ def main(argv=None):
                 logging.exception('Failed to write TIFF comment for %s: %s', f, exc)
 
         logging.info('Completed: %d/%d files updated', successes, len(files))
-
+        logging.info('All done.')
 
 if __name__ == '__main__':
     main()

@@ -34,8 +34,8 @@ def convert_all_xenium(io_config: IOConfig):
     output_data_dir = Path(io_config.output_data_dir)
     output_data_dir.mkdir(parents=True, exist_ok=True)
 
-    output_adata = output_data_dir / "adata"
-    output_adata.mkdir(parents=True, exist_ok=True)
+    adata_dir = Path(io_config.adata_dir)
+    adata_dir.mkdir(parents=True, exist_ok=True)
 
     all_adatas = []
 
@@ -89,7 +89,7 @@ def convert_all_xenium(io_config: IOConfig):
                         f"Added {roi_name}, {run_name}, and {condition} "
                         f"to AnnData for {roi_name}"
                     )
-                    adata.write(output_adata / f"{roi_name}.h5ad")
+                    adata.write(adata_dir / f"{roi_name}.h5ad")
                     logger.info(f"AnnData for {roi_name} saved.")
                     all_adatas.append(adata)
                 except KeyError:
@@ -98,7 +98,7 @@ def convert_all_xenium(io_config: IOConfig):
     # Concatenate all adatas
     if all_adatas:
         combined = ad.concat(all_adatas, join="outer", label="ROI", fill_value=0)
-        combined_path = output_adata / "all_samples.h5ad"
+        combined_path = adata_dir / "all_samples.h5ad"
         combined.write(combined_path)
         logger.info(f"Combined AnnData written to {combined_path}")
     else:

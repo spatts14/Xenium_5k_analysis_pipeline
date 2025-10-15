@@ -39,63 +39,61 @@ def convert_all_xenium(io_config: IOConfig):
 
     all_adatas = []
 
+    print(f"Starting conversion of Xenium data in {xenium_path}")
+
     if not xenium_path.exists():
         raise FileNotFoundError(f"Xenium root directory not found: {xenium_path}")
 
-    # Loop over run directories inside Xenium root
-    for run_dir in xenium_path.iterdir():
-        if not run_dir.is_dir() or not run_dir.name.lower().startswith("run_"):
+    # Loop over date/run folders directly inside Xenium root
+    for date_dir in xenium_path.iterdir():
+        if not date_dir.is_dir():
             continue
 
-        # Loop over date/run folders inside each run directory
-        for date_dir in run_dir.iterdir():
-            if not date_dir.is_dir():
-                continue
+        run_name = date_dir.name  # e.g. "20251001__141239__SP25164_SARA_PATTI_RUN_1"
+        logger.info(f"Processing run: {run_name}")
 
-            run_name = (
-                date_dir.name
-            )  # e.g. "20251001__141239__SP25164_SARA_PATTI_RUN_1"
-            logger.info(f"Processing run: {run_name}")
+        # Loop over ROI folders
+        for roi_folder in date_dir.iterdir():
+            if roi_folder.is_dir() and roi_folder.name.startswith("output-"):
+                roi_name = extract_roi_name(roi_folder.name)
+                logger.info(f"Processing ROI: {roi_name}")
 
-            # Loop over ROI folders
-            for roi_folder in date_dir.iterdir():
-                if roi_folder.is_dir() and roi_folder.name.startswith("output-"):
-                    roi_name = extract_roi_name(roi_folder.name)
-                    logger.info(f"Processing ROI: {roi_name}")
+                try:
+                    sdata = xenium(roi_folder)
+                    logger.info(f"Loaded Xenium data for {roi_name}")
+                except Exception as err:
+                    logger.error(f"Failed loading Xenium data for {roi_name}: {err}")
+                    continue
 
-                    try:
-                        sdata = xenium(roi_folder)
-                    except Exception as err:
-                        logger.error(
-                            f"Failed loading Xenium data for {roi_name}: {err}"
-                        )
-                        continue
+                # Save Zarr per ROI
+                roi_zarr_path = zarr_root / f"{roi_name}.zarr"
+                try:
+                    sdata.write(roi_zarr_path, overwrite=True)
+                    logger.info(f"Zarr for {roi_name} saved to {roi_zarr_path}")
+                except Exception as err:
+                    logger.error(f"Failed writing Zarr for {roi_name}: {err}")
+                    continue
 
-                    # Save Zarr per ROI
-                    roi_zarr_path = zarr_root / f"{roi_name}.zarr"
-                    try:
-                        sdata.write(roi_zarr_path, overwrite=True)
-                    except Exception as err:
-                        logger.error(f"Failed writing Zarr for {roi_name}: {err}")
-                        continue
-
-                    # Extract AnnData and add labels
-                    try:
-                        adata = sdata.tables["table"]
-                        adata.obs["ROI"] = roi_name  # add ROI name
-                        adata.obs["batch"] = run_name  # add run/date name
-                        adata.obs[
-                            "condition"
-                        ] = (  # Add condition "IPF", "COPD", "PM08", "Unknown"
-                            roi_name.split("_")[0]
-                            if roi_name.split("_")[0] in ["IPF", "COPD", "PM08"]
-                            else "Unknown"
-                        )
-                        all_adatas.append(adata)
-                    except KeyError:
-                        logger.warning(
-                            f"No table found in {roi_name}, skipping AnnData."
-                        )
+                # Extract AnnData and add labels
+                try:
+                    adata = sdata.tables["table"]
+                    adata.obs["ROI"] = roi_name  # add ROI name
+                    adata.obs["batch"] = run_name  # add run/date name
+                    condition = (  # Add condition "IPF", "COPD", "PM08", "Unknown"
+                        roi_name.split("_")[0]
+                        if roi_name.split("_")[0] in ["IPF", "COPD", "PM08"]
+                        else "Unknown"
+                    )
+                    adata.obs["condition"] = condition
+                    logger.info(
+                        f"Added {roi_name}, {run_name}, and {condition} "
+                        f"to AnnData for {roi_name}"
+                    )
+                    adata.write(output_adata / f"{roi_name}.h5ad")
+                    logger.info(f"AnnData for {roi_name} saved.")
+                    all_adatas.append(adata)
+                except KeyError:
+                    logger.warning(f"No table found in {roi_name}, skipping AnnData.")
 
     # Concatenate all adatas
     if all_adatas:

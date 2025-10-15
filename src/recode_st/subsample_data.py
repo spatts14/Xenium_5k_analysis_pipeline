@@ -19,7 +19,7 @@ logger = getLogger(__name__)
 def run_subsampled_data(
     config: SubsampleModuleConfig, io_config: IOConfig, main_config: Config
 ):
-    """Run dimension reduction on Xenium data."""
+    """Run data subsampling on Xenium data."""
     # Set variables
     module_dir = io_config.output_dir / config.module_name
 

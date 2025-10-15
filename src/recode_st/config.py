@@ -199,7 +199,7 @@ class IOConfig(BaseModel):
     zarr_dir: Path = Path("xenium.zarr")
     """The directory containing the Zarr-formatted input data from each xenium ROI."""
 
-    adata_dir: Path = Path("adata.h5ad")
+    adata_dir: Path = Path("adata")
     """The directory containing the adata from each xenium ROI."""
 
     area_path: Path = Path("selected_cells_stats.csv")
@@ -218,7 +218,7 @@ class IOConfig(BaseModel):
 
         # Output paths
         self.output_dir = self.base_dir / self.output_dir
-        self.output_data_dir = self.data_dir / self.output_data_dir
+        self.output_data_dir = self.output_dir / self.output_data_dir
         self.zarr_dir = self.output_data_dir / self.zarr_dir
         self.adata_dir = self.output_data_dir / self.adata_dir
         self.logging_dir = self.output_dir / self.logging_dir

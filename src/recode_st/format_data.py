@@ -86,7 +86,7 @@ def convert_all_xenium(io_config: IOConfig):
                     )
                     adata.obs["condition"] = condition
                     logger.info(
-                        f"Added {roi_name}, {run_name}, and {condition}"
+                        f"Added {roi_name}, {run_name}, and {condition} "
                         f"to AnnData for {roi_name}"
                     )
                     adata.write(output_adata / f"{roi_name}.h5ad")

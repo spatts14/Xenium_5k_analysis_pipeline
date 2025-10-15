@@ -199,7 +199,7 @@ class IOConfig(BaseModel):
     zarr_dir: Path = Path("xenium.zarr")
     """The directory containing the Zarr-formatted input data from each xenium ROI."""
 
-    adata_dir: Path = Path("adata.h5ad")
+    adata_dir: Path = Path("adata")
     """The directory containing the adata from each xenium ROI."""
 
     area_path: Path = Path("selected_cells_stats.csv")

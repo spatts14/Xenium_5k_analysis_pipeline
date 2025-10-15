@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l walltime=1:0:0
+#PBS -l walltime=4:0:0
 #PBS -lselect=1:ncpus=8:mem=64gb
 
 # Load production tools

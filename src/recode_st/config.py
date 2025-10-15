@@ -218,7 +218,7 @@ class IOConfig(BaseModel):
 
         # Output paths
         self.output_dir = self.base_dir / self.output_dir
-        self.output_data_dir = self.output_dir / self.output_data_dir
+        self.output_data_dir = self.data_dir / self.output_data_dir
         self.zarr_dir = self.output_data_dir / self.zarr_dir
         self.adata_dir = self.output_data_dir / self.adata_dir
         self.logging_dir = self.output_dir / self.logging_dir

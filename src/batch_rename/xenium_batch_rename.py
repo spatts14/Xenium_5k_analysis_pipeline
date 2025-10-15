@@ -82,18 +82,19 @@ def build_rename_map(files, mapping):
         if not desc:
             continue
 
+        suffix = "".join(f.suffixes) if f.suffixes else f.suffix
+
         # If the mapping value is already a filename (morphology_focus_0000.ome.tif)
         # use it directly. Otherwise, slugify the description and preserve suffix.
         if re.search(r"\.ome\.tif$", desc, flags=re.IGNORECASE):
             candidate = Path(desc).name
-            suffix = "".join(f.suffixes) if f.suffixes else f.suffix
+            base = Path(candidate).stem  # define base even for .ome.tif cases
             if candidate.lower().endswith(suffix.lower()):
                 new_name = candidate
             else:
                 new_name = f"{candidate}"
         else:
             base = slugify(desc)
-            suffix = "".join(f.suffixes) if f.suffixes else f.suffix
             new_name = f"{base}{suffix}"
 
         # Handle naming conflicts

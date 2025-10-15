@@ -1,125 +1,27 @@
 """Dimension reduction module."""
 
-import logging
 import warnings
 from logging import getLogger
-from pathlib import Path
 
-import geosketch
 import numpy as np
+import pandas as pd
 import scanpy as sc
-import squidpy as sq
+from anndata import AnnData
+from zarr.errors import PathNotFoundError
 
-from recode_st.config import IOConfig, SubsampleModuleConfig
+from recode_st.config import Config, IOConfig, SubsampleModuleConfig
 
 warnings.filterwarnings("ignore")
 
 logger = getLogger(__name__)
 
 
-def subsampled_data(
-    adata,
-    subsample_data: bool,
-    module_dir: Path,
-    norm_approach: str,
-    n_total: int = 10_000,
-    min_cells_per_roi: int = 50,
-    n_pca: int = 50,
-) -> sc.AnnData:
-    """Subsample or load a development dataset from an AnnData object.
-
-    Parameters
-    ----------
-    adata : sc.AnnData
-        Input AnnData object containing single-cell data.
-    subsample_data : bool
-        If True, subsample and save the data; if False, load pre-subsampled data.
-    module_dir : Path
-        Directory where the sketch file will be written/read.
-    norm_approach : str
-        Label for normalization approach, used in filename.
-    n_total : int, optional
-        Total number of cells to include in the subsampled dataset (default=10,000).
-    min_cells_per_roi : int, optional
-        Minimum number of cells to sample per ROI (default=50).
-    n_pca : int, optional
-        Number of PCA components to compute if missing (default=50).
-
-    Returns:
-    -------
-    sc.AnnData
-        The subsampled (or loaded) AnnData object.
-    """
-    logger = logging.getLogger(__name__)
-    sketch_path = module_dir / f"adata_sketch_{norm_approach}.h5ad"
-
-    if subsample_data is True:
-        logger.info("Subsampling data for dev...")
-        orig_size = len(adata)
-        logger.info(f"Original size: {orig_size} cells")
-
-        # Compute PCA if not already present
-        if "X_pca" not in adata.obsm:
-            logger.info("PCA not computed. Computing PCA...")
-            sc.pp.pca(adata, n_comps=n_pca)
-
-        roi_counts = adata.obs["ROI"].value_counts()
-        sampled_indices = []
-        logger.info(f"Sketching {n_total} cells across {len(roi_counts)} ROIs...")
-
-        for roi in adata.obs["ROI"].unique():
-            roi_mask = adata.obs["ROI"] == roi
-            roi_data = adata[roi_mask]
-
-            n_roi_sketch = int(n_total * (roi_counts[roi] / len(adata)))
-            n_roi_sketch = max(min_cells_per_roi, n_roi_sketch)
-            n_roi_sketch = min(n_roi_sketch, len(roi_data))
-
-            logger.info(
-                f"  ROI {roi}: sketching {n_roi_sketch} from {len(roi_data)} cells"
-            )
-
-            if n_roi_sketch >= len(roi_data):
-                roi_sketch_local = np.arange(len(roi_data))
-            else:
-                roi_sketch_local = geosketch.gs(
-                    roi_data.obsm["X_pca"], n_roi_sketch, replace=False
-                )
-
-            global_indices = np.where(roi_mask)[0][roi_sketch_local]
-            sampled_indices.extend(global_indices)
-
-        adata = adata[sampled_indices, :].copy()
-        adata.write_h5ad(sketch_path)
-
-        logger.info("\nSketching Results")
-        logger.info(f"Sketched size: {len(adata)} cells")
-        logger.info(f"Reduction: {100 * (1 - len(adata) / orig_size):.1f}%")
-        logger.info("\nCells per ROI:")
-        logger.info(adata.obs["ROI"].value_counts().sort_index())
-
-    else:
-        if not sketch_path.exists():
-            raise FileNotFoundError(
-                f"Expected subsampled file not found: {sketch_path}\n"
-                "Run with subsample_data=True first."
-            )
-        logger.info("Skipping subsampling — loading existing sketch.")
-        adata = sc.read_h5ad(sketch_path)
-        logger.info(f"Loaded subsampled dataset with {len(adata)} cells.")
-
-    return adata
-
-
-def run_subsampled_data(config: SubsampleModuleConfig, io_config: IOConfig):
+def run_subsampled_data(
+    config: SubsampleModuleConfig, io_config: IOConfig, main_config: Config
+):
     """Run dimension reduction on Xenium data."""
     # Set variables
     module_dir = io_config.output_dir / config.module_name
-    n_comps = config.n_comps
-    n_neighbors = config.n_neighbors
-    resolution = config.resolution
-    cluster_name = config.cluster_name
-    norm_approach = config.norm_approach
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -128,95 +30,133 @@ def run_subsampled_data(config: SubsampleModuleConfig, io_config: IOConfig):
     sc.settings.figdir = module_dir
 
     # Import data
-    logger.info(f"Loading Xenium data normalized with {norm_approach}...")
-    adata = sc.read_h5ad(
-        io_config.output_dir / "1_quality_control" / f"adata_{norm_approach}.h5ad"
+    try:
+        logger.info("Loading Xenium data...")
+        combined_path = io_config.adata_dir / "combined_adata.h5ad"
+
+        # Read the file normally - we need the data in memory for QC calculations
+        adata = sc.read_h5ad(combined_path)
+
+    except PathNotFoundError as err:
+        logger.error(f"File not found (or not a valid AnnData file): {combined_path}")
+        raise err
+
+    logger.info("Xenium data loaded.")
+
+    logger.info("Subsampling data by ROI...")
+    # Subsample data
+    adata = subsample_by_roi(
+        adata=adata,
+        roi_column="ROI",
+        total_cells=config.n_cells,
+        random_state=main_config.seed,
+        replace=config.replace,
     )
-
-    # Perform dimension reduction analysis
-    logger.info("Compute PCA...")
-    sc.pp.pca(adata, n_comps=50)
-    sc.pl.pca_variance_ratio(
-        adata,
-        log=True,
-        n_pcs=50,  # Number of PCs shown in the plot
-        show=False,
-        save=f"_{config.module_name}.png",
-    )
-    logger.info(f"PCA Variance plot saved to {sc.settings.figdir}")
-
-    # adata = subsampled_data(
-    #     adata=adata,
-    #     subsample_data=False,  # or False if youve already run it once
-    #     module_dir=module_dir,
-    #     norm_approach="cell_area",
-    #     n_total=10000,
-    # )
-
-    logger.info("Compute neighbors...")
-    sc.pp.neighbors(
-        adata,
-        n_neighbors=n_neighbors,  # compute a neighborhood graph
-        n_pcs=n_comps,  # For 5K panel, 30-50 PCs is typical
-    )
-
-    logger.info("Create UMAPs and cluster cells..")
-    sc.tl.umap(adata)  # calculate umap
-    sc.tl.leiden(
-        adata,
-        resolution=resolution,  # choose resolution for clustering
-        key_added=cluster_name,
-    )  # name clusters
-
-    # plot UMAP
-    logger.info("Plotting UMAPs...")
-    sc.pl.umap(
-        adata,
-        color=[
-            "total_counts",
-            "n_genes_by_counts",
-            "ROI",
-            cluster_name,
-        ],
-        wspace=0.4,
-        show=False,
-        save=f"_{config.module_name}_{norm_approach}.png",  # save figure
-        frameon=False,
-    )
-
-    sc.pl.umap(
-        adata,
-        color=[
-            "PTPRC",  # immune cells
-            "CD3E",  # T cells
-            "CD68",  # macrophages
-            "EPCAM",  # epithelial cells
-            "COL1A1",  # collagen
-            "PDGFRA",  # fibroblasts
-            "ACTA2",  # smooth muscle cells
-            "VWF",  # endothelial cells
-        ],
-        wspace=0.4,
-        show=False,
-        save=f"_{config.module_name}_cell_markers_{norm_approach}.png",  # save figure
-        frameon=False,
-    )
-    logger.info(f"UMAP plot saved to {sc.settings.figdir}")
-
-    # plot visualization of leiden clusters
-    logger.info(f"Plotting {cluster_name} clusters...")
-    for roi in adata.obs["ROI"].unique():
-        subset = adata[adata.obs["ROI"] == roi]
-        sq.pl.spatial_scatter(
-            subset,
-            library_id="spatial",
-            shape=None,
-            color=[cluster_name],
-            wspace=0.4,
-            save=module_dir / f"{cluster_name}_{roi}_spatial.png",
-        )
-    logger.info(f"{cluster_name} spatial scatter plot saved to {module_dir}")
+    logger.info("Subsampling complete.")
 
     # Save anndata object
     adata.write_h5ad(module_dir / "adata.h5ad")
     logger.info(f"Data saved to {module_dir / 'adata.h5ad'}")
+
+
+def subsample_by_roi(
+    adata: AnnData,
+    roi_column: str = "ROI",
+    total_cells: int = 2000,
+    random_state: int = 0,
+    replace: bool = False,
+) -> AnnData:
+    """Subsample an AnnData object so that each ROI is represented equally.
+
+    This function selects an equal number of cells from each region of interest (ROI)
+    in the input AnnData object. It does not perform any quality control; it only
+    performs balanced subsampling.
+
+    Args:
+        adata (AnnData):
+            Input AnnData object with ROI labels stored in ``adata.obs[roi_column]``.
+        roi_column (str):
+            Column in ``adata.obs`` indicating ROI labels (e.g., "ROI").
+        total_cells (int):
+            Desired total number of cells after subsampling. The function calculates
+            an equal number per ROI that fits this total.
+        random_state (int, optional):
+            Seed for reproducible sampling.
+        replace (bool, optional):
+            If True, sample with replacement (allowing perfect balance even if some
+            ROIs are small). If False, the per-ROI sample size is capped by the
+            smallest ROIs size.
+
+    Returns:
+        AnnData:
+            A new AnnData object containing the balanced subsample.
+
+    Notes:
+        - The function assumes that each ROI is represented in the dataset.
+        - When ``replace=False``, the per-ROI sample size cannot exceed the size of
+        the smallest ROI.
+    """
+    if roi_column not in adata.obs:
+        raise KeyError(f"Column '{roi_column}' not found in adata.obs")
+
+    rng = np.random.default_rng(random_state)
+
+    # Count cells per ROI
+    roi_counts = adata.obs[roi_column].value_counts()
+    rois = roi_counts.index.tolist()
+    num_rois = len(rois)
+    if num_rois == 0:
+        raise ValueError("No ROIs found to stratify by.")
+
+    # Target equal count per ROI based on requested total
+    requested_per_roi = total_cells // num_rois
+    if requested_per_roi == 0:
+        raise ValueError(
+            f"total_cells={total_cells} is too small for {num_rois} ROIs. "
+            "Increase total_cells so that at least 1 cell per ROI can be sampled."
+        )
+
+    # If sampling without replacement, we cannot take more than the smallest ROI size
+    if not replace:
+        max_per_roi_no_replace = int(roi_counts.min())
+        per_roi = min(requested_per_roi, max_per_roi_no_replace)
+    else:
+        per_roi = requested_per_roi
+
+    # If per_roi is zero after capping, give a helpful error
+    if per_roi == 0:
+        smallest = int(roi_counts.min())
+        raise ValueError(
+            "Cannot draw at least 1 cell per ROI without replacement. "
+            f"Smallest ROI has only {smallest} cells. Either set replace=True "
+            f"or reduce the number of ROIs or adjust total_cells."
+        )
+
+    # Collect indices sampled per ROI
+    sampled_obs_names = []
+    for roi in rois:
+        # Get the observation names for this ROI
+        roi_mask = (adata.obs[roi_column] == roi).values
+        roi_obs_names = adata.obs_names[roi_mask]
+
+        # Draw per_roi samples for this ROI
+        # Note: use rng.choice for reproducibility
+        chosen = rng.choice(roi_obs_names, size=per_roi, replace=replace)
+        sampled_obs_names.extend(chosen.tolist())
+
+    # Subset the AnnData to the sampled cells (preserve order of obs_names)
+    sampled_obs_names = pd.Index(sampled_obs_names)
+    adata_sub = adata[sampled_obs_names, :].copy()
+
+    # Helpful provenance note
+    adata_sub.uns = dict(adata_sub.uns) if adata_sub.uns is not None else {}
+    adata_sub.uns["subsample_by_roi"] = {
+        "roi_column": roi_column,
+        "total_cells_requested": total_cells,
+        "num_rois": num_rois,
+        "per_roi": per_roi,
+        "replace": replace,
+        "random_state": random_state,
+    }
+
+    return adata_sub

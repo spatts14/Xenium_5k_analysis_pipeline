@@ -40,12 +40,11 @@ class QualityControlModuleConfig(BaseModuleConfig):
 class SubsampleModuleConfig(BaseModuleConfig):
     """Configuration for the Subsample module."""
 
-    subsample_data: bool = False
-    """Whether to subsample the data for development purposes."""
-    norm_approach: Literal["scanpy_log", "sctransform", "cell_area", "none"] = (
-        "cell_area"
-    )
-    """Normalization approach to use."""
+    n_cells: int
+    """Total number of cells to include in the subsampled dataset."""
+
+    replace: bool = False
+    """Whether to sample with replacement."""
 
 
 class DimensionReductionModuleConfig(BaseModuleConfig):

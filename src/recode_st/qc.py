@@ -31,6 +31,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
+    # Import data
     try:
         logger.info("Loading Xenium data...")
         combined_path = io_config.adata_dir / "combined_adata.h5ad"
@@ -42,7 +43,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         logger.error(f"File not found (or not a valid AnnData file): {combined_path}")
         raise err
 
-    logger.info("Done")
+    logger.info("Xenium data loaded.")
 
     # $ Calculate and plot metrics
 

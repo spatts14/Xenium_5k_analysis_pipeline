@@ -31,7 +31,7 @@ def main(config: Config):
         from recode_st.subsample_data import run_subsampled_data
 
         logger.info("Running Optional Module - Subsample data")
-        run_subsampled_data(config.modules.subsample_data, config.io)
+        run_subsampled_data(config.modules.subsample_data, config.io, config)
 
     if config.modules.quality_control:
         from recode_st.qc import run_qc

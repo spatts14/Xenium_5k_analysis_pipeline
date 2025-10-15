@@ -9,7 +9,7 @@ module load tools/prod
 module load Biopython/1.84-foss-2024a
  
 # Change to directory
-cd "$PBS_O_WORKDIR"
+cd /rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline
 
 # Activate virtual environment
 source xenium_5k_venv/bin/activate

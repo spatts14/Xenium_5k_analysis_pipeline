@@ -131,7 +131,7 @@ ipython_config.py
 .pdm.toml
 .pdm-python
 .pdm-build/
-config_*.toml
+config_dev.toml
 
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
 __pypackages__/
@@ -151,6 +151,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+*_venv/
 
 # Spyder project settings
 .spyderproject

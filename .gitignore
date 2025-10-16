@@ -197,3 +197,7 @@ cython_debug/
 .DS_Store
 *.DS_Store
 */.DS_Store
+
+# HPC outputs 
+*.sh.e*
+*.sh.o*

@@ -93,9 +93,7 @@ def convert_all_xenium(io_config: IOConfig):
                         f"to AnnData for {roi_name}"
                     )
                     # Rename obs_names to include ROI so they are unique across ROIs
-                    adata.obs_names = [
-                        f"{roi_name}_{cell_id}" for cell_id in adata.obs_names
-                    ]
+                    adata.obs_names = roi_name + "_" + adata.obs_names.astype(str)
 
                     if adata.obs_names.is_unique is False:
                         raise ValueError(

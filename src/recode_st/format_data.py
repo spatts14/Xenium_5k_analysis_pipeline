@@ -116,7 +116,7 @@ def convert_all_xenium(io_config: IOConfig):
 
     # Concatenate all adatas
     if all_adatas:
-        combined = ad.concat(all_adatas, join="outer", label="ROI", fill_value=0)
+        combined = ad.concat(all_adatas, join="outer", fill_value=0)
         combined_path = adata_dir / "all_samples.h5ad"
         combined.write(combined_path)
         logger.info(f"Combined AnnData written to {combined_path}")

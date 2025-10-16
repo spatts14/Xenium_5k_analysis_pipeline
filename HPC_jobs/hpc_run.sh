@@ -15,4 +15,4 @@ cd /rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline
 source xenium_5k_venv/bin/activate
 
 # Run
-python -m recode_st config_files/config_HPC_rename.toml
+python -m recode_st config_files/config_HPC_subsample.toml

@@ -76,7 +76,10 @@ def convert_all_xenium(io_config: IOConfig):
 
                 # Extract AnnData and add labels
                 try:
+                    # extract AnnData from SpatialData
                     adata = sdata.tables["table"]
+
+                    # Add metadata to AnnData
                     adata.obs["ROI"] = roi_name  # add ROI name
                     adata.obs["batch"] = run_name  # add run/date name
                     condition = (  # Add condition "IPF", "COPD", "PM08", "Unknown"
@@ -89,6 +92,24 @@ def convert_all_xenium(io_config: IOConfig):
                         f"Added {roi_name}, {run_name}, and {condition} "
                         f"to AnnData for {roi_name}"
                     )
+                    # Rename obs_names to include ROI so they are unique across ROIs
+                    adata.obs_names = [
+                        f"{roi_name}_{cell_id}" for cell_id in adata.obs_names
+                    ]
+
+                    if adata.obs_names.is_unique is False:
+                        raise ValueError(
+                            f"Non-unique obs_names in AnnData for {roi_name}"
+                        )
+                    else:
+                        logger.info(f"obs_names are unique in AnnData for {roi_name}")
+                        logger.info(f"obs_names: {adata.obs_names[:3]} ...")
+                        logger.info(
+                            f"AnnData for {roi_name} has shape {adata.shape} "
+                            f"with {adata.n_vars} genes."
+                        )
+
+                    # Save individual AnnData
                     adata.write(adata_dir / f"{roi_name}.h5ad")
                     logger.info(f"AnnData for {roi_name} saved.")
                     all_adatas.append(adata)

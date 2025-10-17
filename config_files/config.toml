@@ -36,12 +36,16 @@ norm_approach = "cell_area"
 
 [modules.dimension_reduction]
 module_name = "dimension_reduction"
-subsample_data = false
-n_comps = 30
+subsample_strategy = "compute"
+n_pca = 30
 n_neighbors = 15
 resolution = 0.5
 cluster_name = "leiden_clusters"
 norm_approach = "scanpy_log"
+
+[modules.integrate]
+module_name = "integrate"
+method = "ingest"
 
 [modules.annotate]
 module_name = "annotate"

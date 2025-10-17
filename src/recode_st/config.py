@@ -53,9 +53,9 @@ class QualityControlModuleConfig(BaseModuleConfig):
 class DimensionReductionModuleConfig(BaseModuleConfig):
     """Configuration for the Quality Control module."""
 
-    subsample_data: bool = False
-    """Whether to subsample the data for development purposes."""
-    n_comps: int
+    subsample_strategy: Literal["none", "compute", "load"] = "none"
+    """Subsampling strategy for development dataset."""
+    n_pca: int
     """number of principal components to compute"""
     n_neighbors: int
     """ number of neighbors for the neighborhood graph"""

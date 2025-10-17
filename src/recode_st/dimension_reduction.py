@@ -1,6 +1,5 @@
 """Dimension reduction module."""
 
-import logging
 import warnings
 from logging import getLogger
 from pathlib import Path
@@ -17,9 +16,8 @@ warnings.filterwarnings("ignore")
 logger = getLogger(__name__)
 
 
-def subsampled_data(
-    adata,
-    subsample_data: bool,
+def subsample_strategy_func(
+    subsample_strategy: str,  # expected: "none", "compute", or "load"
     module_dir: Path,
     norm_approach: str,
     n_total: int = 10_000,
@@ -29,37 +27,45 @@ def subsampled_data(
     """Subsample or load a development dataset from an AnnData object.
 
     Args:
-        adata (sc.AnnData):
-            Input AnnData object containing single-cell data.
-        subsample_data (bool):
-            If True, subsample and save the data; if False, load pre-subsampled data.
-        module_dir (Path):
-            Directory where the sketch file will be written or read.
-        norm_approach (str):
-            Label for the normalization approach, used in the filename.
-        n_total (int, optional):
-            Total number of cells to include in the subsampled data. Defaults to 10,000.
-        min_cells_per_roi (int, optional):
-            Minimum number of cells to sample per ROI. Defaults to 50.
-        n_pca (int, optional):
-            Number of PCA components to compute if missing. Defaults to 50.
+        adata (sc.AnnData): Input AnnData object containing single-cell data.
+        subsample_strategy (str): One of {"none", "compute", "load"}.
+            - "compute": subsample and save the data
+            - "load": load pre-subsampled data
+            - "none": use full data
+        module_dir (Path): Directory where the sketch file will be written or read.
+        norm_approach (str): Label for the normalization approach, used in the filename.
+        n_total (int, optional): Total num of cells to include in the subsampled data.
+        Defaults to 10,000.
+        min_cells_per_roi (int, optional): Minimum number of cells to sample per ROI.
+        Defaults to 50.
+        n_pca (int, optional): Number of PCA components to compute if missing.
+        Defaults to 50.
 
     Returns:
-        sc.AnnData:
-            The subsampled (or loaded) AnnData object.
+        sc.AnnData: The subsampled (or loaded) AnnData object.
     """
-    logger = logging.getLogger(__name__)
     sketch_path = module_dir / f"adata_sketch_{norm_approach}.h5ad"
 
-    if subsample_data is True:
+    if subsample_strategy == "load":
+        logger.info("Loading subsampled data for dimension reduction...")
+        if not sketch_path.exists():
+            raise FileNotFoundError(
+                f"Expected subsampled file not found: {sketch_path}\n"
+                "Run with subsample_strategy='compute' first."
+            )
+
+        adata = sc.read_h5ad(sketch_path)
+        logger.info(f"Loaded subsampled dataset with {len(adata)} cells.")
+
+    elif subsample_strategy == "compute":
         logger.info("Subsampling data for dev...")
         orig_size = len(adata)
         logger.info(f"Original size: {orig_size} cells")
 
         # Compute PCA if not already present
         if "X_pca" not in adata.obsm:
-            logger.info("PCA not computed. Computing PCA...")
-            sc.pp.pca(adata, n_comps=n_pca)
+            logger.info("PCA not found. Computing PCA...")
+            sc.pp.pca(adata, n_comps=60)  # compute 60 PCs
 
         roi_counts = adata.obs["ROI"].value_counts()
         sampled_indices = []
@@ -68,7 +74,6 @@ def subsampled_data(
         for roi in adata.obs["ROI"].unique():
             roi_mask = adata.obs["ROI"] == roi
             roi_data = adata[roi_mask]
-
             n_roi_sketch = int(n_total * (roi_counts[roi] / len(adata)))
             n_roi_sketch = max(min_cells_per_roi, n_roi_sketch)
             n_roi_sketch = min(n_roi_sketch, len(roi_data))
@@ -88,6 +93,7 @@ def subsampled_data(
             sampled_indices.extend(global_indices)
 
         adata = adata[sampled_indices, :].copy()
+        logger.info(f"Saved subsampled dataset: size {len(adata)} cells")
         adata.write_h5ad(sketch_path)
 
         logger.info("\nSketching Results")
@@ -96,15 +102,18 @@ def subsampled_data(
         logger.info("\nCells per ROI:")
         logger.info(adata.obs["ROI"].value_counts().sort_index())
 
+    elif subsample_strategy == "none":
+        logger.info(f"Using full dataset normalized with {norm_approach}...")
+        if "X_pca" not in adata.obsm:
+            logger.info("Computing PCA...")
+            sc.pp.pca(adata, n_comps=60)  # compute 60 PCs
+        logger.info("PCA computation complete.")
+
     else:
-        if not sketch_path.exists():
-            raise FileNotFoundError(
-                f"Expected subsampled file not found: {sketch_path}\n"
-                "Run with subsample_data=True first."
-            )
-        logger.info("Skipping subsampling — loading existing sketch.")
-        adata = sc.read_h5ad(sketch_path)
-        logger.info(f"Loaded subsampled dataset with {len(adata)} cells.")
+        raise ValueError(
+            f"Invalid subsample_strategy: {subsample_strategy}. "
+            "Choose from {'none', 'compute', 'load'}."
+        )
 
     return adata
 
@@ -115,11 +124,12 @@ def run_dimension_reduction(
     """Run dimension reduction on Xenium data."""
     # Set variables
     module_dir = io_config.output_dir / config.module_name
-    n_comps = config.n_comps
+    n_pca = config.n_pca
     n_neighbors = config.n_neighbors
     resolution = config.resolution
     cluster_name = config.cluster_name
     norm_approach = config.norm_approach
+    subsample_strategy = config.subsample_strategy
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -127,37 +137,21 @@ def run_dimension_reduction(
     # Set the directory where to save the ScanPy figures
     sc.settings.figdir = module_dir
 
-    # Import data
-    logger.info(f"Loading Xenium data normalized with {norm_approach}...")
-    adata = sc.read_h5ad(
-        io_config.output_dir / "1_quality_control" / f"adata_{norm_approach}.h5ad"
-    )
-
-    # Perform dimension reduction analysis
-    logger.info("Compute PCA...")
-    sc.pp.pca(adata, n_comps=50)
-    sc.pl.pca_variance_ratio(
-        adata,
-        log=True,
-        n_pcs=50,  # Number of PCs shown in the plot
-        show=False,
-        save=f"_{config.module_name}.png",
-    )
-    logger.info(f"PCA Variance plot saved to {sc.settings.figdir}")
-
-    adata = subsampled_data(
-        adata=adata,
-        subsample_data=True,  # or False if youve already run it once
+    logger.info(f"Loading data using subsample strategy: {subsample_strategy}...")
+    adata = subsample_strategy_func(
+        subsample_strategy=subsample_strategy,
         module_dir=module_dir,
-        norm_approach="cell_area",
-        n_total=10000,
+        norm_approach=norm_approach,
+        n_total=10000,  # target ~1000 total cells
+        min_cells_per_roi=100,  # ensure each ROI has at least 100
+        n_pca=n_pca,  # compute 30 PCs if missing
     )
 
     logger.info("Compute neighbors...")
     sc.pp.neighbors(
         adata,
         n_neighbors=n_neighbors,  # compute a neighborhood graph
-        n_pcs=n_comps,  # For 5K panel, 30-50 PCs is typical
+        n_pcs=n_pca,  # For 5K panel, 30-50 PCs is typical
     )
 
     logger.info("Create UMAPs and cluster cells..")

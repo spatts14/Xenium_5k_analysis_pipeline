@@ -28,27 +28,25 @@ def subsampled_data(
 ) -> sc.AnnData:
     """Subsample or load a development dataset from an AnnData object.
 
-    Parameters
-    ----------
-    adata : sc.AnnData
-        Input AnnData object containing single-cell data.
-    subsample_data : bool
-        If True, subsample and save the data; if False, load pre-subsampled data.
-    module_dir : Path
-        Directory where the sketch file will be written/read.
-    norm_approach : str
-        Label for normalization approach, used in filename.
-    n_total : int, optional
-        Total number of cells to include in the subsampled dataset (default=10,000).
-    min_cells_per_roi : int, optional
-        Minimum number of cells to sample per ROI (default=50).
-    n_pca : int, optional
-        Number of PCA components to compute if missing (default=50).
+    Args:
+        adata (sc.AnnData):
+            Input AnnData object containing single-cell data.
+        subsample_data (bool):
+            If True, subsample and save the data; if False, load pre-subsampled data.
+        module_dir (Path):
+            Directory where the sketch file will be written or read.
+        norm_approach (str):
+            Label for the normalization approach, used in the filename.
+        n_total (int, optional):
+            Total number of cells to include in the subsampled data. Defaults to 10,000.
+        min_cells_per_roi (int, optional):
+            Minimum number of cells to sample per ROI. Defaults to 50.
+        n_pca (int, optional):
+            Number of PCA components to compute if missing. Defaults to 50.
 
     Returns:
-    -------
-    sc.AnnData
-        The subsampled (or loaded) AnnData object.
+        sc.AnnData:
+            The subsampled (or loaded) AnnData object.
     """
     logger = logging.getLogger(__name__)
     sketch_path = module_dir / f"adata_sketch_{norm_approach}.h5ad"
@@ -147,13 +145,13 @@ def run_dimension_reduction(
     )
     logger.info(f"PCA Variance plot saved to {sc.settings.figdir}")
 
-    # adata = subsampled_data(
-    #     adata=adata,
-    #     subsample_data=False,  # or False if youve already run it once
-    #     module_dir=module_dir,
-    #     norm_approach="cell_area",
-    #     n_total=10000,
-    # )
+    adata = subsampled_data(
+        adata=adata,
+        subsample_data=True,  # or False if youve already run it once
+        module_dir=module_dir,
+        norm_approach="cell_area",
+        n_total=10000,
+    )
 
     logger.info("Compute neighbors...")
     sc.pp.neighbors(

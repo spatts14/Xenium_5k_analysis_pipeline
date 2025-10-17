@@ -69,6 +69,13 @@ class DimensionReductionModuleConfig(BaseModuleConfig):
     """Normalization approach to use."""
 
 
+class IntegrateModuleConfig(BaseModuleConfig):
+    """Configuration for the Integration module."""
+
+    method: Literal["ingest", "scANVI"]
+    """Integration method to use to integrate scRNAseq and spatial data."""
+
+
 class AnnotateModuleConfig(BaseModuleConfig):
     """Configuration for the Annotate module."""
 
@@ -158,6 +165,9 @@ class ModulesConfig(BaseModel):
 
     dimension_reduction: DimensionReductionModuleConfig | None = None
     """Configuration for the Dimension Reduction module."""
+
+    integrate: IntegrateModuleConfig | None = None
+    """Configuration for the Integration module."""
 
     annotate: AnnotateModuleConfig | None = None
     """Configuration for the Annotate module."""

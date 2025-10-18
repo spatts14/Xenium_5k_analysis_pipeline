@@ -29,7 +29,6 @@ def subsample_strategy_func(
 
     Args:
         io_config (IOConfig): IO configuration object.
-        adata (sc.AnnData): Input AnnData object containing single-cell data.
         subsample_strategy (str): One of {"none", "compute", "load"}.
             - "compute": subsample and save the data
             - "load": load pre-subsampled data

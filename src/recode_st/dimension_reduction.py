@@ -17,6 +17,7 @@ logger = getLogger(__name__)
 
 
 def subsample_strategy_func(
+    io_config: IOConfig,
     subsample_strategy: str,  # expected: "none", "compute", or "load"
     module_dir: Path,
     norm_approach: str,
@@ -27,6 +28,7 @@ def subsample_strategy_func(
     """Subsample or load a development dataset from an AnnData object.
 
     Args:
+        io_config (IOConfig): IO configuration object.
         adata (sc.AnnData): Input AnnData object containing single-cell data.
         subsample_strategy (str): One of {"none", "compute", "load"}.
             - "compute": subsample and save the data
@@ -58,6 +60,11 @@ def subsample_strategy_func(
         logger.info(f"Loaded subsampled dataset with {len(adata)} cells.")
 
     elif subsample_strategy == "compute":
+        logger.info("Computing subsampled data for dimension reduction...")
+        logger.info(f"Loading full dataset normalized with {norm_approach}...")
+        adata = sc.read_h5ad(
+            io_config.output_dir / "1_quality_control" / f"adata_{norm_approach}.h5ad"
+        )
         logger.info("Subsampling data for dev...")
         orig_size = len(adata)
         logger.info(f"Original size: {orig_size} cells")
@@ -104,6 +111,10 @@ def subsample_strategy_func(
 
     elif subsample_strategy == "none":
         logger.info(f"Using full dataset normalized with {norm_approach}...")
+        logger.info(f"Loading full dataset normalized with {norm_approach}...")
+        adata = sc.read_h5ad(
+            io_config.output_dir / "1_quality_control" / f"adata_{norm_approach}.h5ad"
+        )
         if "X_pca" not in adata.obsm:
             logger.info("Computing PCA...")
             sc.pp.pca(adata, n_comps=60)  # compute 60 PCs
@@ -139,6 +150,7 @@ def run_dimension_reduction(
 
     logger.info(f"Loading data using subsample strategy: {subsample_strategy}...")
     adata = subsample_strategy_func(
+        io_config=io_config,
         subsample_strategy=subsample_strategy,
         module_dir=module_dir,
         norm_approach=norm_approach,

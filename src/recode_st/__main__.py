@@ -45,10 +45,16 @@ def main(config: Config):
         logger.info("Running Module 2 - Dimension Reduction")
         run_dimension_reduction(config.modules.dimension_reduction, config.io)
 
+    if config.modules.integrate:
+        from recode_st.integrate import run_integration
+
+        logger.info("Running Module 3a - Integration")
+        run_integration(config.modules.integrate, config.io)
+
     if config.modules.annotate:
         from recode_st.annotate import run_annotate
 
-        logger.info("Running Module 3 - Annotate")
+        logger.info("Running Module 3b - Annotate")
         run_annotate(config.modules.annotate, config.io)
 
     if config.modules.view_images:

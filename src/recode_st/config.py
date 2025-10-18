@@ -53,9 +53,9 @@ class QualityControlModuleConfig(BaseModuleConfig):
 class DimensionReductionModuleConfig(BaseModuleConfig):
     """Configuration for the Quality Control module."""
 
-    subsample_data: bool = False
-    """Whether to subsample the data for development purposes."""
-    n_comps: int
+    subsample_strategy: Literal["none", "compute", "load"] = "none"
+    """Subsampling strategy for development dataset."""
+    n_pca: int
     """number of principal components to compute"""
     n_neighbors: int
     """ number of neighbors for the neighborhood graph"""
@@ -67,6 +67,13 @@ class DimensionReductionModuleConfig(BaseModuleConfig):
         "cell_area"
     )
     """Normalization approach to use."""
+
+
+class IntegrateModuleConfig(BaseModuleConfig):
+    """Configuration for the Integration module."""
+
+    method: Literal["ingest", "scANVI"]
+    """Integration method to use to integrate scRNAseq and spatial data."""
 
 
 class AnnotateModuleConfig(BaseModuleConfig):
@@ -158,6 +165,9 @@ class ModulesConfig(BaseModel):
 
     dimension_reduction: DimensionReductionModuleConfig | None = None
     """Configuration for the Dimension Reduction module."""
+
+    integrate: IntegrateModuleConfig | None = None
+    """Configuration for the Integration module."""
 
     annotate: AnnotateModuleConfig | None = None
     """Configuration for the Annotate module."""

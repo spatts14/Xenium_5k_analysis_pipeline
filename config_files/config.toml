@@ -1,87 +1,79 @@
 # An example configuration file for recode_st
 
-log_level = "INFO" # Define the logging level here. Options are: DEBUG, INFO, WARNING, ERROR, CRITICAL
-seed = 21122023    # Random seed for reproducibility
+# --- Global Settings ---
+log_level = "INFO"
+seed = 42
 
+# --- Input / Output Configuration ---
 [io]
-base_dir = "."                    # Base directory for the project (relative to the current working directory)
-data_dir = "data"                 # Directory where the input data is stored (relative to base_dir)
-xenium_dir = "xenium_raw"         # Directory containing Xenium data (relative to data_dir)
-output_data_dir = "out_data"      # Directory where processed data will be saved (relative to data_dir)
-adata_dir = "adata"               # Directory where AnnData objects will be saved (relative to output_data_dir)
-zarr_dir = "xenium.zarr"          # Directory where Zarr data will be stored (relative to output_data_dir)
-output_dir = "out_test"           # Directory where the output will be saved (relative to base_dir)
-path = "selected_cells_stats.csv" # Path to the CSV file containing selected cells statistics (relative to data_dir)
-logging_path = "logs"             # Directory where logs will be saved (relative to output_dir)
+base_dir = "/path/to/project"
+data_dir = "data"
+output_dir = "out"
+xenium_dir = "xenium"
+output_data_dir = "processed_data"
+zarr_dir = "xenium.zarr"
+adata_dir = "adata"
+area_path = "selected_cells_stats.csv"
+logging_dir = "logs"
 
+# --- Modules Configuration ---
 [modules.format_data]
-module_name = "0_format" # Name of the module - will be used in the output directory name
+module_name = "format_data"
 
 [modules.subsample_data]
-module_name = "0.5_subsample_data" # Name of the module - will be used in the output directory name
-n_cells = 2000                     # Total number of cells to include in the subsampled dataset
-replace = false                    # Whether to sample with replacement
+module_name = "subsample"
+n_cells = 5000
+replace = false
 
 [modules.quality_control]
-module_name = "1_quality_control" # Name of the module - will be used in the output directory name
-min_counts = 10                   # Minimum number of counts required for a cell to pass filtering
-min_cells = 5                     # Minimum number of cells expressed required for a gene to pass filtering
-min_cell_area = 25                # Minimum cell area to filter cells required for a cell to pass filtering
-max_cell_area = 1000              # Maximum cell area to filter cells required for a cell to pass filtering
-norm_approach = "cell_area"       # Normalization approach to use
+module_name = "quality_control"
+subsample_data = false
+min_counts = 200
+min_cells = 3
+min_cell_area = 50
+max_cell_area = 2000
+norm_approach = "cell_area"
 
 [modules.dimension_reduction]
-module_name = "2_dimension_reduction" # Name of the module - will be used in the output directory name
-norm_approach = "cell_area"           # Normalization approach to use
-subsample_data = true                 # Whether to subsample the data for development purposes
-n_comps = 30                          # number of principal components to compute
-n_neighbors = 30                      # number of neighbors for the neighborhood graph
-resolution = 0.5                      # resolution for leiden clustering
-cluster_name = "leiden"               # name of the cluster column in adata.obs
+module_name = "dimension_reduction"
+subsample_strategy = "compute"
+n_pca = 30
+n_neighbors = 15
+resolution = 0.5
+cluster_name = "leiden_clusters"
+norm_approach = "scanpy_log"
+
+[modules.integrate]
+module_name = "integrate"
+method = "ingest"
 
 [modules.annotate]
-module_name = "3_annotate" # Name of the module - will be used in the output directory name
-cluster_name = "leiden"    # name of the cluster column in adata.obs
-new_clusters = "cell_type" # name of the new cluster column in adata.obs
+module_name = "annotate"
+cluster_name = "leiden_clusters"
+new_clusters = "annotated_clusters"
 
 [modules.view_images]
-module_name = "4_view_images" # Name of the module - will be used in the output directory name
-gene_list = [ # List of genes to visualize on tissue
-    "EPCAM",
-    "CD3D",
-    "CD68",
-    "PTPRC",
-    "ACTA2",
-]
-
-[modules.spatial_statistics]
-module_name = "5_spatial_stats" # Name of the module - will be used in the output directory name
+module_name = "view_images"
+gene_list = ["CD3E", "EPCAM", "PECAM1", "MKI67"]
 
 [modules.muspan]
-module_name = "6_muspan" # Name of the module - will be used in the output directory name
-domain_name = "Xenium_lung_FFPE" # Name of the domain for MuSpAn analysis
-transcripts_of_interest = [ # List of transcripts of interest for MuSpAn analysis
-    "EPCAM",
-    "CD3D",
-    "CD68",
-    "VWF",
-    "PTPRC",
-    "ACTA2",
-]
-adata_cell_id = "cell_id" # column name in adata.obs for cell IDs
-cluster_labels = "cell_type" # column name in adata.obs for cell types
+module_name = "muspan"
+domain_name = "tumor_microenvironment"
+transcripts_of_interest = ["CXCL13", "CXCR5", "CD8A"]
+adata_cell_id = "cell_id"
+cluster_labels = "cell_type"
 
 [modules.muspan_spatial_stat]
-module_name = "6_muspan"               # Name of the module - will be used in the output directory name
-muspan_object = "muspan_object.muspan" # Name of the muspan object file
-cluster_labels = "cell_type"           # Name of the cluster labels field to use for analysis
+module_name = "muspan_spatial_stat"
+muspan_object = "muspan_object.pkl"
+cluster_labels = "cell_type"
 
 [modules.muspan_spatial_graph]
-module_name = "6_muspan"               # Name of the module - will be used in the output directory name
-muspan_object = "muspan_object.muspan" # Name of the muspan object file
-min_edge_distance = 0                  # Minimum edge distance for spatial graphs
-max_edge_distance = 45                 # Maximum edge distance for spatial graphs
-distance_list = [10, 20, 50]           # List of distances for proximity networks
-min_edge_distance_shape = 0            # Minimum edge distance for shape-based networks
-max_edge_distance_shape = 1            # Maximum edge distance for shape-based networks
-k_list = [2, 5, 10, 15]                # List of k values for KNN networks
+module_name = "muspan_spatial_graph"
+muspan_object = "muspan_object.pkl"
+min_edge_distance = 10
+max_edge_distance = 50
+distance_list = [10, 20, 30, 40, 50]
+min_edge_distance_shape = 5
+max_edge_distance_shape = 25
+k_list = [5, 10, 15]

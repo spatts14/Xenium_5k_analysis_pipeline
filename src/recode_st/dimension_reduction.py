@@ -153,7 +153,7 @@ def run_dimension_reduction(
         subsample_strategy=subsample_strategy,
         module_dir=module_dir,
         norm_approach=norm_approach,
-        n_total=10000,  # target ~1000 total cells
+        n_total=10000,  # target ~10000 total cells
         min_cells_per_roi=100,  # ensure each ROI has at least 100
         n_pca=n_pca,  # compute 30 PCs if missing
     )

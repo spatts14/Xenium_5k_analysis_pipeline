@@ -154,7 +154,7 @@ def run_dimension_reduction(
         norm_approach=norm_approach,
         n_total=10000,  # target ~10000 total cells
         min_cells_per_roi=100,  # ensure each ROI has at least 100
-        n_pca=n_pca,  # compute 30 PCs if missing
+        n_pca=n_pca,  # compute n_pca PCs if missing
     )
 
     logger.info("Compute neighbors...")

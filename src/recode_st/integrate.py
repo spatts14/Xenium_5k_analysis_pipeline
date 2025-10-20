@@ -45,15 +45,19 @@ def run_integration(
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
 
-    logger.info("Preprocessing reference scRNAseq data...")
+    logger.info("Checking if need to process reference scRNAseq data...")
     # If not already done:
     if "X_pca" not in adata_ref.obsm:
+        logger.info("Preprocessing HLCA reference data...")
         sc.pp.normalize_total(adata_ref, target_sum=1e4)
         sc.pp.log1p(adata_ref)
         sc.pp.highly_variable_genes(adata_ref, n_top_genes=2000)
         sc.tl.pca(adata_ref, n_comps=50)
         sc.pp.neighbors(adata_ref, n_neighbors=15, n_pcs=40)
+    else:
+        logger.info("HLCA reference data already preprocessed.")
 
+    logger.info("Starting integration...")
     if method == "ingest":
         logger.info("Integrating data using ingest...")
         sc.tl.ingest(

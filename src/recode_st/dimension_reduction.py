@@ -111,7 +111,7 @@ def subsample_strategy_func(
     elif subsample_strategy == "none":
         logger.info(f"Using full dataset normalized with {norm_approach}...")
         adata = sc.read_h5ad(
-            io_config.output_dir / "quality_control" / f"adata_{norm_approach}.h5ad"
+            io_config.output_dir / "1_quality_control" / f"adata_{norm_approach}.h5ad"
         )
         if "X_pca" not in adata.obsm:
             logger.info("Computing PCA...")

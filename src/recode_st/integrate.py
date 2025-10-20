@@ -13,22 +13,12 @@ warnings.filterwarnings("ignore")
 logger = getLogger(__name__)
 
 
-def run_integration(
-    io_config: IOConfig,
-    config: IntegrateModuleConfig,
-    adata_rna: sc.AnnData,
-    adata_st: sc.AnnData,
-) -> sc.AnnData:
+def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     """Integrate scRNAseq and spatial transcriptomics data using Scanorama.
 
     Args:
-        io_config (IOConfig): IO configuration object.
         config (IntegrateModuleConfig): Integration module configuration object.
-        adata_rna (sc.AnnData): AnnData object for scRNAseq data.
-        adata_st (sc.AnnData): AnnData object for spatial transcriptomics data.
-
-    Returns:
-        sc.AnnData: Integrated AnnData object.
+        io_config (IOConfig): IO configuration object.
     """
     method = config.method
 
@@ -40,7 +30,7 @@ def run_integration(
     logger.info("Starting integration of scRNAseq and spatial transcriptomics data...")
 
     logger.info("Loading scRNAseq data from HLCA ...")
-    adata_ref = sc.read_h5ad(config.hlca_path)
+    adata_ref = sc.read_h5ad(io_config.hlca_path)
 
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")

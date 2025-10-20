@@ -45,6 +45,7 @@ norm_approach = "scanpy_log"
 
 [modules.integrate]
 module_name = "3_integrate"
+hlca_path = "/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/core.h5ad"
 method = "ingest"
 
 [modules.annotate]

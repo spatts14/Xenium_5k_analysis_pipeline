@@ -72,6 +72,9 @@ class DimensionReductionModuleConfig(BaseModuleConfig):
 class IntegrateModuleConfig(BaseModuleConfig):
     """Configuration for the Integration module."""
 
+    hlca_path: Path
+    """Path to the HLCA reference dataset in h5ad format."""
+
     method: Literal["ingest", "scANVI"]
     """Integration method to use to integrate scRNAseq and spatial data."""
 

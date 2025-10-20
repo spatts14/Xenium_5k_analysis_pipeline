@@ -80,6 +80,11 @@ def run_integration(
         raise NotImplementedError(f"Integration method {method} not implemented.")
 
     logger.info("Visualize data following label transfer...")
-    sc.pl.umap(adata, color="predicted_cell_type", title="Xenium data mapped to HLCA")
+    sc.pl.umap(
+        adata,
+        color="predicted_cell_type",
+        title="Xenium data mapped to HLCA",
+        save=f"_{config.module_name}_{method}.png",  # save figure
+    )
 
     logger.info("Integration complete.")

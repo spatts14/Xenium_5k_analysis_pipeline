@@ -62,7 +62,7 @@ def subsample_strategy_func(
         logger.info("Computing subsampled data for dimension reduction...")
         logger.info(f"Loading full dataset normalized with {norm_approach}...")
         adata = sc.read_h5ad(
-            io_config.output_dir / "1_quality_control" / f"adata_{norm_approach}.h5ad"
+            io_config.output_dir / "quality_control" / f"adata_{norm_approach}.h5ad"
         )
         logger.info("Subsampling data for dev...")
         orig_size = len(adata)
@@ -111,7 +111,7 @@ def subsample_strategy_func(
     elif subsample_strategy == "none":
         logger.info(f"Using full dataset normalized with {norm_approach}...")
         adata = sc.read_h5ad(
-            io_config.output_dir / "1_quality_control" / f"adata_{norm_approach}.h5ad"
+            io_config.output_dir / "quality_control" / f"adata_{norm_approach}.h5ad"
         )
         if "X_pca" not in adata.obsm:
             logger.info("Computing PCA...")
@@ -155,6 +155,15 @@ def run_dimension_reduction(
         n_total=10000,  # target ~10000 total cells
         min_cells_per_roi=100,  # ensure each ROI has at least 100
         n_pca=n_pca,  # compute n_pca PCs if missing
+    )
+
+    logger.info("Plot PCA variance...")
+    sc.pl.pca_variance_ratio(
+        adata,
+        log=True,
+        n_pcs=60,  # Number of PCs shown in the plot
+        show=False,
+        save=f"_{config.module_name}.png",
     )
 
     logger.info("Compute neighbors...")

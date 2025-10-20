@@ -18,15 +18,15 @@ logging_dir = "logs"
 
 # --- Modules Configuration ---
 [modules.format_data]
-module_name = "format_data"
+module_name = "0_format_data"
 
 [modules.subsample_data]
-module_name = "subsample"
+module_name = "0.5_subsample"
 n_cells = 5000
 replace = false
 
 [modules.quality_control]
-module_name = "quality_control"
+module_name = "1_quality_control"
 subsample_data = false
 min_counts = 200
 min_cells = 3
@@ -35,7 +35,7 @@ max_cell_area = 2000
 norm_approach = "cell_area"
 
 [modules.dimension_reduction]
-module_name = "dimension_reduction"
+module_name = "2_dimension_reduction"
 subsample_strategy = "compute"
 n_pca = 30
 n_neighbors = 15
@@ -44,16 +44,16 @@ cluster_name = "leiden_clusters"
 norm_approach = "scanpy_log"
 
 [modules.integrate]
-module_name = "integrate"
+module_name = "3_integrate"
 method = "ingest"
 
 [modules.annotate]
-module_name = "annotate"
+module_name = "3_annotate"
 cluster_name = "leiden_clusters"
 new_clusters = "annotated_clusters"
 
 [modules.view_images]
-module_name = "view_images"
+module_name = "4_view_images"
 gene_list = ["CD3E", "EPCAM", "PECAM1", "MKI67"]
 
 [modules.muspan]

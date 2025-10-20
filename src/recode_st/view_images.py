@@ -24,7 +24,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "3_annotate" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "annotate" / "adata.h5ad")
 
     # View plots
     logger.info("Visualize clusters on tissue...")

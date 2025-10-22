@@ -27,6 +27,9 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
+    # Set the directory where to save the ScanPy figures
+    sc.settings.figdir = module_dir
+
     logger.info("Starting integration of scRNAseq and spatial transcriptomics data...")
 
     logger.info("Loading scRNAseq data from HLCA ...")
@@ -103,21 +106,25 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
 
     logger.info(f"Columns in adata {adata.obs.columns}...")
 
-    sc.pl.umap(
-        adata,
-        color=["leiden_clusters", "predicted_cell_type"],
-        title="Xenium data mapped to HLCA",
-        save=f"_{config.module_name}_{method}_integration.png",  # save figure
-    )
+    color_list = ["condition", "ROI", "predicted_cell_type"]
 
-    color_list = ["condition", "ROI", "leiden_clusters", "predicted_cell_type"]
-
+    logger.info("Plotting UMAPs...")
     sc.pl.umap(
         adata,
         color=color_list,
         title="Xenium data mapped to HLCA",
-        save=f"_{config.module_name}_{method}.png",  # save figure
-    )
+        save=f"_{config.module_name}_{method}.png",
+    )  # save figure
+
+    sc.pl.umap(
+        adata,
+        color=["leiden_clusters", "predicted_cell_type"],
+        title="Xenium data mapped to HLCA",
+        save=f"_{config.module_name}_{method}_leiden.png",
+    )  # save figure
+
+    logger.info(f"UMAP plot saved to {sc.settings.figdir}")
+
     logger.info("Saving integrated data...")
     adata.write_h5ad(module_dir / "adata.h5ad")
     logger.info(f"Integrated data saved to {module_dir}.")

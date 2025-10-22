@@ -100,12 +100,17 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
         raise NotImplementedError(f"Integration method {method} not implemented.")
 
     logger.info("Visualize data following label transfer...")
+
+    color_list = ["ROI", "leiden", "predicted_cell_type"]
     if "leiden" not in adata.obs:
         logger.info("leiden clustering not found.")
+        color_list = ["ROI", "predicted_cell_type"]
+    else:
+        logger.info("leiden clustering found.")
 
     sc.pl.umap(
         adata,
-        color=["ROI", "leiden", "predicted_cell_type"],
+        color=color_list,
         title="Xenium data mapped to HLCA",
         save=str(module_dir / f"_{config.module_name}_{method}.png"),  # save figure
     )

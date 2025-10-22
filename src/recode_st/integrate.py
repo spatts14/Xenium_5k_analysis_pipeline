@@ -103,18 +103,20 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
 
     logger.info(f"Columns in adata {adata.obs.columns}...")
 
-    color_list = ["ROI", "leiden", "predicted_cell_type"]
-    if "leiden" not in adata.obs:
-        logger.info("leiden clustering not found.")
-        color_list = ["ROI", "predicted_cell_type"]
-    else:
-        logger.info("leiden clustering found.")
+    sc.pl.umap(
+        adata,
+        color=["leiden_clusters", "predicted_cell_type"],
+        title="Xenium data mapped to HLCA",
+        save=f"_{config.module_name}_{method}_integration.png",  # save figure
+    )
+
+    color_list = ["condition", "ROI", "leiden_clusters", "predicted_cell_type"]
 
     sc.pl.umap(
         adata,
         color=color_list,
         title="Xenium data mapped to HLCA",
-        save=str(module_dir / f"_{config.module_name}_{method}.png"),  # save figure
+        save=f"_{config.module_name}_{method}.png",  # save figure
     )
     logger.info("Saving integrated data...")
     adata.write_h5ad(module_dir / "adata.h5ad")

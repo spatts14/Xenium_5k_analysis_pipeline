@@ -64,7 +64,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     if method == "ingest":
         logger.info("Integrating data using ingest...")
 
-        logger.info("Enuring Xenium data and reference data have the same genes...")
+        logger.info("Confirm Xenium data and reference data have the same genes...")
         var_names = adata_ref.var_names.intersection(adata.var_names)
         adata_ref = adata_ref[:, var_names].copy()
         adata_ingest = adata[:, var_names].copy()
@@ -90,6 +90,8 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
             adata.obs_names, "predicted_cell_type"
         ]
 
+        logger.info("Ingest integration complete.")
+
     elif method == "scANVI":  # Placeholder for scANVI integration
         logger.info("Integrating data using scANVI...")
         # Placeholder for scANVI integration code
@@ -98,11 +100,17 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
         raise NotImplementedError(f"Integration method {method} not implemented.")
 
     logger.info("Visualize data following label transfer...")
+    if "leiden" not in adata.obs:
+        logger.info("leiden clustering not found.")
+
     sc.pl.umap(
         adata,
-        color=["leiden", "predicted_cell_type"],
+        color=["ROI", "leiden", "predicted_cell_type"],
         title="Xenium data mapped to HLCA",
-        save=f"_{config.module_name}_{method}.png",  # save figure
+        save=module_dir / f"_{config.module_name}_{method}.png",  # save figure
     )
+    logger.info("Saving integrated data...")
+    adata.write_h5ad(module_dir / "adata.h5ad")
+    logger.info(f"Integrated data saved to {module_dir}.")
 
     logger.info("Integration complete.")

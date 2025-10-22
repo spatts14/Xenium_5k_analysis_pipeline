@@ -45,6 +45,15 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
         sc.tl.pca(adata_ref, n_comps=50)
         sc.pp.neighbors(adata_ref, n_neighbors=15, n_pcs=40)
         sc.tl.umap(adata_ref)
+        sc.pl.umap(
+            adata_ref,
+            color="cell_type",
+            title="HLCA reference data UMAP",
+            save=f"_{config.module_name}_hlca_umap.png",
+        )
+        logger.info("Finished preprocessing HLCA reference data.")
+        adata_ref.write_h5ad(io_config.hlca_path)
+        logger.info(f"Processed HLCA reference data saved to {io_config.hlca_path}.")
     else:
         logger.info(
             "HLCA reference data already preprocessed. "
@@ -54,6 +63,13 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Starting integration...")
     if method == "ingest":
         logger.info("Integrating data using ingest...")
+
+        logger.info("Enuring Xenium data and reference data have the same genes...")
+        var_names = adata_ref.var_names.intersection(adata.var_names)
+        adata_ref = adata_ref[:, var_names].copy()
+        adata = adata[:, var_names].copy()
+
+        # Run ingest to map Xenium data onto HLCA reference
         sc.tl.ingest(
             adata,
             adata_ref,
@@ -76,7 +92,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Visualize data following label transfer...")
     sc.pl.umap(
         adata,
-        color="predicted_cell_type",
+        color=["leiden", "predicted_cell_type"],
         title="Xenium data mapped to HLCA",
         save=f"_{config.module_name}_{method}.png",  # save figure
     )

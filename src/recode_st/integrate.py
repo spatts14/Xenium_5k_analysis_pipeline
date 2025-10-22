@@ -38,6 +38,11 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
 
+    logger.info("Confirm Xenium data and reference data have the same genes...")
+    var_names = adata_ref.var_names.intersection(adata.var_names)
+    adata_ref = adata_ref[:, var_names].copy()
+    adata_ingest = adata[:, var_names].copy()
+
     logger.info("Checking if need to process reference scRNAseq data...")
     # Confirm that PCA and UMAP have been computed for reference data
     if "X_pca" not in adata_ref.obsm or "X_umap" not in adata_ref.obsm:
@@ -66,11 +71,6 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Starting integration...")
     if method == "ingest":
         logger.info("Integrating data using ingest...")
-
-        logger.info("Confirm Xenium data and reference data have the same genes...")
-        var_names = adata_ref.var_names.intersection(adata.var_names)
-        adata_ref = adata_ref[:, var_names].copy()
-        adata_ingest = adata[:, var_names].copy()
 
         # Run ingest to map Xenium data onto HLCA reference
         sc.tl.ingest(

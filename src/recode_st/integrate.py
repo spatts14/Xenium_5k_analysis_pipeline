@@ -107,7 +107,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
         adata,
         color=["ROI", "leiden", "predicted_cell_type"],
         title="Xenium data mapped to HLCA",
-        save=module_dir / f"_{config.module_name}_{method}.png",  # save figure
+        save=str(module_dir / f"_{config.module_name}_{method}.png"),  # save figure
     )
     logger.info("Saving integrated data...")
     adata.write_h5ad(module_dir / "adata.h5ad")

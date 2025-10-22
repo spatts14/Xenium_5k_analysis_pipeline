@@ -101,6 +101,8 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
 
     logger.info("Visualize data following label transfer...")
 
+    logger.info(f"Columns in adata {adata.obs.columns}...")
+
     color_list = ["ROI", "leiden", "predicted_cell_type"]
     if "leiden" not in adata.obs:
         logger.info("leiden clustering not found.")

@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Literal, Self
 
 import tomllib
-from pydantic import BaseModel, DirectoryPath, model_validator
+from pydantic import BaseModel, DirectoryPath, Field, model_validator
 
 
 class BaseModuleConfig(BaseModel):
@@ -215,6 +215,9 @@ class IOConfig(BaseModel):
     area_path: Path = Path("selected_cells_stats.csv")
     """The path to the CSV file containing selected cells statistics."""
 
+    hlca_path: Path  # no default, must be explicitly set in config
+    """Path to the HLCA reference dataset in h5ad format."""
+
     logging_dir: Path = Path("logs")
     """The directory for logging output."""
 
@@ -253,10 +256,10 @@ class Config(BaseModel):
     seed: int
     """A random seed to use for reproducibility."""
 
-    io: IOConfig = IOConfig()
+    io: IOConfig = Field(default_factory=IOConfig)
     """Input and output directories configuration."""
 
-    modules: ModulesConfig = ModulesConfig()
+    modules: ModulesConfig = Field(default_factory=ModulesConfig)
     """Configuration for all modules."""
 
 

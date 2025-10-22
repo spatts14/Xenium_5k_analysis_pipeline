@@ -39,9 +39,18 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
 
     logger.info("Confirm Xenium data and reference data have the same genes...")
+    # Replace ensembl ID with gene symbols from adata_ref for matching
+    adata_ref.var_names = adata_ref.var["feature_name"]
+
+    # Now intersect based on gene symbols
     var_names = adata_ref.var_names.intersection(adata.var_names)
+
+    # Subset both datasets to common genes
     adata_ref = adata_ref[:, var_names].copy()
     adata_ingest = adata[:, var_names].copy()
+    logger.info(f"Number of common genes: {len(var_names)}")
+    logger.info(f"HLCA: {adata_ref.shape}")
+    logger.info(f"ST dataset: {adata_ingest.shape}")
 
     logger.info("Checking if need to process reference scRNAseq data...")
     # Confirm that PCA and UMAP have been computed for reference data

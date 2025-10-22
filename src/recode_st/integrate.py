@@ -67,11 +67,11 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
         logger.info("Enuring Xenium data and reference data have the same genes...")
         var_names = adata_ref.var_names.intersection(adata.var_names)
         adata_ref = adata_ref[:, var_names].copy()
-        adata = adata[:, var_names].copy()
+        adata_ingest = adata[:, var_names].copy()
 
         # Run ingest to map Xenium data onto HLCA reference
         sc.tl.ingest(
-            adata,
+            adata_ingest,
             adata_ref,
             obs=["cell_type"],  # Annotation column to use in adata_ref.obs
             # For core HLCA, "cell_type"
@@ -80,8 +80,16 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
             neighbors_key=None,  # use default neighbors from reference
             inplace=True,
         )
-        adata.obs["predicted_cell_type"] = adata.obs["cell_type"]
-        del adata.obs["cell_type"]
+
+        # Rename predicted cell type column
+        adata_ingest.obs["predicted_cell_type"] = adata_ingest.obs["cell_type"]
+        del adata_ingest.obs["cell_type"]
+
+        # Copy cell type predictions back to original adata
+        adata.obs["predicted_cell_type"] = adata_ingest.obs.loc[
+            adata.obs_names, "predicted_cell_type"
+        ]
+
     elif method == "scANVI":  # Placeholder for scANVI integration
         logger.info("Integrating data using scANVI...")
         # Placeholder for scANVI integration code

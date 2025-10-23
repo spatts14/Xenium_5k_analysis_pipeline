@@ -74,7 +74,10 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     mask = adata.var["ensembl_id"].isin(
         var_names
     )  # mask to filter genes based on ensembl IDs
-    adata_ingest = adata[:, mask].copy()
+    adata_ingest = adata[:, mask].copy()  # subset using mast
+    # Rename var_names to the Ensembl IDs
+    adata_ingest.var_names = adata_ingest.var["ensembl_id"]
+    logger.info(f"Print first 5 gene names in ST: {adata_ingest.var_names[:]}")
 
     # Subset reference datasets to common genes
     adata_ref = adata_ref[:, var_names].copy()

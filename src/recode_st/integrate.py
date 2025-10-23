@@ -43,7 +43,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Confirm Xenium data and reference data have the same genes...")
     # Replace ensembl ID with gene symbols from adata_ref for matching
     gene_id_dict = pd.read_csv(
-        config.gene_id_dict_path, index_col=0
+        io_config.gene_id_dict_path, index_col=0
     )  # dictionary with ensembl and gene symbols
 
     # Add ensembl_id to spatial transcriptomics data

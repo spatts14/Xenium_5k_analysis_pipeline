@@ -3,6 +3,8 @@
 import warnings  # ? what is the best way to suppress warnings from package inputs?
 from logging import getLogger
 
+import pandas as pd
+
 # import torch
 import scanpy as sc
 
@@ -40,15 +42,27 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
 
     logger.info("Confirm Xenium data and reference data have the same genes...")
     # Replace ensembl ID with gene symbols from adata_ref for matching
-    adata_ref.var_names = adata_ref.var["feature_name"]
+    gene_id_dict = pd.read_csv(
+        config.gene_id_dict_path, index_col=0
+    )  # dictionary with ensembl and gene symbols
 
-    # Now intersect based on gene symbols
-    var_names = adata_ref.var_names.intersection(adata.var_names)
+    # Add ensembl_id to spatial transcriptomics data
+    adata.var["ensembl_id"] = adata.var.index.map(gene_id_dict["ensembl_id"])
 
-    # Subset both datasets to common genes
-    adata_ref = adata_ref[:, var_names].copy()
-    adata_ingest = adata[:, var_names].copy()
+    # List of genes shared between datasets based on ensembl IDs
+    var_names = adata_ref.var_names.intersection(adata.var["ensembl_id"])
     logger.info(f"Number of common genes: {len(var_names)}")
+
+    # Subset spatial transcriptomics data to common genes
+    mask = adata.var["ensembl_id"].isin(
+        var_names
+    )  # mask to filter genes based on ensembl IDs
+    adata_ingest = adata[:, mask].copy()
+
+    # Subset reference datasets to common genes
+    adata_ref = adata_ref[:, var_names].copy()
+
+    # Confirm that both datasets have the same genes
     logger.info(f"HLCA: {adata_ref.shape}")
     logger.info(f"ST dataset: {adata_ingest.shape}")
 

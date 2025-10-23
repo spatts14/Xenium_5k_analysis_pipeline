@@ -3,6 +3,8 @@
 import warnings  # ? what is the best way to suppress warnings from package inputs?
 from logging import getLogger
 
+import pandas as pd
+
 # import torch
 import scanpy as sc
 
@@ -38,6 +40,42 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
 
+    logger.info("Confirm Xenium data and reference data have the same genes...")
+    # Replace ensembl ID with gene symbols from adata_ref for matching
+    try:
+        gene_id_dict = pd.read_csv(
+            io_config.gene_id_dict_path, index_col=0
+        )  # dictionary with ensembl and gene symbols
+    except FileNotFoundError as e:
+        logger.error(f"Gene ID dictionary file not found: {io_config.gene_id_dict_path}")
+        raise FileNotFoundError(f"Gene ID dictionary file not found: {io_config.gene_id_dict_path}") from e
+    except pd.errors.ParserError as e:
+        logger.error(f"Error parsing gene ID dictionary file: {io_config.gene_id_dict_path}")
+        raise ValueError(f"Error parsing gene ID dictionary file: {io_config.gene_id_dict_path}") from e
+    except Exception as e:
+        logger.error(f"Unexpected error reading gene ID dictionary file: {io_config.gene_id_dict_path}: {e}")
+        raise
+
+    # Add ensembl_id to spatial transcriptomics data
+    adata.var["ensembl_id"] = adata.var.index.map(gene_id_dict["ensembl_id"])
+
+    # List of genes shared between datasets based on ensembl IDs
+    var_names = adata_ref.var_names.intersection(adata.var["ensembl_id"])
+    logger.info(f"Number of common genes: {len(var_names)}")
+
+    # Subset spatial transcriptomics data to common genes
+    mask = adata.var["ensembl_id"].isin(
+        var_names
+    )  # mask to filter genes based on ensembl IDs
+    adata_ingest = adata[:, mask].copy()
+
+    # Subset reference datasets to common genes
+    adata_ref = adata_ref[:, var_names].copy()
+
+    # Confirm that both datasets have the same genes
+    logger.info(f"HLCA: {adata_ref.shape}")
+    logger.info(f"ST dataset: {adata_ingest.shape}")
+
     logger.info("Checking if need to process reference scRNAseq data...")
     # Confirm that PCA and UMAP have been computed for reference data
     if "X_pca" not in adata_ref.obsm or "X_umap" not in adata_ref.obsm:
@@ -66,11 +104,6 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Starting integration...")
     if method == "ingest":
         logger.info("Integrating data using ingest...")
-
-        logger.info("Confirm Xenium data and reference data have the same genes...")
-        var_names = adata_ref.var_names.intersection(adata.var_names)
-        adata_ref = adata_ref[:, var_names].copy()
-        adata_ingest = adata[:, var_names].copy()
 
         # Run ingest to map Xenium data onto HLCA reference
         sc.tl.ingest(

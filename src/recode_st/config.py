@@ -218,6 +218,10 @@ class IOConfig(BaseModel):
     hlca_path: Path  # no default, must be explicitly set in config
     """Path to the HLCA reference dataset in h5ad format."""
 
+    gene_id_dict_path: Path  # no default, must be explicitly set in config
+    """Path to the gene ID dictionary CSV file.
+    The CSV should have 'ensembl_id' as the index column and a 'gene_symbol' column."""
+
     logging_dir: Path = Path("logs")
     """The directory for logging output."""
 

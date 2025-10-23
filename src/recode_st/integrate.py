@@ -26,6 +26,10 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
 
     module_dir = io_config.output_dir / config.module_name
 
+    # Paths to input data
+    hcla_path = io_config.hlca_path
+    gene_id_dict_path = io_config.gene_id_dict_path
+
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
@@ -35,7 +39,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Starting integration of scRNAseq and spatial transcriptomics data...")
 
     logger.info("Loading scRNAseq data from HLCA ...")
-    adata_ref = sc.read_h5ad(io_config.hlca_path)
+    adata_ref = sc.read_h5ad(hcla_path)
 
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
@@ -44,16 +48,20 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     # Replace ensembl ID with gene symbols from adata_ref for matching
     try:
         gene_id_dict = pd.read_csv(
-            io_config.gene_id_dict_path, index_col=0
+            gene_id_dict_path, index_col=0
         )  # dictionary with ensembl and gene symbols
     except FileNotFoundError as e:
-        logger.error(f"Gene ID dictionary file not found: {io_config.gene_id_dict_path}")
-        raise FileNotFoundError(f"Gene ID dictionary file not found: {io_config.gene_id_dict_path}") from e
+        logger.error(f"Gene ID dictionary file not found: {gene_id_dict_path}")
+        raise FileNotFoundError(
+            f"Gene ID dictionary file not found: {gene_id_dict_path}"
+        ) from e
     except pd.errors.ParserError as e:
-        logger.error(f"Error parsing gene ID dictionary file: {io_config.gene_id_dict_path}")
-        raise ValueError(f"Error parsing gene ID dictionary file: {io_config.gene_id_dict_path}") from e
+        logger.error(f"Error parsing gene ID dictionary file: {gene_id_dict_path}")
+        raise ValueError(
+            f"Error parsing gene ID dictionary file: {gene_id_dict_path}"
+        ) from e
     except Exception as e:
-        logger.error(f"Unexpected error reading gene ID dictionary file: {io_config.gene_id_dict_path}: {e}")
+        logger.error(f"Error reading gene ID dictionary file: {gene_id_dict_path}: {e}")
         raise
 
     # Add ensembl_id to spatial transcriptomics data
@@ -66,11 +74,48 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     # Subset spatial transcriptomics data to common genes
     mask = adata.var["ensembl_id"].isin(
         var_names
-    )  # mask to filter genes based on ensembl IDs
+    )  # Create mask to filter genes based on ensembl IDs
     adata_ingest = adata[:, mask].copy()
+
+    adata_ingest.var_names = adata_ingest.var[
+        "ensembl_id"
+    ]  # Rename var_names to the Ensembl IDs
+    logger.info(f"First 5 gene names in ST: {adata_ingest.var_names[:5].tolist()}")
 
     # Subset reference datasets to common genes
     adata_ref = adata_ref[:, var_names].copy()
+
+    # Check that the genes are in the same order
+    logger.info(
+        f"Checking genes list:{set(adata_ref.var_names) == set(adata_ingest.var_names)}"
+    )
+    # After subsetting both datasets to common genes, add these checks:
+
+    # 1. Check if gene names are identical
+    logger.info(
+        f"Gene names match: {adata_ref.var_names.equals(adata_ingest.var_names)}"
+    )
+
+    # 2. Check if they're in the same order
+    logger.info(
+        f"Genes in same order: {(adata_ref.var_names == adata_ingest.var_names).all()}"
+    )
+
+    # 3. Show first few genes from each
+    logger.info(f"First 5 genes in reference: {adata_ref.var_names[:5].tolist()}")
+    logger.info(f"First 5 genes in ST: {adata_ingest.var_names[:5].tolist()}")
+
+    # 4. Check for any missing genes in either direction
+    missing_in_ref = set(adata_ingest.var_names) - set(adata_ref.var_names)
+    missing_in_ingest = set(adata_ref.var_names) - set(adata_ingest.var_names)
+    logger.info(f"Genes in ST but not in reference: {len(missing_in_ref)}")
+    logger.info(f"Genes in reference but not in ST: {len(missing_in_ingest)}")
+
+    # 5. If order doesn't match, reorder adata_ingest to match adata_ref
+    if not (adata_ref.var_names == adata_ingest.var_names).all():
+        logger.info("Reordering adata_ingest genes to match reference...")
+        adata_ingest = adata_ingest[:, adata_ref.var_names].copy()
+        logger.info("Genes reordered successfully.")
 
     # Confirm that both datasets have the same genes
     logger.info(f"HLCA: {adata_ref.shape}")

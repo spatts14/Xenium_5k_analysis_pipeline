@@ -80,7 +80,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     adata_ingest.var_names = adata_ingest.var[
         "ensembl_id"
     ]  # Rename var_names to the Ensembl IDs
-    logger.info(f"Print first 5 gene names in ST: {adata_ingest.var_names[:]}")
+    logger.info(f"First 5 gene names in ST: {adata_ingest.var_names[:5].tolist()}")
 
     # Subset reference datasets to common genes
     adata_ref = adata_ref[:, var_names].copy()

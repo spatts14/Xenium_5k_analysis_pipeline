@@ -2,7 +2,6 @@
 
 import warnings  # ? what is the best way to suppress warnings from package inputs?
 from logging import getLogger
-from pathlib import Path
 
 import pandas as pd
 
@@ -26,8 +25,10 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     method = config.method
 
     module_dir = io_config.output_dir / config.module_name
-    hlca_path = Path(io_config.hlca_path)
-    gene_id_dict_path = Path(io_config.gene_id_dict_path)
+
+    # Paths to input data
+    hcla_path = io_config.hlca_path
+    gene_id_dict_path = io_config.gene_id_dict_path
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -38,10 +39,10 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Starting integration of scRNAseq and spatial transcriptomics data...")
 
     logger.info("Loading scRNAseq data from HLCA ...")
-    adata_ref = sc.read_h5ad(hlca_path)
+    adata_ref = sc.read_h5ad(hcla_path)
 
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(hlca_path / "2_dimension_reduction" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
 
     logger.info("Confirm Xenium data and reference data have the same genes...")
     # Replace ensembl ID with gene symbols from adata_ref for matching
@@ -73,14 +74,48 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     # Subset spatial transcriptomics data to common genes
     mask = adata.var["ensembl_id"].isin(
         var_names
-    )  # mask to filter genes based on ensembl IDs
-    adata_ingest = adata[:, mask].copy()  # subset using mast
-    # Rename var_names to the Ensembl IDs
-    adata_ingest.var_names = adata_ingest.var["ensembl_id"]
+    )  # Create mask to filter genes based on ensembl IDs
+    adata_ingest = adata[:, mask].copy()
+
+    adata_ingest.var_names = adata_ingest.var[
+        "ensembl_id"
+    ]  # Rename var_names to the Ensembl IDs
     logger.info(f"Print first 5 gene names in ST: {adata_ingest.var_names[:]}")
 
     # Subset reference datasets to common genes
     adata_ref = adata_ref[:, var_names].copy()
+
+    # Check that the genes are in the same order
+    logger.info(
+        f"Checking order: {set(adata_ref.var_names) == set(adata_ingest.var_names)}"
+    )
+    # After subsetting both datasets to common genes, add these checks:
+
+    # 1. Check if gene names are identical
+    logger.info(
+        f"Gene names match: {adata_ref.var_names.equals(adata_ingest.var_names)}"
+    )
+
+    # 2. Check if they're in the same order
+    logger.info(
+        f"Genes in same order: {(adata_ref.var_names == adata_ingest.var_names).all()}"
+    )
+
+    # 3. Show first few genes from each
+    logger.info(f"First 5 genes in reference: {adata_ref.var_names[:5].tolist()}")
+    logger.info(f"First 5 genes in ST: {adata_ingest.var_names[:5].tolist()}")
+
+    # 4. Check for any missing genes in either direction
+    missing_in_ref = set(adata_ingest.var_names) - set(adata_ref.var_names)
+    missing_in_ingest = set(adata_ref.var_names) - set(adata_ingest.var_names)
+    logger.info(f"Genes in ST but not in reference: {len(missing_in_ref)}")
+    logger.info(f"Genes in reference but not in ST: {len(missing_in_ingest)}")
+
+    # 5. If order doesn't match, reorder adata_ingest to match adata_ref
+    if not (adata_ref.var_names == adata_ingest.var_names).all():
+        logger.info("Reordering adata_ingest genes to match reference...")
+        adata_ingest = adata_ingest[:, adata_ref.var_names].copy()
+        logger.info("Genes reordered successfully.")
 
     # Confirm that both datasets have the same genes
     logger.info(f"HLCA: {adata_ref.shape}")
@@ -103,8 +138,8 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
             save=f"_{config.module_name}_hlca_umap.png",
         )
         logger.info("Finished preprocessing HLCA reference data.")
-        adata_ref.write_h5ad(hlca_path)
-        logger.info(f"Processed HLCA reference data saved to {hlca_path}.")
+        adata_ref.write_h5ad(io_config.hlca_path)
+        logger.info(f"Processed HLCA reference data saved to {io_config.hlca_path}.")
     else:
         logger.info(
             "HLCA reference data already preprocessed. "

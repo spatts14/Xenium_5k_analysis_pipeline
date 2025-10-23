@@ -42,9 +42,19 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
 
     logger.info("Confirm Xenium data and reference data have the same genes...")
     # Replace ensembl ID with gene symbols from adata_ref for matching
-    gene_id_dict = pd.read_csv(
-        io_config.gene_id_dict_path, index_col=0
-    )  # dictionary with ensembl and gene symbols
+    try:
+        gene_id_dict = pd.read_csv(
+            io_config.gene_id_dict_path, index_col=0
+        )  # dictionary with ensembl and gene symbols
+    except FileNotFoundError as e:
+        logger.error(f"Gene ID dictionary file not found: {io_config.gene_id_dict_path}")
+        raise FileNotFoundError(f"Gene ID dictionary file not found: {io_config.gene_id_dict_path}") from e
+    except pd.errors.ParserError as e:
+        logger.error(f"Error parsing gene ID dictionary file: {io_config.gene_id_dict_path}")
+        raise ValueError(f"Error parsing gene ID dictionary file: {io_config.gene_id_dict_path}") from e
+    except Exception as e:
+        logger.error(f"Unexpected error reading gene ID dictionary file: {io_config.gene_id_dict_path}: {e}")
+        raise
 
     # Add ensembl_id to spatial transcriptomics data
     adata.var["ensembl_id"] = adata.var.index.map(gene_id_dict["ensembl_id"])

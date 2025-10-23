@@ -87,7 +87,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
 
     # Check that the genes are in the same order
     logger.info(
-        f"Checking order: {set(adata_ref.var_names) == set(adata_ingest.var_names)}"
+        f"Checking genes list:{set(adata_ref.var_names) == set(adata_ingest.var_names)}"
     )
     # After subsetting both datasets to common genes, add these checks:
 

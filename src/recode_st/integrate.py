@@ -2,6 +2,7 @@
 
 import warnings  # ? what is the best way to suppress warnings from package inputs?
 from logging import getLogger
+from pathlib import Path
 
 import pandas as pd
 
@@ -25,6 +26,8 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     method = config.method
 
     module_dir = io_config.output_dir / config.module_name
+    hlca_path = Path(io_config.hlca_path)
+    gene_id_dict_path = Path(io_config.gene_id_dict_path)
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -35,25 +38,29 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Starting integration of scRNAseq and spatial transcriptomics data...")
 
     logger.info("Loading scRNAseq data from HLCA ...")
-    adata_ref = sc.read_h5ad(io_config.hlca_path)
+    adata_ref = sc.read_h5ad(hlca_path)
 
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
+    adata = sc.read_h5ad(hlca_path / "2_dimension_reduction" / "adata.h5ad")
 
     logger.info("Confirm Xenium data and reference data have the same genes...")
     # Replace ensembl ID with gene symbols from adata_ref for matching
     try:
         gene_id_dict = pd.read_csv(
-            io_config.gene_id_dict_path, index_col=0
+            gene_id_dict_path, index_col=0
         )  # dictionary with ensembl and gene symbols
     except FileNotFoundError as e:
-        logger.error(f"Gene ID dictionary file not found: {io_config.gene_id_dict_path}")
-        raise FileNotFoundError(f"Gene ID dictionary file not found: {io_config.gene_id_dict_path}") from e
+        logger.error(f"Gene ID dictionary file not found: {gene_id_dict_path}")
+        raise FileNotFoundError(
+            f"Gene ID dictionary file not found: {gene_id_dict_path}"
+        ) from e
     except pd.errors.ParserError as e:
-        logger.error(f"Error parsing gene ID dictionary file: {io_config.gene_id_dict_path}")
-        raise ValueError(f"Error parsing gene ID dictionary file: {io_config.gene_id_dict_path}") from e
+        logger.error(f"Error parsing gene ID dictionary file: {gene_id_dict_path}")
+        raise ValueError(
+            f"Error parsing gene ID dictionary file: {gene_id_dict_path}"
+        ) from e
     except Exception as e:
-        logger.error(f"Unexpected error reading gene ID dictionary file: {io_config.gene_id_dict_path}: {e}")
+        logger.error(f"Error reading gene ID dictionary file: {gene_id_dict_path}: {e}")
         raise
 
     # Add ensembl_id to spatial transcriptomics data
@@ -93,8 +100,8 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
             save=f"_{config.module_name}_hlca_umap.png",
         )
         logger.info("Finished preprocessing HLCA reference data.")
-        adata_ref.write_h5ad(io_config.hlca_path)
-        logger.info(f"Processed HLCA reference data saved to {io_config.hlca_path}.")
+        adata_ref.write_h5ad(hlca_path)
+        logger.info(f"Processed HLCA reference data saved to {hlca_path}.")
     else:
         logger.info(
             "HLCA reference data already preprocessed. "

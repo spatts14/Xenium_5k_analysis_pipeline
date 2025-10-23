@@ -220,7 +220,7 @@ class IOConfig(BaseModel):
 
     gene_id_dict_path: Path  # no default, must be explicitly set in config
     """Path to the gene ID dictionary CSV file.
-    Should contain 'gene_symbol' and 'ensembl_id' columns."""
+    The CSV should have 'ensembl_id' as the index column and a 'gene_symbol' column."""
 
     logging_dir: Path = Path("logs")
     """The directory for logging output."""

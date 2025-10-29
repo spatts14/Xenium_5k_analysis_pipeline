@@ -318,7 +318,7 @@ def run_dimension_reduction(
         dpi_save=300,  # resolution of saved plots (important!)
         frameon=False,  # remove borders
         vector_friendly=True,  # produce vector-friendly PDFs/SVGs
-        fontsize=12,  # adjust font size
+        fontsize=16,  # adjust font size
         facecolor="white",  # background color
         figsize=(10, 8),  # default single-panel figure size
     )

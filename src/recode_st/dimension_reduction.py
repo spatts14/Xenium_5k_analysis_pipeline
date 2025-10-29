@@ -187,7 +187,7 @@ def compute_dimensionality_reduction(
         min_dist: Minimum distance for UMAP
 
     Returns:
-        AnnData with computed dimensionality reduction
+        Nothing. Saves figures and AnnData with computed dimensionality reduction.
     """
     logger.info(f"Computing neighbors (k={n_neighbors})...")
     sc.pp.neighbors(adata, n_neighbors=n_neighbors, n_pcs=n_pca)

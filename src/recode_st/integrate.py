@@ -15,35 +15,32 @@ warnings.filterwarnings("ignore")
 logger = getLogger(__name__)
 
 
-def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
-    """Integrate scRNAseq and spatial transcriptomics data using Scanorama.
+def prepare_integrated_datasets(gene_id_dict_path, adata_ref, adata):
+    """Ensures ST and reference dataset contain are in correct format for integration.
+
+    Both datasets should have:
+    1. The same list of genes
+    2. Labeled by the ensembl ID rather than gene symbol
+    3. Genes are in the same order.
+    This needs to be done prior to integration!
 
     Args:
-        config (IntegrateModuleConfig): Integration module configuration object.
-        io_config (IOConfig): IO configuration object.
+        gene_id_dict_path (str | Path): Path to gene ID dictionary .csv file.
+        First column: named "gene_symbol" containing the gene ID for all genes in
+        spatial transcriptomics dataset,
+        Second column:  named "ensembl_ID" containing the ensembl ID of the
+        corresponding gene.
+        adata_ref (anndata.AnnData)): Reference scRNAseq AnnData object.
+        adata (anndata.AnnData): Spatial transcriptomics AnnData object.
+
+    Raises:
+        FileNotFoundError: _description_
+        ValueError: _description_
+
+    Returns:
+        anndata.AnnData: formatted adata_ref and adata_ingest AnnData objects.
+
     """
-    method = config.method
-
-    module_dir = io_config.output_dir / config.module_name
-
-    # Paths to input data
-    hcla_path = io_config.hlca_path
-    gene_id_dict_path = io_config.gene_id_dict_path
-
-    # Create output directories if they do not exist
-    module_dir.mkdir(exist_ok=True)
-
-    # Set the directory where to save the ScanPy figures
-    sc.settings.figdir = module_dir
-
-    logger.info("Starting integration of scRNAseq and spatial transcriptomics data...")
-
-    logger.info("Loading scRNAseq data from HLCA ...")
-    adata_ref = sc.read_h5ad(hcla_path)
-
-    logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
-
     logger.info("Confirm Xenium data and reference data have the same genes...")
     # Replace ensembl ID with gene symbols from adata_ref for matching
     try:
@@ -120,6 +117,41 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     # Confirm that both datasets have the same genes
     logger.info(f"HLCA: {adata_ref.shape}")
     logger.info(f"ST dataset: {adata_ingest.shape}")
+    return adata_ref, adata_ingest
+
+
+def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
+    """Integrate scRNAseq and spatial transcriptomics data using Scanorama.
+
+    Args:
+        config (IntegrateModuleConfig): Integration module configuration object.
+        io_config (IOConfig): IO configuration object.
+    """
+    method = config.method
+
+    module_dir = io_config.output_dir / config.module_name
+
+    # Paths to input data
+    hcla_path = io_config.hlca_path
+    gene_id_dict_path = io_config.gene_id_dict_path
+
+    # Create output directories if they do not exist
+    module_dir.mkdir(exist_ok=True)
+
+    # Set the directory where to save the ScanPy figures
+    sc.settings.figdir = module_dir
+
+    logger.info("Starting integration of scRNAseq and spatial transcriptomics data...")
+
+    logger.info("Loading scRNAseq data from HLCA ...")
+    adata_ref = sc.read_h5ad(hcla_path)
+
+    logger.info("Loading Xenium data...")
+    adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
+
+    adata_ref, adata_ingest = prepare_integrated_datasets(
+        gene_id_dict_path, adata_ref, adata
+    )
 
     logger.info("Checking if need to process reference scRNAseq data...")
     # Confirm that PCA and UMAP have been computed for reference data

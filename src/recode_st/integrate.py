@@ -31,14 +31,14 @@ def prepare_integrated_datasets(gene_id_dict_path, adata_ref, adata):
         Second column:  named "ensembl_ID" containing the ensembl ID of the
         corresponding gene.
         adata_ref (anndata.AnnData)): Reference scRNAseq AnnData object.
-        adata (anndata.AnnData)): Spatial transcriptomics AnnData object.
+        adata (anndata.AnnData): Spatial transcriptomics AnnData object.
 
     Raises:
         FileNotFoundError: _description_
         ValueError: _description_
 
     Returns:
-        _type_: _description_
+        anndata.AnnData: formatted adata_ref and adata_ingest AnnData objects.
 
     """
     logger.info("Confirm Xenium data and reference data have the same genes...")

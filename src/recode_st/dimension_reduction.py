@@ -3,7 +3,7 @@
 import warnings
 from logging import getLogger
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import geosketch
 import numpy as np
@@ -193,7 +193,7 @@ def compute_dimensionality_reduction(
     sc.pp.neighbors(adata, n_neighbors=n_neighbors, n_pcs=n_pca)
 
     logger.info("Computing UMAP...")
-    sc.tl.umap(adata, min_dist=min_dist)
+    sc.tl.umap(adata)
 
     logger.info(f"Clustering with resolution={resolution}...")
     sc.tl.leiden(adata, resolution=resolution, key_added=cluster_name)
@@ -207,7 +207,7 @@ def plot_dimensionality_reduction(
     module_name: str,
     n_neighbors: int,
     figdir: Path,
-    cmap=sns.color_palette("Blues", as_cmap=True),
+    cmap: Any = sns.color_palette("Blues", as_cmap=True),
     cluster_name: str = "leiden",
 ) -> None:
     """Create and save dimensionality reduction plots.
@@ -350,17 +350,14 @@ def run_dimension_reduction(
         save=f"_{config.module_name}.pdf",
     )
 
-    # Run dimension reduction for each n_neighbors value
-    logger.info("Computing dimension reduction...")
-
     # Compute dimensionality reduction
+    logger.info("Computing dimension reduction...")
     adata = compute_dimensionality_reduction(
         adata=adata,
         n_pca=config.n_pca,
         n_neighbors=config.n_neighbors,
         resolution=config.resolution,
         cluster_name=config.cluster_name,
-        min_dist=0.1,
     )
 
     logger.info("Plotting dimension reduction...")

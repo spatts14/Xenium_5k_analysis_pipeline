@@ -7,6 +7,7 @@ import pandas as pd
 
 # import torch
 import scanpy as sc
+import seaborn as sns
 
 from recode_st.config import IntegrateModuleConfig, IOConfig
 
@@ -138,8 +139,21 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
-    # Set the directory where to save the ScanPy figures
+    # Set figure parameters
+    sc.set_figure_params(
+        dpi=300,  # resolution of saved figures
+        dpi_save=300,  # resolution of saved plots
+        frameon=False,  # remove borders
+        vector_friendly=True,  # produce vector-friendly PDFs/SVGs
+        fontsize=16,  # adjust font size
+        facecolor="white",  # background color
+        figsize=(5, 4),  # default single-panel figure size
+    )
+    # Set figure directory where to save scanpy figures
     sc.settings.figdir = module_dir
+
+    # Set color palette
+    cmap = sns.color_palette("crest", as_cmap=True)
 
     logger.info("Starting integration of scRNAseq and spatial transcriptomics data...")
 
@@ -223,15 +237,17 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
         adata,
         color=color_list,
         title="Xenium data mapped to HLCA",
-        save=f"_{config.module_name}_{method}.png",
-    )  # save figure
+        save=f"_{config.module_name}_{method}.png",  # save figure
+        cmap=cmap,
+    )
 
     sc.pl.umap(
         adata,
         color=["leiden_clusters", "predicted_cell_type"],
         title="Xenium data mapped to HLCA",
-        save=f"_{config.module_name}_{method}_leiden.png",
-    )  # save figure
+        save=f"_{config.module_name}_{method}_leiden.png",  # save figure
+        cmap=cmap,
+    )
 
     logger.info(f"UMAP plot saved to {sc.settings.figdir}")
 

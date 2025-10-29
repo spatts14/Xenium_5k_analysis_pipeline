@@ -207,7 +207,7 @@ def plot_dimensionality_reduction(
     module_name: str,
     n_neighbors: int,
     figdir: Path,
-    cmap: Any = sns.color_palette("Blues", as_cmap=True),
+    cmap: Any = sns.color_palette("crest", as_cmap=True),
     cluster_name: str = "leiden",
 ) -> None:
     """Create and save dimensionality reduction plots.
@@ -237,7 +237,7 @@ def plot_dimensionality_reduction(
         cmap=cmap,
         wspace=0.4,
         show=False,
-        save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}.pdf",
+        save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}.png",
         frameon=False,
     )
 
@@ -261,7 +261,7 @@ def plot_dimensionality_reduction(
         ncols=4,
         wspace=0.4,
         show=False,
-        save=f"_{module_name}_cell_markers_{norm_approach}_neighbors_{n_neighbors}.pdf",
+        save=f"_{module_name}_cell_markers_{norm_approach}_neighbors_{n_neighbors}.png",
         frameon=False,
     )
 
@@ -290,7 +290,7 @@ def plot_spatial_distribution(
             shape=None,
             color=[cluster_name],
             wspace=0.4,
-            save=module_dir / f"{cluster_name}_{roi}_spatial.pdf",
+            save=module_dir / f"{cluster_name}_{roi}_spatial.png",
         )
 
     logger.info(f"Spatial plots saved to {module_dir}")
@@ -314,18 +314,19 @@ def run_dimension_reduction(
 
     # Set figure parameters
     sc.set_figure_params(
-        dpi=150,  # resolution of saved figures
-        dpi_save=300,  # resolution of saved plots (important!)
+        dpi=300,  # resolution of saved figures
+        dpi_save=300,  # resolution of saved plots
         frameon=False,  # remove borders
         vector_friendly=True,  # produce vector-friendly PDFs/SVGs
         fontsize=16,  # adjust font size
         facecolor="white",  # background color
-        figsize=(10, 8),  # default single-panel figure size
+        figsize=(5, 4),  # default single-panel figure size
     )
+    # Set figure directory where to save scanpy figures
     sc.settings.figdir = module_dir
 
     # Set color palette
-    cmap = sns.color_palette("Blues", as_cmap=True)
+    cmap = sns.color_palette("crest", as_cmap=True)
 
     # Load data based on subsampling strategy
     subsample_path = module_dir / f"adata_subsample_{config.norm_approach}.h5ad"
@@ -347,7 +348,7 @@ def run_dimension_reduction(
         log=True,
         n_pcs=config.n_pca,
         show=False,
-        save=f"_{config.module_name}.pdf",
+        save=f"_{config.module_name}.png",
     )
 
     # Compute dimensionality reduction

@@ -55,6 +55,10 @@ class DimensionReductionModuleConfig(BaseModuleConfig):
 
     subsample_strategy: Literal["none", "compute", "load"] = "none"
     """Subsampling strategy for development dataset."""
+    subsample_n_total: int = 5000
+    """Total number of cells to include in the subsampled dataset."""
+    subsample_min_cells_per_roi: int = 100
+    """Minimum number of cells to include from each ROI in the subsampled dataset."""
     n_pca: int
     """number of principal components to compute"""
     n_neighbors: int

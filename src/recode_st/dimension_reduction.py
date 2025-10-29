@@ -203,12 +203,12 @@ def compute_dimensionality_reduction(
 
 def plot_dimensionality_reduction(
     adata: sc.AnnData,
-    cluster_name: str,
     norm_approach: str,
     module_name: str,
     n_neighbors: int,
-    cmap,
     figdir: Path,
+    cmap=sns.color_palette("Blues", as_cmap=True),
+    cluster_name: str = "leiden",
 ) -> None:
     """Create and save dimensionality reduction plots.
 
@@ -237,9 +237,11 @@ def plot_dimensionality_reduction(
         cmap=cmap,
         wspace=0.4,
         show=False,
-        save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}.png",
+        save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}.pdf",
         frameon=False,
     )
+
+    logger.info("Plotting UMAPs with marker genes...")
 
     # Cell type marker plots
     marker_genes = [
@@ -259,7 +261,7 @@ def plot_dimensionality_reduction(
         ncols=4,
         wspace=0.4,
         show=False,
-        save=f"_{module_name}_cell_markers_{norm_approach}_neighbors_{n_neighbors}.png",
+        save=f"_{module_name}_cell_markers_{norm_approach}_neighbors_{n_neighbors}.pdf",
         frameon=False,
     )
 
@@ -288,7 +290,7 @@ def plot_spatial_distribution(
             shape=None,
             color=[cluster_name],
             wspace=0.4,
-            save=module_dir / f"{cluster_name}_{roi}_spatial.png",
+            save=module_dir / f"{cluster_name}_{roi}_spatial.pdf",
         )
 
     logger.info(f"Spatial plots saved to {module_dir}")
@@ -345,40 +347,42 @@ def run_dimension_reduction(
         log=True,
         n_pcs=config.n_pca,
         show=False,
-        save=f"_{config.module_name}.png",
+        save=f"_{config.module_name}.pdf",
     )
 
     # Run dimension reduction for each n_neighbors value
-    for n_neighbors in config.n_neighbors_list:
-        logger.info(f"Processing with n_neighbors={n_neighbors}")
+    logger.info("Computing dimension reduction...")
 
-        # Compute dimensionality reduction
-        adata = compute_dimensionality_reduction(
-            adata=adata,
-            n_pca=config.n_pca,
-            n_neighbors=n_neighbors,
-            resolution=config.resolution,
-            cluster_name=config.cluster_name,
-            min_dist=0.1,
-        )
+    # Compute dimensionality reduction
+    adata = compute_dimensionality_reduction(
+        adata=adata,
+        n_pca=config.n_pca,
+        n_neighbors=config.n_neighbors,
+        resolution=config.resolution,
+        cluster_name=config.cluster_name,
+        min_dist=0.1,
+    )
 
-        # Plot results
-        plot_dimensionality_reduction(
-            adata=adata,
-            cluster_name=config.cluster_name,
-            norm_approach=config.norm_approach,
-            module_name=config.module_name,
-            n_neighbors=n_neighbors,
-            cmap=cmap,
-            figdir=module_dir,
-        )
+    logger.info("Plotting dimension reduction...")
 
-    # Optional: Plot spatial distribution (uncomment if needed)
-    # plot_spatial_distribution(
-    #     adata=adata,
-    #     cluster_name=config.cluster_name,
-    #     module_dir=module_dir,
-    # )
+    # Plot results
+    plot_dimensionality_reduction(
+        adata=adata,
+        cluster_name=config.cluster_name,
+        norm_approach=config.norm_approach,
+        module_name=config.module_name,
+        n_neighbors=config.n_neighbors,
+        cmap=cmap,
+        figdir=module_dir,
+    )
+
+    logger.info("Plotting spatial distribution of clusters...")
+    # Plot spatial distribution of clusters
+    plot_spatial_distribution(
+        adata=adata,
+        cluster_name=config.cluster_name,
+        module_dir=module_dir,
+    )
 
     # Save final results
     output_path = module_dir / "adata.h5ad"

@@ -243,10 +243,9 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
 
     sc.pl.umap(
         adata,
-        color=["leiden_clusters", "predicted_cell_type"],
-        ncols=1,
+        color=["predicted_cell_type"],
         title="Xenium data mapped to HLCA",
-        save=f"_{config.module_name}_{method}_leiden.png",  # save figure
+        save=f"_{config.module_name}_{method}_cell_type.png",  # save figure
         cmap=cmap,
     )
 

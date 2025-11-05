@@ -4,13 +4,20 @@ from pathlib import Path
 
 import pandas as pd
 
+# Define variables
+
+
 # Define the base directory
 base_dir = Path(
-    "/Volumes/sep22/home/wet_lab/_Experiments/009_ST_Xenium/data/xenium/run_1/20251001__141239__SP25164_SARA_PATTI_RUN_1"
+    "/Volumes/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/data/xenium_raw/20251028__162706__SP25164_SARA_PATTI_RUN_2"
 )
+
 output_dir = Path(
-    "/Volumes/sep22/home/wet_lab/_Experiments/009_ST_Xenium/out/data/summary_metrics"
+    "/Volumes/sep22/home/wet_lab/_Experiments/009_ST_Xenium/data/out_data/summary_metrics/csv"
 )
+
+run = "_".join(base_dir.name.split("_")[-2:])
+
 output_dir.mkdir(parents=True, exist_ok=True)
 
 # List to store dataframes
@@ -53,7 +60,7 @@ if dfs:
     print(f"\nColumns in combined dataframe:\n{combined_df.columns.tolist()}")
 
     # Save the combined dataframe
-    output_path = base_dir / "combined_metrics_summary.csv"
+    output_path = base_dir / f"combined_metrics_summary_{run}.csv"
     combined_df.to_csv(output_path, index=False)
     print(f"\nCombined data saved to: {output_path}")
 
@@ -67,6 +74,6 @@ else:
 combined_df["run"] = int(str(base_dir).split("_")[-1])
 
 # Save the combined dataframe
-output_path = output_dir / "combined_metrics_summary.csv"
+output_path = output_dir / f"combined_metrics_summary_{run}.csv"
 combined_df.to_csv(output_path, index=False)
 print(f"\nCombined data saved to: {output_path}")

@@ -8,11 +8,14 @@ import seaborn as sns
 
 # Setup
 base_dir = Path(
-    "/Volumes/sep22/home/wet_lab/_Experiments/009_ST_Xenium/out/data/summary_metrics"
+    "/Volumes/sep22/home/wet_lab/_Experiments/009_ST_Xenium/data/out_data/summary_metrics/"
 )
 
+out_dir = base_dir / "figs"
+out_dir.mkdir(parents=True, exist_ok=True)
+
 # Load combined dataframe
-df = pd.read_csv(base_dir / "combined_metrics_summary.csv")
+df = pd.read_excel(base_dir / "csv/combined_run_dfs.xlsx")
 print(df.columns)
 
 # Color palettes
@@ -113,7 +116,7 @@ plots = [
         "fraction_empty_cells",
         "Fraction of Empty Cells by Condition",
         "Fraction of Empty Cells",
-        (-0.001, 0.1),
+        (-0.001, 0.2),
         "fraction_empty_cells_condition.png",
     ),
     (
@@ -140,7 +143,7 @@ for y, title, ylabel, ylim, filename in plots:
         palette=condition_color_dict,
         title=title,
         ylabel=ylabel,
-        filename=base_dir / filename,
+        filename=out_dir / filename,
         order=["PM08", "COPD", "IPF"],
         ylim=ylim,
     )

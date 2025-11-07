@@ -41,7 +41,7 @@ mask =(adata.obs["disease"].isin([
 adata_subset = adata[mask, :].to_memory()
 
 logging.info(f"Diseases: {adata_subset.obs["disease"].value_counts()}")
-logging.info(f"Diseases: {adata_subset.obs["tissue_coarse_unharmonized"].value_counts()}")
+logging.info(f"Tissue types: {adata_subset.obs["tissue_coarse_unharmonized"].value_counts()}")
 
 adata = None  # free memory
 gc.collect()

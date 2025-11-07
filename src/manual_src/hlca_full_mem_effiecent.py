@@ -31,12 +31,14 @@ logging.info(f"Reading AnnData file from {adata_path}")
 adata = sc.read_h5ad(adata_path, backed='r')
 
 # Filter before loading into memory
-mask =(adata.obs["disease"].isin([
+mask = (
+    adata.obs["disease"].isin([
         "normal",
         "pulmonary fibrosis",
         "interstitial lung disease",
         "chronic obstructive pulmonary disease"
-    ]))
+    ])
+)
 
 adata_subset = adata[mask, :].to_memory()
 

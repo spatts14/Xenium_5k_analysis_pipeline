@@ -1,6 +1,5 @@
 from pathlib import Path
 import scanpy as sc
-import scipy.sparse as sp
 import gc
 import logging
 import sys

@@ -1,13 +1,24 @@
 #!/bin/bash
+#PBS -l walltime=0:10:0
+#PBS -lselect=1:ncpus=1:mem=8gb
+
+
+# Load necessary modules
+module load tools/prod # Load production tools
+module load Biopython/1.84-foss-2024a # Load python and bundle
+source xenium_5k_venv/bin/activate # Activate virtual environment
 
 # Batch rename script for Xenium morphology_focus files
 # This script will process all output directories in your Xenium run
 
 # Set your data directory path
-DATA_DIR="/Volumes/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/data/xenium_raw/20251001__141239__SP25164_SARA_PATTI_RUN_1"
+DATA_DIR="/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/data/xenium_raw/20251028__162706__SP25164_SARA_PATTI_RUN_2"
 
-# Set the mapping file path
-MAPPING_FILE="xenium_mapping.md"
+# Get the directory where this script is located
+SCRIPT_DIR="/rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline/src/batch_rename"
+
+# Set your mapping file relative to this script
+MAPPING_FILE="$SCRIPT_DIR/xenium_mapping.md"
 
 echo "Xenium Batch Rename Script"
 echo "=========================="
@@ -22,23 +33,9 @@ if [ ! -f "$MAPPING_FILE" ]; then
     exit 1
 fi
 
-# First, run a dry-run to see what will be changed
-echo "Running dry-run to preview changes..."
-echo "------------------------------------"
-python3 xenium_batch_rename.py -d "$DATA_DIR" -m "$MAPPING_FILE" --dry-run
-
+echo "Proceeding with renaming..."
+echo "---------------------------"
+python3 "$SCRIPT_DIR/xenium_batch_rename.py" -d "$DATA_DIR" -m "$MAPPING_FILE" --rename --backup
 echo ""
-echo "Dry-run completed. Review the output above."
-echo ""
-read -p "Do you want to proceed with the actual renaming? (y/N): " -n 1 -r
-echo ""
-
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo "Proceeding with renaming..."
-    echo "---------------------------"
-    python3 xenium_batch_rename.py -d "$DATA_DIR" -m "$MAPPING_FILE" --rename --backup
-    echo ""
-    echo "Batch rename completed!"
-else
-    echo "Operation cancelled."
-fi
+echo "Batch rename completed!"
+echo "======================"

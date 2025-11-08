@@ -121,6 +121,135 @@ def prepare_integrated_datasets(gene_id_dict_path, adata_ref, adata):
     return adata_ref, adata_ingest
 
 
+def process_reference_data(config, io_config, adata_ref):
+    """Preprocesses the reference scRNA-seq dataset if PCA and UMAP are missing.
+
+    This function checks whether the reference AnnData object already contains
+    computed PCA and UMAP embeddings. If not, it performs standard single-cell
+    preprocessing steps, including normalization, log-transformation, highly
+    variable gene selection, PCA, neighbor graph construction, and UMAP embedding.
+    The resulting AnnData object is saved to disk and optionally visualized.
+
+    Args:
+        config (SimpleNamespace or dict): Configuration object containing
+            module-specific parameters, including the module name used to
+            construct figure filenames.
+        io_config (SimpleNamespace or dict): I/O configuration object with paths
+            to input and output data. Must include ``hlca_path`` to save the
+            processed reference dataset.
+        adata_ref (anndata.AnnData): Reference single-cell RNA-seq dataset (e.g.,
+            HLCA) to be processed or verified. The object is modified in place.
+
+    Side Effects:
+        - Writes the processed reference AnnData object to ``io_config.hlca_path``.
+        - Saves a UMAP visualization as a PNG file.
+
+    Logs:
+        - Whether preprocessing is needed.
+        - Each major preprocessing step.
+        - Path to the saved output file.
+
+    Returns:
+        None
+    """
+    logger.info("Checking if need to process reference scRNAseq data...")
+    # Confirm that PCA and UMAP have been computed for reference data
+    if "X_pca" not in adata_ref.obsm or "X_umap" not in adata_ref.obsm:
+        logger.info("Preprocessing HLCA reference data...")
+        sc.pp.normalize_total(adata_ref, target_sum=1e4)
+        sc.pp.log1p(adata_ref)
+        sc.pp.highly_variable_genes(adata_ref, n_top_genes=2000)
+        sc.tl.pca(adata_ref, n_comps=50)
+        sc.pp.neighbors(adata_ref, n_neighbors=15, n_pcs=40)
+        sc.tl.umap(adata_ref)
+        sc.pl.umap(
+            adata_ref,
+            color="cell_type",
+            title="HLCA reference data UMAP",
+            save=f"_{config.module_name}_hlca_umap.png",
+        )
+        logger.info("Finished preprocessing HLCA reference data.")
+        adata_ref.write_h5ad(io_config.hlca_path)
+        logger.info(f"Processed HLCA reference data saved to {io_config.hlca_path}.")
+    else:
+        logger.info(
+            "HLCA reference data already preprocessed. "
+            "Contains PCA and UMAP computation."
+        )
+
+
+def perform_ingest_integration(
+    method, ref_col, label_transfer_col, adata_ref, adata, adata_ingest
+):
+    """Integrates spatial transcriptomics data with a reference scRNA-seq dataset.
+
+    Depending on the selected method, this function performs label transfer from
+    a reference single-cell dataset (e.g., HLCA) to a spatial transcriptomics
+    dataset (e.g., Xenium). Currently, only the "ingest" method is implemented.
+    The ingest approach uses Scanpys `tl.ingest` to project query data into the
+    references PCA space and transfer cell-type labels.
+
+    Args:
+        method (str): Integration method to use. Supported options:
+            - ``"ingest"``: Uses Scanpys `tl.ingest` for mapping and label transfer.
+            - ``"scANVI"``: Placeholder for future implementation.
+        ref_col (str): Column name in ``adata_ref.obs`` containing reference
+            annotations (e.g., cell types) to use for label transfer.
+        label_transfer_col (str): Column name to store the transferred labels
+            in both ``adata_ingest.obs`` and ``adata.obs``.
+        adata_ref (anndata.AnnData): Reference scRNA-seq AnnData object containing
+            precomputed embeddings (PCA or UMAP) and cell-type annotations.
+        adata (anndata.AnnData): Original spatial transcriptomics dataset to which
+            transferred labels will be written.
+        adata_ingest (anndata.AnnData): Copy of the spatial dataset formatted for
+            ingestion, aligned by gene set with the reference.
+
+    Raises:
+        NotImplementedError: If ``method`` is set to ``"scANVI"`` (not yet implemented).
+        NotImplementedError: If an unknown integration ``method`` is provided.
+
+    Logs:
+        - The start and completion of the integration process.
+        - The integration method being used.
+
+    Returns:
+        None
+    """
+    logger.info("Starting integration...")
+    if method == "ingest":
+        logger.info("Integrating data using ingest...")
+
+        # Run ingest to map Xenium data onto HLCA reference
+        sc.tl.ingest(
+            adata_ingest,
+            adata_ref,
+            obs=ref_col,  # Annotation column to use in adata_ref.obs
+            # For core HLCA, "cell_type"
+            embedding_method="pca",  # or 'umap'
+            labeling_method="knn",  # how to transfer labels
+            neighbors_key=None,  # use default neighbors from reference
+            inplace=True,
+        )
+
+        # Rename predicted cell type column
+        adata_ingest.obs[label_transfer_col] = adata_ingest.obs["cell_type"]
+        del adata_ingest.obs["cell_type"]
+
+        # Copy cell type predictions back to original adata
+        adata.obs[label_transfer_col] = adata_ingest.obs.loc[
+            adata.obs_names, label_transfer_col
+        ]
+
+        logger.info("Ingest integration complete.")
+
+    elif method == "scANVI":  # Placeholder for scANVI integration
+        logger.info("Integrating data using scANVI...")
+        # Placeholder for scANVI integration code
+        raise NotImplementedError("scANVI integration method not yet implemented.")
+    else:
+        raise NotImplementedError(f"Integration method {method} not implemented.")
+
+
 def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     """Integrate scRNAseq and spatial transcriptomics data using Scanorama.
 
@@ -128,8 +257,11 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
         config (IntegrateModuleConfig): Integration module configuration object.
         io_config (IOConfig): IO configuration object.
     """
+    # Variables
     method = config.method
-
+    ref_col = config.ref_col  # Column in adata_ref.obs to use for label transfer
+    label_transfer_col = config.label_transfer_col
+    # Name of the column to store label transfer results in adata.obs
     module_dir = io_config.output_dir / config.module_name
 
     # Paths to input data
@@ -167,70 +299,17 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
         gene_id_dict_path, adata_ref, adata
     )
 
-    logger.info("Checking if need to process reference scRNAseq data...")
-    # Confirm that PCA and UMAP have been computed for reference data
-    if "X_pca" not in adata_ref.obsm or "X_umap" not in adata_ref.obsm:
-        logger.info("Preprocessing HLCA reference data...")
-        sc.pp.normalize_total(adata_ref, target_sum=1e4)
-        sc.pp.log1p(adata_ref)
-        sc.pp.highly_variable_genes(adata_ref, n_top_genes=2000)
-        sc.tl.pca(adata_ref, n_comps=50)
-        sc.pp.neighbors(adata_ref, n_neighbors=15, n_pcs=40)
-        sc.tl.umap(adata_ref)
-        sc.pl.umap(
-            adata_ref,
-            color="cell_type",
-            title="HLCA reference data UMAP",
-            save=f"_{config.module_name}_hlca_umap.png",
-        )
-        logger.info("Finished preprocessing HLCA reference data.")
-        adata_ref.write_h5ad(io_config.hlca_path)
-        logger.info(f"Processed HLCA reference data saved to {io_config.hlca_path}.")
-    else:
-        logger.info(
-            "HLCA reference data already preprocessed. "
-            "Contains PCA and UMAP computation."
-        )
+    process_reference_data(config, io_config, adata_ref)
 
-    logger.info("Starting integration...")
-    if method == "ingest":
-        logger.info("Integrating data using ingest...")
-
-        # Run ingest to map Xenium data onto HLCA reference
-        sc.tl.ingest(
-            adata_ingest,
-            adata_ref,
-            obs=["cell_type"],  # Annotation column to use in adata_ref.obs
-            # For core HLCA, "cell_type"
-            embedding_method="pca",  # or 'umap'
-            labeling_method="knn",  # how to transfer labels
-            neighbors_key=None,  # use default neighbors from reference
-            inplace=True,
-        )
-
-        # Rename predicted cell type column
-        adata_ingest.obs["predicted_cell_type"] = adata_ingest.obs["cell_type"]
-        del adata_ingest.obs["cell_type"]
-
-        # Copy cell type predictions back to original adata
-        adata.obs["predicted_cell_type"] = adata_ingest.obs.loc[
-            adata.obs_names, "predicted_cell_type"
-        ]
-
-        logger.info("Ingest integration complete.")
-
-    elif method == "scANVI":  # Placeholder for scANVI integration
-        logger.info("Integrating data using scANVI...")
-        # Placeholder for scANVI integration code
-        raise NotImplementedError("scANVI integration method not yet implemented.")
-    else:
-        raise NotImplementedError(f"Integration method {method} not implemented.")
+    perform_ingest_integration(
+        method, ref_col, label_transfer_col, adata_ref, adata, adata_ingest
+    )
 
     logger.info("Visualize data following label transfer...")
 
     logger.info(f"Columns in adata {adata.obs.columns}...")
 
-    color_list = ["condition", "ROI", "predicted_cell_type"]
+    color_list = ["condition", "ROI", label_transfer_col]
 
     logger.info("Plotting UMAPs...")
     sc.pl.umap(
@@ -243,9 +322,9 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
 
     sc.pl.umap(
         adata,
-        color=["predicted_cell_type"],
+        color=label_transfer_col,
         title="Xenium data mapped to HLCA",
-        save=f"_{config.module_name}_{method}_cell_type.png",  # save figure
+        save=f"_{config.module_name}_{method}_{ref_col}.png",  # save figure
         cmap=cmap,
     )
 

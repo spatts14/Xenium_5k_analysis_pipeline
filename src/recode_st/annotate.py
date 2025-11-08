@@ -26,7 +26,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "3_integrate" / "adata.h5ad")
 
     # Set the directory where to save the ScanPy figures
     sc.settings.figdir = module_dir

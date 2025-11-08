@@ -31,7 +31,14 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     # Set the directory where to save the ScanPy figures
     sc.settings.figdir = module_dir
 
-    # Annotate cell clusters
+    # Remove cell clusters with less than 10 cells
+    logger.info("Removing clusters with fewer than 10 cells...")
+    cluster_counts = adata.obs[cluster_name].value_counts()
+    clusters_to_remove = cluster_counts[cluster_counts < 10].index
+    adata = adata[~adata.obs[cluster_name].isin(clusters_to_remove)].copy()
+    logger.info(f"Clusters removed after filtering: {clusters_to_remove.tolist()}")
+    logger.info(f"Remaining clusters: {adata.obs[cluster_name].unique().tolist()}")
+
     # Calculate the differentially expressed genes for every cluster,
     # compared to the rest of the cells in our adata
     logger.info("Calculating differentially expressed genes for each cluster...")

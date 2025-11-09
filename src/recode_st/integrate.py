@@ -316,7 +316,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
         adata,
         color=color_list,
         title="Xenium data mapped to HLCA",
-        save=f"_{config.module_name}_{method}.png",  # save figure
+        save=f"_{config.module_name}_{method}_{ref_col}.png",  # save figure
         cmap=cmap,
     )
 

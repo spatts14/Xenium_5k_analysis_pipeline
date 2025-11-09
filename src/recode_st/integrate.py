@@ -232,8 +232,8 @@ def perform_ingest_integration(
         )
 
         # Rename predicted cell type column
-        adata_ingest.obs[label_transfer_col] = adata_ingest.obs["cell_type"]
-        del adata_ingest.obs["cell_type"]
+        adata_ingest.obs[label_transfer_col] = adata_ingest.obs[ref_col]
+        del adata_ingest.obs[ref_col]
 
         # Copy cell type predictions back to original adata
         adata.obs[label_transfer_col] = adata_ingest.obs.loc[

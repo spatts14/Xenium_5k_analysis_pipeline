@@ -4,6 +4,7 @@ import os
 import random
 
 import numpy as np
+import scanpy as sc
 import torch
 
 
@@ -25,3 +26,17 @@ def seed_everything(seed: int):
         torch.mps.manual_seed(seed)
     else:
         pass
+
+
+def set_figure_params(config, module_dir, method):
+    """Set figure parameters for scanpy plots."""
+    sc.set_figure_params(
+        dpi=300,
+        dpi_save=300,
+        frameon=False,
+        vector_friendly=True,
+        fontsize=16,
+        facecolor="white",
+        figsize=(15, 4),
+    )
+    sc.settings.figdir = module_dir

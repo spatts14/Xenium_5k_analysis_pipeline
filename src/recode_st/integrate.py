@@ -279,7 +279,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
         vector_friendly=True,  # produce vector-friendly PDFs/SVGs
         fontsize=16,  # adjust font size
         facecolor="white",  # background color
-        figsize=(5, 4),  # default single-panel figure size
+        figsize=(15, 4),  # default single-panel figure size
     )
     # Set figure directory where to save scanpy figures
     sc.settings.figdir = module_dir

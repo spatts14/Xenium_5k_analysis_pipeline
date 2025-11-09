@@ -51,7 +51,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
         standard_scale="var",
         n_genes=5,
         show=False,
-        save=f"{config.module_name}.png",
+        save=f"{config.module_name}_{cluster_name}.png",
     )
     logger.info(f"Dotplot saved to {sc.settings.figdir}")
 
@@ -63,7 +63,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
         ncols=3,
         legend_fontsize=10,
         show=False,
-        save=f"_{config.module_name}.png",
+        save=f"_{config.module_name}_{cluster_name}.png",
     )
     logger.info(f"UMAP plot saved to {sc.settings.figdir}")
 

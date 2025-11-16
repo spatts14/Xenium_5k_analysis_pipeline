@@ -76,13 +76,6 @@ class DimensionReductionModuleConfig(BaseModuleConfig):
 class IntegrateModuleConfig(BaseModuleConfig):
     """Configuration for the Integration module."""
 
-    method: Literal["ingest", "scANVI"]
-    """Integration method to use to integrate scRNAseq and spatial data."""
-    ref_col: str = "cell_type"
-    """Column in adata_ref.obs to use for label transfer."""
-    label_transfer_col: str = "predicted_cell_type"
-    """Name of the column to store label transfer results in adata.obs."""
-
 
 class AnnotateModuleConfig(BaseModuleConfig):
     """Configuration for the Annotate module."""

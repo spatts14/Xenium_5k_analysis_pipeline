@@ -1,4 +1,4 @@
-"""Integrate scRNAseq and spatial transcriptomics."""
+"""Integrate scRNAseq and STx."""
 
 import warnings  # ? what is the best way to suppress warnings from package inputs?
 from logging import getLogger
@@ -8,12 +8,18 @@ import pandas as pd
 # import torch
 import scanpy as sc
 import seaborn as sns
+from scvi.model import SCANVI, SCVI
 
 from recode_st.config import IntegrateModuleConfig, IOConfig
 
 warnings.filterwarnings("ignore")
 
 logger = getLogger(__name__)
+
+# Define global variables
+INGEST_LABEL_COL = "ingest_pred_cell_type"
+SCANVI_LABEL_COL = "scANVI_pred_cell_type"
+REF_CELL_LABEL_COL = "cell type"
 
 
 def prepare_integrated_datasets(gene_id_dict_path, adata_ref, adata):
@@ -28,11 +34,11 @@ def prepare_integrated_datasets(gene_id_dict_path, adata_ref, adata):
     Args:
         gene_id_dict_path (str | Path): Path to gene ID dictionary .csv file.
         First column: named "gene_symbol" containing the gene ID for all genes in
-        spatial transcriptomics dataset,
+        STx dataset.
         Second column:  named "ensembl_ID" containing the ensembl ID of the
         corresponding gene.
         adata_ref (anndata.AnnData)): Reference scRNAseq AnnData object.
-        adata (anndata.AnnData): Spatial transcriptomics AnnData object.
+        adata (anndata.AnnData): STx AnnData object.
 
     Raises:
         FileNotFoundError: _description_
@@ -62,14 +68,14 @@ def prepare_integrated_datasets(gene_id_dict_path, adata_ref, adata):
         logger.error(f"Error reading gene ID dictionary file: {gene_id_dict_path}: {e}")
         raise
 
-    # Add ensembl_id to spatial transcriptomics data
+    # Add ensembl_id to STx data
     adata.var["ensembl_id"] = adata.var.index.map(gene_id_dict["ensembl_id"])
 
     # List of genes shared between datasets based on ensembl IDs
     var_names = adata_ref.var_names.intersection(adata.var["ensembl_id"])
     logger.info(f"Number of common genes: {len(var_names)}")
 
-    # Subset spatial transcriptomics data to common genes
+    # Subset STx data to common genes
     mask = adata.var["ensembl_id"].isin(
         var_names
     )  # Create mask to filter genes based on ensembl IDs
@@ -158,9 +164,11 @@ def process_reference_data(config, io_config, adata_ref):
         logger.info("Preprocessing HLCA reference data...")
         sc.pp.normalize_total(adata_ref, target_sum=1e4)
         sc.pp.log1p(adata_ref)
-        sc.pp.highly_variable_genes(adata_ref, n_top_genes=2000)
-        sc.tl.pca(adata_ref, n_comps=50)
+        sc.pp.highly_variable_genes(adata_ref, n_top_genes=5000, flavor="seurat_v3")
+        sc.pp.scale(adata_ref, max_value=10)
+        sc.tl.pca(adata_ref, n_comps=75, svd_solver="arpack")
         sc.pp.neighbors(adata_ref, n_neighbors=15, n_pcs=40)
+        sc.pp.neighbors(adata_ref, n_neighbors=30, n_pcs=75)
         sc.tl.umap(adata_ref)
         sc.pl.umap(
             adata_ref,
@@ -178,80 +186,112 @@ def process_reference_data(config, io_config, adata_ref):
         )
 
 
-def perform_ingest_integration(
-    method, ref_col, label_transfer_col, adata_ref, adata, adata_ingest
-):
-    """Integrates spatial transcriptomics data with a reference scRNA-seq dataset.
+def perform_ingest_integration(adata_ref, adata, adata_ingest):
+    """Integrates STx data with a reference scRNA-seq dataset using ingest.
 
-    Depending on the selected method, this function performs label transfer from
-    a reference single-cell dataset (e.g., HLCA) to a spatial transcriptomics
-    dataset (e.g., Xenium). Currently, only the "ingest" method is implemented.
-    The ingest approach uses Scanpys `tl.ingest` to project query data into the
-    references PCA space and transfer cell-type labels.
+    This function performs label transfer from a reference single-cell dataset
+    (e.g., HLCA) to a STx dataset (e.g., Xenium).
+    The ingest approach uses Scanpys `tl.ingest` to
+    project query data into the references PCA space and transfer cell-type labels.
 
     Args:
-        method (str): Integration method to use. Supported options:
-            - ``"ingest"``: Uses Scanpys `tl.ingest` for mapping and label transfer.
-            - ``"scANVI"``: Placeholder for future implementation.
-        ref_col (str): Column name in ``adata_ref.obs`` containing reference
-            annotations (e.g., cell types) to use for label transfer.
-        label_transfer_col (str): Column name to store the transferred labels
-            in both ``adata_ingest.obs`` and ``adata.obs``.
         adata_ref (anndata.AnnData): Reference scRNA-seq AnnData object containing
             precomputed embeddings (PCA or UMAP) and cell-type annotations.
-        adata (anndata.AnnData): Original spatial transcriptomics dataset to which
+        adata (anndata.AnnData): Original STx dataset to which
             transferred labels will be written.
         adata_ingest (anndata.AnnData): Copy of the spatial dataset formatted for
             ingestion, aligned by gene set with the reference.
-
-    Raises:
-        NotImplementedError: If ``method`` is set to ``"scANVI"`` (not yet implemented).
-        NotImplementedError: If an unknown integration ``method`` is provided.
-
-    Logs:
-        - The start and completion of the integration process.
-        - The integration method being used.
 
     Returns:
         None
     """
     logger.info("Starting integration...")
-    if method == "ingest":
-        logger.info("Integrating data using ingest...")
+    logger.info("Integrating data using ingest...")
 
-        # Run ingest to map Xenium data onto HLCA reference
-        sc.tl.ingest(
-            adata_ingest,
-            adata_ref,
-            obs=ref_col,  # Annotation column to use in adata_ref.obs
-            # For core HLCA, "cell_type"
-            embedding_method="pca",  # or 'umap'
-            labeling_method="knn",  # how to transfer labels
-            neighbors_key=None,  # use default neighbors from reference
-            inplace=True,
+    # Run ingest to map Xenium data onto HLCA reference
+    sc.tl.ingest(
+        adata_ingest,
+        adata_ref,
+        obs=REF_CELL_LABEL_COL,  # Annotation column to use in adata_ref.obs
+        # For core HLCA, "cell_type"
+        embedding_method="pca",  # or 'umap'
+        labeling_method="knn",  # how to transfer labels
+        neighbors_key=None,  # use default neighbors from reference
+        inplace=True,
+    )
+
+    # Rename predicted cell type column
+    adata_ingest.obs[INGEST_LABEL_COL] = adata_ingest.obs[REF_CELL_LABEL_COL]
+    del adata_ingest.obs[REF_CELL_LABEL_COL]
+
+    # Copy cell type predictions back to original adata
+    adata.obs[INGEST_LABEL_COL] = adata_ingest.obs.loc[
+        adata.obs_names, INGEST_LABEL_COL
+    ]
+    logger.info("Ingest integration complete.")
+
+
+def perform_scANVI_integration(adata_ref, adata):
+    """Integrates STx data with a reference scRNA-seq dataset using scANVI.
+
+    This function performs label transfer from a reference single-cell dataset
+    (e.g., HLCA) to a STx dataset (e.g., Xenium).
+    The ingest approach uses scANVI to transfer cell-type labels.
+
+    Args:
+        adata_ref (anndata.AnnData): Reference scRNA-seq AnnData object containing
+            precomputed embeddings (PCA or UMAP) and cell-type annotations.
+        adata (anndata.AnnData): Original STx dataset to which
+            transferred labels will be written.
+        adata_ingest (anndata.AnnData): Copy of the spatial dataset formatted for
+            ingestion, aligned by gene set with the reference.
+
+    Returns:
+        None
+    """
+    logger.info("Integrating data using scANVI...")
+
+    logger.info("ADD CODE")
+    LABEL_COL = "cell types"  # your ground-truth column
+    # 0) Make an unlabeled category
+    adata.obs["cell_types_scvi"] = (
+        adata.obs[LABEL_COL].astype("string").fillna("Unknown").astype("category")
+    )
+    # ensure 'Unknown' is a category
+    if "Unknown" not in adata.obs["cell_types_scvi"].cat.categories:
+        adata.obs["cell_types_scvi"] = adata.obs["cell_types_scvi"].cat.add_categories(
+            ["Unknown"]
         )
+        adata.obs["cell_types_scvi"] = adata.obs["cell_types_scvi"].fillna("Unknown")
 
-        # Rename predicted cell type column
-        adata_ingest.obs[label_transfer_col] = adata_ingest.obs[ref_col]
-        del adata_ingest.obs[ref_col]
+    # 1) Setup WITH labels_key (this is the key piece you were missing)
+    SCVI.setup_anndata(
+        adata,
+        labels_key="cell_types_scvi",  # REQUIRED for SCANVI.from_scvi_model
+    )
 
-        # Copy cell type predictions back to original adata
-        adata.obs[label_transfer_col] = adata_ingest.obs.loc[
-            adata.obs_names, label_transfer_col
-        ]
+    # 2) Train SCVI (latent model)
+    m = SCVI(adata, n_latent=30)
+    m.train()  # tune epochs as needed
 
-        logger.info("Ingest integration complete.")
+    # 3) Build SCANVI from the pretrained SCVI
+    scanvi = SCANVI.from_scvi_model(
+        m,
+        unlabeled_category="Unknown",
+    )
 
-    elif method == "scANVI":  # Placeholder for scANVI integration
-        logger.info("Integrating data using scANVI...")
-        # Placeholder for scANVI integration code
-        raise NotImplementedError("scANVI integration method not yet implemented.")
-    else:
-        raise NotImplementedError(f"Integration method {method} not implemented.")
+    scanvi.train()  # tune epochs as needed
+
+    # 4) Predict and fill only the missing labels
+    pred = scanvi.predict()
+
+    adata.obs["cell types_pred_scvi"] = pred
+
+    logger.info("scANVI integration complete.")
 
 
 def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
-    """Integrate scRNAseq and spatial transcriptomics data using Scanorama.
+    """Integrate scRNAseq and STx data using scANVI and ingest.
 
     Args:
         config (IntegrateModuleConfig): Integration module configuration object.
@@ -259,8 +299,6 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     """
     # Variables
     method = config.method
-    ref_col = config.ref_col  # Column in adata_ref.obs to use for label transfer
-    label_transfer_col = config.label_transfer_col
     # Name of the column to store label transfer results in adata.obs
     module_dir = io_config.output_dir / config.module_name
 
@@ -295,36 +333,41 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
 
+    logger("Formatting data for ingest integration...")
     adata_ref, adata_ingest = prepare_integrated_datasets(
         gene_id_dict_path, adata_ref, adata
     )
 
+    logger("Processing reference data...")
     process_reference_data(config, io_config, adata_ref)
 
-    perform_ingest_integration(
-        method, ref_col, label_transfer_col, adata_ref, adata, adata_ingest
-    )
+    logger("Starting integration methods...")
+    perform_ingest_integration(adata_ref, adata, adata_ingest)
+
+    perform_scANVI_integration(adata_ref, adata)
 
     logger.info("Visualize data following label transfer...")
 
     logger.info(f"Columns in adata {adata.obs.columns}...")
 
-    color_list = ["condition", "ROI", label_transfer_col]
+    for method in [INGEST_LABEL_COL, SCANVI_LABEL_COL]:
+        sc.pl.umap(
+            adata,
+            color=method,
+            title="INTEGRATION WITH HLCA",
+            save=f"_{config.module_name}_{method}_{REF_CELL_LABEL_COL}.png",
+        )
+
+    # NEED TO FIX FORMATTING SO ALL PLOTS ARE VISIBLE AND DONT OVERLAP!
+    color_list = ["condition", "ROI", INGEST_LABEL_COL, SCANVI_LABEL_COL]
 
     logger.info("Plotting UMAPs...")
     sc.pl.umap(
         adata,
         color=color_list,
-        title="Xenium data mapped to HLCA",
-        save=f"_{config.module_name}_{method}_{ref_col}.png",  # save figure
-        cmap=cmap,
-    )
-
-    sc.pl.umap(
-        adata,
-        color=label_transfer_col,
-        title="Xenium data mapped to HLCA",
-        save=f"_{config.module_name}_{method}_{ref_col}.png",  # save figure
+        title="COMPARING INTEGRATION APPROACHES",
+        ncol=2,
+        save=f"_{config.module_name}_{method}_{REF_CELL_LABEL_COL}.png",  # save figure
         cmap=cmap,
     )
 

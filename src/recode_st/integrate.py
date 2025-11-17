@@ -177,7 +177,6 @@ def process_reference_data(config, io_config, adata_ref):
         sc.pp.highly_variable_genes(adata_ref, n_top_genes=5000, flavor="seurat_v3")
         sc.pp.scale(adata_ref, max_value=10)
         sc.tl.pca(adata_ref, n_comps=75, svd_solver="arpack")
-        sc.pp.neighbors(adata_ref, n_neighbors=15, n_pcs=40)
         sc.pp.neighbors(adata_ref, n_neighbors=30, n_pcs=75)
         sc.tl.umap(adata_ref)
         sc.pl.umap(
@@ -780,9 +779,6 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
 
     logger.info("Processing reference data...")
     process_reference_data(config, io_config, adata_ref)
-
-    logger.info("Subset on shared HVGs for integration...")
-    # SHOULD WE DO THIS?
 
     logger.info("Starting integration methods...")
 

@@ -182,7 +182,7 @@ def process_reference_data(config, io_config, adata_ref):
         sc.tl.umap(adata_ref)
         sc.pl.umap(
             adata_ref,
-            color="cell_type",
+            color=REF_CELL_LABEL_COL,
             title="HLCA reference data UMAP",
             save=f"_{config.module_name}_hlca_umap.png",
         )
@@ -439,7 +439,7 @@ def extract_predictions_and_visualize(adata_combined, scanvi_model, adata, modul
     plt.savefig(plot_path, dpi=300, bbox_inches="tight")
     plt.close()
 
-    logger.info(f" scANVI results plot saved: {plot_path}")
+    logger.info(f"scANVI results plot saved: {plot_path}")
 
     return adata
 

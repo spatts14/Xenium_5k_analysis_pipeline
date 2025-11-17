@@ -315,6 +315,9 @@ def perform_scANVI_integration(adata_ref, adata_ingest):
     # This ensures that STx cells are marked as unlabeled before we assign ref labels
     adata_combined.obs[labels_key] = unlabeled_category
 
+    # Check columns in adata_combined
+    logger.info(f"Columns in adata_combined: {list(adata_combined.obs.columns)}")
+
     # Assign real labels to reference cells
     ref_mask = adata_combined.obs[BATCH_COL] == "Ref"
     if REF_CELL_LABEL_COL in adata_combined.obs.columns:

@@ -2,6 +2,7 @@
 
 import warnings  # ? what is the best way to suppress warnings from package inputs?
 from logging import getLogger
+from pathlib import Path
 
 import anndata
 import matplotlib.pyplot as plt
@@ -24,6 +25,11 @@ logger = getLogger(__name__)
 INGEST_LABEL_COL = "ingest_pred_cell_type"
 SCANVI_LABEL_COL = "scANVI_pred_cell_type"
 REF_CELL_LABEL_COL = "cell type"
+PROCESS_REF_DATA = True  # Whether to preprocess reference data if PCA/UMAP missing
+
+hlca_int = Path(
+    "/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/hlca_full_processed.h5ad"
+)
 
 
 def prepare_integrated_datasets(gene_id_dict_path, adata_ref, adata):
@@ -167,32 +173,50 @@ def process_reference_data(config, io_config, adata_ref):
     Returns:
         None
     """
-    logger.info("Checking if need to process reference scRNAseq data...")
-    # Confirm that PCA and UMAP have been computed for reference data
-    if "X_pca" not in adata_ref.obsm or "X_umap" not in adata_ref.obsm:
+    logger.info("Checking if reference scRNA-seq data needs processing...")
+
+    # Check if we need to preprocess the reference data
+    if PROCESS_REF_DATA:
         logger.info("Preprocessing HLCA reference data...")
+
+        # Basic filtering and normalization
         sc.pp.filter_cells(adata_ref, min_genes=200)
         sc.pp.filter_genes(adata_ref, min_cells=10)
         sc.pp.normalize_total(adata_ref, target_sum=1e4)
         sc.pp.log1p(adata_ref)
+
+        # Feature selection and scaling
         sc.pp.highly_variable_genes(adata_ref, n_top_genes=5000, flavor="seurat_v3")
         sc.pp.scale(adata_ref, max_value=10)
+
+        # Dimensionality reduction
         sc.tl.pca(adata_ref, n_comps=75, svd_solver="arpack")
         sc.pp.neighbors(adata_ref, n_neighbors=30, n_pcs=75)
         sc.tl.umap(adata_ref)
+
+        # Plot UMAP
         sc.pl.umap(
             adata_ref,
             color=REF_CELL_LABEL_COL,
             title="HLCA reference data UMAP",
             save=f"_{config.module_name}_hlca_umap.png",
         )
-        logger.info("Finished preprocessing HLCA reference data.")
-        adata_ref.write_h5ad(io_config.hlca_path)
-        logger.info(f"Processed HLCA reference data saved to {io_config.hlca_path}.")
+
+        # Save processed reference
+        adata_ref.write_h5ad(hlca_int)
+        logger.info(
+            f"Finished preprocessing. Processed HLCA reference saved to {hlca_int}."
+        )
+
+    # Check if reference data already contains embeddings
+    elif "X_pca" not in adata_ref.obsm or "X_umap" not in adata_ref.obsm:
+        logger.warning(
+            "HLCA reference data missing PCA or UMAP embeddings. "
+            "Please preprocess the reference data before integration."
+        )
     else:
         logger.info(
-            "HLCA reference data already preprocessed. "
-            "Contains PCA and UMAP computation."
+            "HLCA reference data already preprocessed & contains PCA & UMAP embeddings."
         )
 
 

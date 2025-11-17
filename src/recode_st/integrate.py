@@ -297,7 +297,7 @@ def perform_scANVI_integration(adata_ref, adata_ingest):
     logger.info("Combining reference and spatial data...")
     adata_combined = anndata.concat(
         [adata_ref, adata_ingest],
-        join="inner",
+        join="outer",
         label=BATCH_COL,
         keys=["Ref", "STx"],
         index_unique="_",
@@ -813,8 +813,8 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Starting integration methods...")
 
     # 1. Perform ingest integration
-    logger.info("Performing integration using: sc.tl.ingest...")
-    perform_ingest_integration(adata_ref, adata, adata_ingest)
+    # logger.info("Performing integration using: sc.tl.ingest...")
+    # perform_ingest_integration(adata_ref, adata, adata_ingest)
 
     logger.info("Performing integration using: scANVI...")
     # 2. Perform scANVI integration (use adata_ingest which has matching genes)

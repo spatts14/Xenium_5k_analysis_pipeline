@@ -58,7 +58,7 @@ def configure_scanpy_figures(figdir: str, dpi: int = 300, fontsize: int = 16):
         vector_friendly=True,
         fontsize=fontsize,
         facecolor="white",
-        figsize=(15, 4),
+        figsize=(6, 4),
     )
 
     cmap = sns.color_palette("crest", as_cmap=True)

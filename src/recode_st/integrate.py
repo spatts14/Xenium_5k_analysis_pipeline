@@ -813,12 +813,16 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Starting integration methods...")
 
     # 1. Perform ingest integration
+    logger.info("Performing integration using: sc.tl.ingest...")
     perform_ingest_integration(adata_ref, adata, adata_ingest)
 
+    logger.info("Performing integration using: scANVI...")
     # 2. Perform scANVI integration (use adata_ingest which has matching genes)
+    logger.info("Training model...")
     adata_combined, scanvi_model = perform_scANVI_integration(adata_ref, adata_ingest)
 
     # 3. Extract scANVI predictions and copy to original adata
+    logger.info("Extracting labels...")
     if adata_combined is not None and scanvi_model is not None:
         adata = extract_predictions_and_visualize(
             adata_combined, scanvi_model, adata, module_dir

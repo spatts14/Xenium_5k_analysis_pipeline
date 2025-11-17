@@ -16,7 +16,7 @@ warnings.filterwarnings("ignore")
 
 logger = getLogger(__name__)
 
-# Define global variables
+# Define global variables - SHOULD THESE BE HERE OR INSIDE THE RUN FUNCTION?
 INGEST_LABEL_COL = "ingest_pred_cell_type"
 SCANVI_LABEL_COL = "scANVI_pred_cell_type"
 REF_CELL_LABEL_COL = "cell type"
@@ -290,6 +290,55 @@ def perform_scANVI_integration(adata_ref, adata):
     logger.info("scANVI integration complete.")
 
 
+def visualize_integration(config, cmap, adata):
+    """Visualize integration results using UMAPs.
+
+    Args:
+        config (SimpleNamespace or dict): Configuration object containing
+            module-specific parameters, including the module name used to
+            construct figure filenames.
+        cmap (_type_): _description_
+        adata (anndata.AnnData): Original STx dataset to which
+            transferred labels will be written.
+    """
+    logger("Generating UMAPs...")
+    logger.info(f"Columns in adata {adata.obs.columns}...")
+
+    for method in [INGEST_LABEL_COL, SCANVI_LABEL_COL]:
+        sc.pl.umap(
+            adata,
+            color=method,
+            title="INTEGRATION WITH HLCA",
+            save=f"_{config.module_name}_{method}_{REF_CELL_LABEL_COL}.png",
+        )
+
+    # NEED TO FIX FORMATTING SO ALL PLOTS ARE VISIBLE AND DONT OVERLAP!
+    color_list = ["condition", "ROI", INGEST_LABEL_COL, SCANVI_LABEL_COL]
+
+    logger.info("Plotting UMAPs...")
+    sc.pl.umap(
+        adata,
+        color=color_list,
+        title="COMPARING INTEGRATION APPROACHES",
+        ncol=2,
+        save=f"_{config.module_name}_{method}_{REF_CELL_LABEL_COL}.png",
+        cmap=cmap,
+    )
+
+    logger.info(f"UMAP plot saved to {sc.settings.figdir}")
+
+
+def compare(adata):
+    """Compare ingest and scANVI integrations.
+
+    Args:
+        adata (anndata.AnnData): Original STx dataset to which
+            transferred labels will be written.
+    """
+    SCANVI_LABEL_COL
+    SCANVI_LABEL_COL
+
+
 def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     """Integrate scRNAseq and STx data using scANVI and ingest.
 
@@ -298,7 +347,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
         io_config (IOConfig): IO configuration object.
     """
     # Variables
-    method = config.method
+
     # Name of the column to store label transfer results in adata.obs
     module_dir = io_config.output_dir / config.module_name
 
@@ -310,6 +359,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     module_dir.mkdir(exist_ok=True)
 
     # Set figure parameters
+    # CLEAN UP CODE BY PUTTING THIS AS A HELPER FUNCTION? BEST WAY TO DO THIS?
     sc.set_figure_params(
         dpi=300,  # resolution of saved figures
         dpi_save=300,  # resolution of saved plots
@@ -333,45 +383,24 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
 
-    logger("Formatting data for ingest integration...")
+    logger.info("Formatting data for ingest integration...")
     adata_ref, adata_ingest = prepare_integrated_datasets(
         gene_id_dict_path, adata_ref, adata
     )
 
-    logger("Processing reference data...")
+    logger.info("Processing reference data...")
     process_reference_data(config, io_config, adata_ref)
 
-    logger("Starting integration methods...")
+    logger.info("Starting integration methods...")
     perform_ingest_integration(adata_ref, adata, adata_ingest)
 
     perform_scANVI_integration(adata_ref, adata)
 
     logger.info("Visualize data following label transfer...")
+    visualize_integration(config, cmap, adata)
 
-    logger.info(f"Columns in adata {adata.obs.columns}...")
-
-    for method in [INGEST_LABEL_COL, SCANVI_LABEL_COL]:
-        sc.pl.umap(
-            adata,
-            color=method,
-            title="INTEGRATION WITH HLCA",
-            save=f"_{config.module_name}_{method}_{REF_CELL_LABEL_COL}.png",
-        )
-
-    # NEED TO FIX FORMATTING SO ALL PLOTS ARE VISIBLE AND DONT OVERLAP!
-    color_list = ["condition", "ROI", INGEST_LABEL_COL, SCANVI_LABEL_COL]
-
-    logger.info("Plotting UMAPs...")
-    sc.pl.umap(
-        adata,
-        color=color_list,
-        title="COMPARING INTEGRATION APPROACHES",
-        ncol=2,
-        save=f"_{config.module_name}_{method}_{REF_CELL_LABEL_COL}.png",  # save figure
-        cmap=cmap,
-    )
-
-    logger.info(f"UMAP plot saved to {sc.settings.figdir}")
+    logger.info("Comparing approaches")
+    compare(adata)
 
     logger.info("Saving integrated data...")
     adata.write_h5ad(module_dir / "adata.h5ad")

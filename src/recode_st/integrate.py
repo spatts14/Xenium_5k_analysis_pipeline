@@ -24,8 +24,8 @@ logger = getLogger(__name__)
 # Define global variables - SHOULD THESE BE HERE OR INSIDE THE RUN FUNCTION?
 INGEST_LABEL_COL = "ingest_pred_cell_type"
 SCANVI_LABEL_COL = "scANVI_pred_cell_type"
-REF_CELL_LABEL_COL = "cell type"
-PROCESS_REF_DATA = True  # Whether to preprocess reference data if PCA/UMAP missing
+REF_CELL_LABEL_COL = "cell_type"  # Column in reference data with cell type labels
+PROCESS_REF_DATA = False  # Whether to preprocess reference data if PCA/UMAP missing
 
 hlca_int = Path(
     "/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/hlca_full_processed.h5ad"
@@ -290,8 +290,8 @@ def perform_scANVI_integration(adata_ref, adata_ingest):
 
     # Add dataset labels
     BATCH_COL = "dataset_origin"
-    adata_ref.obs[BATCH_COL] = "Reference"
-    adata_ingest.obs[BATCH_COL] = "Spatial"
+    adata_ref.obs[BATCH_COL] = "Ref"
+    adata_ingest.obs[BATCH_COL] = "STx"
 
     # Combine datasets
     logger.info("Combining reference and spatial data...")
@@ -299,18 +299,24 @@ def perform_scANVI_integration(adata_ref, adata_ingest):
         [adata_ref, adata_ingest],
         join="inner",
         label=BATCH_COL,
-        keys=["Reference", "Spatial"],
+        keys=["Ref", "STx"],
         index_unique="_",
     )
 
     # Create scANVI labels (reference has labels, spatial is 'Unknown')
-    labels_key = "cell_type_scanvi"
-    unlabeled_category = "Unknown"
+    labels_key = (
+        "cell_type_scanvi"  # new column that scANVI will use for its training labels.
+    )
+    unlabeled_category = (
+        "Unknown"  # placeholder for cells that do not have known labels aka STx cells
+    )
 
+    # Set the label column (cell_type_scanvi) to "Unknown" for all cells initially.
+    # This ensures that STx cells are marked as unlabeled before we assign ref labels
     adata_combined.obs[labels_key] = unlabeled_category
 
-    # Set reference labels
-    ref_mask = adata_combined.obs[BATCH_COL] == "Reference"
+    # Assign real labels to reference cells
+    ref_mask = adata_combined.obs[BATCH_COL] == "Ref"
     if REF_CELL_LABEL_COL in adata_combined.obs.columns:
         adata_combined.obs.loc[ref_mask, labels_key] = adata_combined.obs.loc[
             ref_mask, REF_CELL_LABEL_COL
@@ -319,8 +325,18 @@ def perform_scANVI_integration(adata_ref, adata_ingest):
         logger.error(f"Cell type column '{REF_CELL_LABEL_COL}' not found")
         return None, None
 
-    logger.info(f"Reference cells with labels: {ref_mask.sum()}")
-    logger.info(f"Spatial cells (unlabeled): {(~ref_mask).sum()}")
+    logger.info(
+        f"Reference cells with labels: {ref_mask.sum()}"
+    )  # number of reference cells with labels.
+    logger.info(
+        f"Percent ref cells labeled: {100 * ref_mask.sum() / adata_combined.n_obs:.2f}%"
+    )
+    logger.info(
+        f"Spatial cells (unlabeled): {(~ref_mask).sum()}"
+    )  # number of spatial (unlabeled) cells.
+    logger.info(
+        f"Percent Spatial cells: {100 * (~ref_mask).sum() / adata_combined.n_obs:.2f}%"
+    )
     logger.info(f"Unique cell types: {adata_combined.obs[labels_key].value_counts()}")
 
     # Setup scANVI
@@ -345,7 +361,7 @@ def perform_scANVI_integration(adata_ref, adata_ingest):
 
     # Train scANVI
     logger.info("Training scANVI model...")
-    scanvi_model.train(max_epochs=max_epochs_scanvi, patience=5, batch_size=128)
+    scanvi_model.train(max_epochs=max_epochs_scanvi, patience=10, batch_size=128)
 
     logger.info("scANVI training completed!")
 
@@ -377,7 +393,7 @@ def extract_predictions_and_visualize(adata_combined, scanvi_model, adata, modul
 
     # Get predictions (hard labels)
     logger.info("Making predictions...")
-    adata_combined.obs["scanvi_predicted"] = scanvi_model.predict(adata_combined)
+    adata_combined.obs[SCANVI_LABEL_COL] = scanvi_model.predict(adata_combined)
 
     # Get prediction probabilities
     prediction_probs = scanvi_model.predict(adata_combined, soft=True)
@@ -397,7 +413,7 @@ def extract_predictions_and_visualize(adata_combined, scanvi_model, adata, modul
 
     logger.info(f"Spatial cells annotated: {adata_spatial_predicted.n_obs}")
     logger.info("Predicted cell type distribution:")
-    logger.info(adata_spatial_predicted.obs["scanvi_predicted"].value_counts())
+    logger.info(adata_spatial_predicted.obs[SCANVI_LABEL_COL].value_counts())
 
     # Map predictions back to original adata using cell names
     # Remove the "_Spatial" suffix added by concat
@@ -413,8 +429,11 @@ def extract_predictions_and_visualize(adata_combined, scanvi_model, adata, modul
         )
 
     # Create mapping
-    prediction_map = dict(
-        zip(spatial_indices, adata_spatial_predicted.obs["scanvi_predicted"])
+    cell_prediction_map = dict(
+        zip(spatial_indices, adata_spatial_predicted.obs[SCANVI_LABEL_COL])
+    )
+    probability_map = dict(
+        zip(spatial_indices, adata_spatial_predicted.obsm["scanvi_probs"])
     )
     entropy_map = dict(
         zip(spatial_indices, adata_spatial_predicted.obs["prediction_entropy"])
@@ -424,7 +443,8 @@ def extract_predictions_and_visualize(adata_combined, scanvi_model, adata, modul
     )
 
     # Copy predictions to original adata
-    adata.obs[SCANVI_LABEL_COL] = adata.obs_names.map(prediction_map)
+    adata.obs[SCANVI_LABEL_COL] = adata.obs_names.map(cell_prediction_map)
+    adata.obs["scANVI_prediction_probs"] = adata.obs_names.map(probability_map)
     adata.obs["scANVI_prediction_entropy"] = adata.obs_names.map(entropy_map)
     adata.obs["scANVI_prediction_confidence"] = adata.obs_names.map(max_prob_map)
 
@@ -491,36 +511,30 @@ def visualize_integration(config, cmap, adata):
         sc.pp.neighbors(adata, n_neighbors=15, n_pcs=40)
         sc.tl.umap(adata)
 
-    # Plot individual methods
     for method in [INGEST_LABEL_COL, SCANVI_LABEL_COL]:
-        if method in adata.obs.columns:
-            sc.pl.umap(
-                adata,
-                color=method,
-                title=f"INTEGRATION WITH HLCA - {method}",
-                save=f"_{config.module_name}_{method}.png",
-            )
+        if method not in adata.obs.columns:
+            print(f"Missing column: {method}")
+            continue
 
-    # Plot comparison if both methods are available
-    color_list = [
-        col for col in [INGEST_LABEL_COL, SCANVI_LABEL_COL] if col in adata.obs.columns
-    ]
-
-    # Add optional columns if they exist
-    for optional_col in ["condition", "ROI"]:
-        if optional_col in adata.obs.columns:
-            color_list.append(optional_col)
-
-    if len(color_list) > 0:
-        logger.info("Plotting comparison UMAPs...")
         sc.pl.umap(
             adata,
-            color=color_list,
-            title="COMPARING INTEGRATION APPROACHES",
-            ncols=min(2, len(color_list)),
-            save=f"_{config.module_name}_comparison.png",
-            cmap=cmap,
+            color=method,
+            title=f"INTEGRATION WITH HLCA - {method}",
+            save=f"_{config.module_name}_{method}.png",
+            show=False,  # change to True if you want inline display
         )
+
+    # Plot comparison if both methods are available
+    color_list = [INGEST_LABEL_COL, SCANVI_LABEL_COL]
+    logger.info("Plotting comparison UMAPs...")
+    sc.pl.umap(
+        adata,
+        color=color_list,
+        title="COMPARING INTEGRATION APPROACHES",
+        ncols=min(2, len(color_list)),
+        save=f"_{config.module_name}_comparison.png",
+        cmap=cmap,
+    )
 
     logger.info(f"UMAP plots saved to {sc.settings.figdir}")
 

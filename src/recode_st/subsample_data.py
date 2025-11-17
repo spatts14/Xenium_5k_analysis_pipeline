@@ -10,6 +10,7 @@ from anndata import AnnData
 from zarr.errors import PathNotFoundError
 
 from recode_st.config import Config, IOConfig, SubsampleModuleConfig
+from recode_st.helper_function import configure_scanpy_figures
 
 warnings.filterwarnings("ignore")
 
@@ -26,8 +27,12 @@ def run_subsampled_data(
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
-    # Set the directory where to save the ScanPy figures
+    # Set figure directory for this module (overrides global setting)
     sc.settings.figdir = module_dir
+
+    # Ensure global visualization settings are applied
+    # This ensures consistency across all modules
+    configure_scanpy_figures(str(io_config.output_dir))
 
     # Import data
     try:

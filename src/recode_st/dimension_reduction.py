@@ -12,6 +12,7 @@ import seaborn as sns
 import squidpy as sq
 
 from recode_st.config import DimensionReductionModuleConfig, IOConfig
+from recode_st.helper_function import configure_scanpy_figures
 
 warnings.filterwarnings("ignore")
 
@@ -312,21 +313,13 @@ def run_dimension_reduction(
     module_dir = io_config.output_dir / config.module_name
     module_dir.mkdir(exist_ok=True, parents=True)
 
-    # Set figure parameters
-    sc.set_figure_params(
-        dpi=300,  # resolution of saved figures
-        dpi_save=300,  # resolution of saved plots
-        frameon=False,  # remove borders
-        vector_friendly=True,  # produce vector-friendly PDFs/SVGs
-        fontsize=16,  # adjust font size
-        facecolor="white",  # background color
-        figsize=(5, 4),  # default single-panel figure size
-    )
-    # Set figure directory where to save scanpy figures
+    # Set figure directory for this module (overrides global setting)
     sc.settings.figdir = module_dir
 
-    # Set color palette
-    cmap = sns.color_palette("crest", as_cmap=True)
+    # Get shared colormap from global visualization settings
+    # This ensures consistency across all modules
+    viz_assets = configure_scanpy_figures(str(io_config.output_dir))
+    cmap = viz_assets["cmap"]
 
     # Load data based on subsampling strategy
     subsample_path = module_dir / f"adata_subsample_{config.norm_approach}.h5ad"

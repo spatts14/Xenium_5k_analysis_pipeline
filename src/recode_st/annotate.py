@@ -8,6 +8,7 @@ import pandas as pd
 import scanpy as sc
 
 from recode_st.config import AnnotateModuleConfig, IOConfig
+from recode_st.helper_function import configure_scanpy_figures
 
 warnings.filterwarnings("ignore")
 
@@ -24,12 +25,16 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
+    # Set figure directory for this module (overrides global setting)
+    sc.settings.figdir = module_dir
+
+    # Ensure global visualization settings are applied
+    # This ensures consistency across all modules
+    configure_scanpy_figures(str(io_config.output_dir))
+
     # Import data
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "3_integrate" / "adata.h5ad")
-
-    # Set the directory where to save the ScanPy figures
-    sc.settings.figdir = module_dir
 
     # Remove cell clusters with less than 10 cells
     logger.info("Removing clusters with fewer than 10 cells...")

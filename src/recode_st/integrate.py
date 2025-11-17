@@ -14,6 +14,7 @@ import seaborn as sns
 from scvi.model import SCANVI, SCVI
 
 from recode_st.config import IntegrateModuleConfig, IOConfig
+from recode_st.helper_function import configure_scanpy_figures
 
 warnings.filterwarnings("ignore")
 
@@ -747,22 +748,13 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
-    # Set figure parameters
-    # CLEAN UP CODE BY PUTTING THIS AS A HELPER FUNCTION? BEST WAY TO DO THIS?
-    sc.set_figure_params(
-        dpi=300,  # resolution of saved figures
-        dpi_save=300,  # resolution of saved plots
-        frameon=False,  # remove borders
-        vector_friendly=True,  # produce vector-friendly PDFs/SVGs
-        fontsize=16,  # adjust font size
-        facecolor="white",  # background color
-        figsize=(15, 4),  # default single-panel figure size
-    )
-    # Set figure directory where to save scanpy figures
+    # Set figure directory for this module (overrides global setting)
     sc.settings.figdir = module_dir
 
-    # Set color palette
-    cmap = sns.color_palette("crest", as_cmap=True)
+    # Get shared colormap from global visualization settings
+    # This ensures consistency across all modules
+    viz_assets = configure_scanpy_figures(str(io_config.output_dir))
+    cmap = viz_assets["cmap"]
 
     logger.info("Starting integration of scRNAseq and spatial transcriptomics data...")
 

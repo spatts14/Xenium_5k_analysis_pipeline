@@ -61,8 +61,6 @@ def configure_scanpy_figures(figdir: str, dpi: int = 300, fontsize: int = 16):
         figsize=(15, 4),
     )
 
-    sc.settings.figdir = figdir
-
     cmap = sns.color_palette("crest", as_cmap=True)
 
     return {"cmap": cmap}

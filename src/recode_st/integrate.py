@@ -284,12 +284,14 @@ def perform_scANVI_integration(adata_ref, adata_ingest):
     """
     logger.info("Integrating data using scANVI...")
 
+    # Set constants
+    BATCH_COL = "dataset_origin"
+
     # Training parameters
     max_epochs_scvi = 200
     max_epochs_scanvi = 100
 
     # Add dataset labels
-    BATCH_COL = "dataset_origin"
     adata_ref.obs[BATCH_COL] = "Ref"
     adata_ingest.obs[BATCH_COL] = "STx"
 
@@ -304,16 +306,17 @@ def perform_scANVI_integration(adata_ref, adata_ingest):
     )
 
     # Create scANVI labels (reference has labels, spatial is 'Unknown')
-    labels_key = (
+    LABELS_KEY = (
         "cell_type_scanvi"  # new column that scANVI will use for its training labels.
     )
-    unlabeled_category = (
+    UNLABELED_CATEGORY = (
         "Unknown"  # placeholder for cells that do not have known labels aka STx cells
     )
 
     # Set the label column (cell_type_scanvi) to "Unknown" for all cells initially.
     # This ensures that STx cells are marked as unlabeled before we assign ref labels
-    adata_combined.obs[labels_key] = unlabeled_category
+    adata_combined.obs[LABELS_KEY] = UNLABELED_CATEGORY
+    ref_mask = adata_combined.obs[BATCH_COL] == "Ref"
 
     # Check columns in adata_combined
     logger.info(f"Columns in adata_combined: {list(adata_combined.obs.columns)}")
@@ -321,7 +324,7 @@ def perform_scANVI_integration(adata_ref, adata_ingest):
     # Assign real labels to reference cells
     ref_mask = adata_combined.obs[BATCH_COL] == "Ref"
     if REF_CELL_LABEL_COL in adata_combined.obs.columns:
-        adata_combined.obs.loc[ref_mask, labels_key] = adata_combined.obs.loc[
+        adata_combined.obs.loc[ref_mask, LABELS_KEY] = adata_combined.obs.loc[
             ref_mask, REF_CELL_LABEL_COL
         ]
     else:
@@ -340,32 +343,34 @@ def perform_scANVI_integration(adata_ref, adata_ingest):
     logger.info(
         f"Percent Spatial cells: {100 * (~ref_mask).sum() / adata_combined.n_obs:.2f}%"
     )
-    logger.info(f"Unique cell types: {adata_combined.obs[labels_key].value_counts()}")
+    logger.info(f"Unique cell types: {adata_combined.obs[LABELS_KEY].value_counts()}")
 
     # Setup scANVI
     logger.info("Setting up scANVI model...")
-    SCANVI.setup_anndata(
+    SCVI.setup_anndata(
         adata_combined,
-        labels_key=labels_key,
-        unlabeled_category=unlabeled_category,
         batch_key=BATCH_COL,
+        labels_key=None,  # SCVI is unsupervised
     )
-
-    # Train scVI first (recommended)
-    logger.info("Training scVI model...")
     scvi_model = SCVI(adata_combined, n_latent=30, n_hidden=128)
+    logger.info("Training SCVI model...")
     scvi_model.train(max_epochs=max_epochs_scvi, patience=10, batch_size=128)
 
     # Initialize scANVI from trained scVI
     logger.info("Initializing scANVI model...")
+    SCANVI.setup_anndata(
+        adata_combined,
+        labels_key=LABELS_KEY,
+        unlabeled_category=UNLABELED_CATEGORY,
+        batch_key=BATCH_COL,
+    )
     scanvi_model = SCANVI.from_scvi_model(
-        scvi_model, unlabeled_category=unlabeled_category
+        scvi_model, unlabeled_category=UNLABELED_CATEGORY
     )
 
     # Train scANVI
     logger.info("Training scANVI model...")
     scanvi_model.train(max_epochs=max_epochs_scanvi, patience=10, batch_size=128)
-
     logger.info("scANVI training completed!")
 
     return adata_combined, scanvi_model
@@ -825,7 +830,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     adata_combined, scanvi_model = perform_scANVI_integration(adata_ref, adata_ingest)
 
     # 3. Extract scANVI predictions and copy to original adata
-    logger.info("Extracting labels...")
+    logger.info("Extracting labels from scANVI...")
     if adata_combined is not None and scanvi_model is not None:
         adata = extract_predictions_and_visualize(
             adata_combined, scanvi_model, adata, module_dir

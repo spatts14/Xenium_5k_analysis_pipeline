@@ -76,9 +76,6 @@ class DimensionReductionModuleConfig(BaseModuleConfig):
 class IntegrateModuleConfig(BaseModuleConfig):
     """Configuration for the Integration module."""
 
-    method: Literal["ingest", "scANVI"]
-    """Integration method to use to integrate scRNAseq and spatial data."""
-
 
 class AnnotateModuleConfig(BaseModuleConfig):
     """Configuration for the Annotate module."""

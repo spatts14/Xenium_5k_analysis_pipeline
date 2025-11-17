@@ -11,10 +11,13 @@ logger = getLogger(__package__)
 
 def main(config: Config):
     """Main function to run the recode_st package."""
-    from recode_st.helper_function import seed_everything
+    from recode_st.helper_function import configure_scanpy_figures, seed_everything
     from recode_st.logging_config import configure_logging
 
     configure_logging(config.io.logging_dir, config.log_level)
+
+    # Apply Scanpy global visualization settings
+    configure_scanpy_figures(config.io.output_dir)
 
     logger.info("Starting recode_st pipeline...")
 

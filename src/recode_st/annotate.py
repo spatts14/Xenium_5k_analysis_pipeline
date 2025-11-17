@@ -8,6 +8,7 @@ import pandas as pd
 import scanpy as sc
 
 from recode_st.config import AnnotateModuleConfig, IOConfig
+from recode_st.helper_function import configure_scanpy_figures
 
 warnings.filterwarnings("ignore")
 
@@ -24,14 +25,25 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
+    # Set figure directory for this module (overrides global setting)
+    sc.settings.figdir = module_dir
+
+    # Ensure global visualization settings are applied
+    # This ensures consistency across all modules
+    configure_scanpy_figures(str(io_config.output_dir))
+
     # Import data
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "3_integrate" / "adata.h5ad")
 
-    # Set the directory where to save the ScanPy figures
-    sc.settings.figdir = module_dir
+    # Remove cell clusters with less than 10 cells
+    logger.info("Removing clusters with fewer than 10 cells...")
+    cluster_counts = adata.obs[cluster_name].value_counts()
+    clusters_to_remove = cluster_counts[cluster_counts < 10].index
+    adata = adata[~adata.obs[cluster_name].isin(clusters_to_remove)].copy()
+    logger.info(f"Clusters removed after filtering: {clusters_to_remove.tolist()}")
+    logger.info(f"Remaining clusters: {adata.obs[cluster_name].unique().tolist()}")
 
-    # Annotate cell clusters
     # Calculate the differentially expressed genes for every cluster,
     # compared to the rest of the cells in our adata
     logger.info("Calculating differentially expressed genes for each cluster...")
@@ -44,7 +56,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
         standard_scale="var",
         n_genes=5,
         show=False,
-        save=f"{config.module_name}.png",
+        save=f"{config.module_name}_{cluster_name}.png",
     )
     logger.info(f"Dotplot saved to {sc.settings.figdir}")
 
@@ -56,7 +68,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
         ncols=3,
         legend_fontsize=10,
         show=False,
-        save=f"_{config.module_name}.png",
+        save=f"_{config.module_name}_{cluster_name}.png",
     )
     logger.info(f"UMAP plot saved to {sc.settings.figdir}")
 

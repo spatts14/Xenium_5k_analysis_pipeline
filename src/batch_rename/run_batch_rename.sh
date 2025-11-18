@@ -12,7 +12,7 @@ source xenium_5k_venv/bin/activate # Activate virtual environment
 # This script will process all output directories in your Xenium run
 
 # Set your data directory path
-DATA_DIR="/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/data/xenium_raw/20251028__162706__SP25164_SARA_PATTI_RUN_2"
+DATA_DIR="/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/data/20251103__141920__SP25164_SARA_PATTI_RUN_3"
 
 # Get the directory where this script is located
 SCRIPT_DIR="/rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline/src/batch_rename"

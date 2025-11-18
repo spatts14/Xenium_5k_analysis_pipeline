@@ -354,7 +354,7 @@ def perform_scANVI_integration(adata_ref, adata_ingest):
     )
     scvi_model = SCVI(adata_combined, n_latent=30, n_hidden=128)
     logger.info("Training SCVI model...")
-    scvi_model.train(max_epochs=max_epochs_scvi, patience=10, batch_size=128)
+    scvi_model.train(max_epochs=max_epochs_scvi, batch_size=128)
 
     # Initialize scANVI from trained scVI
     logger.info("Initializing scANVI model...")
@@ -370,7 +370,7 @@ def perform_scANVI_integration(adata_ref, adata_ingest):
 
     # Train scANVI
     logger.info("Training scANVI model...")
-    scanvi_model.train(max_epochs=max_epochs_scanvi, patience=10, batch_size=128)
+    scanvi_model.train(max_epochs=max_epochs_scanvi, batch_size=128)
     logger.info("scANVI training completed!")
 
     return adata_combined, scanvi_model

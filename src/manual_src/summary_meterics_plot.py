@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -82,6 +83,138 @@ def plot_violin(data, x, y, palette, title, ylabel, filename, order=None, ylim=N
     plt.close()
 
 
+def raincloud_plot(
+    data,
+    x,
+    y,
+    hue,
+    order=None,
+    hue_order=None,
+    palette=None,
+    box_width=0.15,
+    violin_width=0.6,
+    jitter=0.15,
+    figsize=(8, 5),
+    title=None,
+    ylabel=None,
+    xlabel=None,
+    ylim=None,
+    filename=None,
+):
+    """Create a raincloud plot.
+
+    Half violin (distribution), overlaid boxplot (summary), and jittered points
+    colored by `hue` to show subgroup structure (e.g. run effects).
+
+    Args:
+        data: DataFrame containing the variables to plot.
+        x: Categorical variable for the x-axis (e.g., Condition).
+        y: Numeric variable to visualize.
+        hue: Subgroup/category used to color individual points (e.g., run).
+        order: Optional sequence defining the order of x-axis categories.
+        hue_order: Optional sequence defining the order of hue categories.
+        palette: Color mapping for hue categories.
+        box_width: Width of the central boxplot element.
+        violin_width: Width of the half-violin distribution shape.
+        jitter: Horizontal jitter magnitude for point spreading.
+        figsize: Figure size in inches (width, height).
+        title: Optional plot title.
+        ylabel: Optional y-axis label.
+        xlabel: Optional x-axis label.
+        ylim: Optional y-axis limits (tuple).
+        filename: Optional path to save the figure. If None, plot is not saved.
+
+    Returns:
+        None
+    """
+    plt.figure(figsize=figsize)
+
+    # ----------------------------------------------------------------------
+    # 1. HALF VIOLIN (left half)
+    # We use a full violin but clip to one side using a custom helper.
+    # ----------------------------------------------------------------------
+    sns.violinplot(
+        data=data,
+        x=x,
+        y=y,
+        order=order,
+        inner=None,
+        linewidth=0,
+        palette=None,  # no coloring here; just outline disabled
+        cut=0,
+        width=violin_width,
+        color="#D1EEEE",
+    )
+
+    # Clip the violins to left side
+    ax = plt.gca()
+    for collection in ax.collections:
+        paths = collection.get_paths()
+        for p in paths:
+            v = p.vertices
+            v[:, 0] = np.minimum(v[:, 0], np.median(v[:, 0]))  # keep the left half
+
+    # ----------------------------------------------------------------------
+    # 2. BOX PLOTS (centered)
+    # ----------------------------------------------------------------------
+    sns.boxplot(
+        data=data,
+        x=x,
+        y=y,
+        order=order,
+        width=box_width,
+        showcaps=True,
+        boxprops={"facecolor": (1, 1, 1, 0.5), "zorder": 10},
+        showfliers=False,
+        whiskerprops={"linewidth": 1},
+        medianprops={"color": "black", "linewidth": 2},
+    )
+
+    # ----------------------------------------------------------------------
+    # 3. JITTERED POINTS (colored by run)
+    # ----------------------------------------------------------------------
+    sns.stripplot(
+        data=data,
+        x=x,
+        y=y,
+        hue=hue,
+        order=order,
+        hue_order=hue_order,
+        palette=palette,
+        dodge=True,
+        jitter=jitter,
+        alpha=0.8,
+        zorder=20,
+    )
+
+    # ----------------------------------------------------------------------
+    # 4. Labels and formatting
+    # ----------------------------------------------------------------------
+    if xlabel:
+        plt.xlabel(xlabel)
+    else:
+        plt.xlabel(x)
+
+    if ylabel:
+        plt.ylabel(ylabel)
+    else:
+        plt.ylabel(y)
+
+    if title:
+        plt.title(title)
+
+    if ylim:
+        plt.ylim(ylim)
+
+    plt.legend(title=hue, bbox_to_anchor=(1.02, 1), loc="upper left")
+
+    plt.tight_layout()
+
+    if filename:
+        plt.savefig(filename, dpi=300)
+        plt.close()
+
+
 # Plots
 plots = [
     (
@@ -136,16 +269,31 @@ plots = [
 ]
 
 for y, title, ylabel, ylim, filename in plots:
-    plot_violin(
+    # plot_violin(
+    #     data=df,
+    #     x="Condition",
+    #     y=y,
+    #     palette=condition_color_dict,
+    #     title=title,
+    #     ylabel=ylabel,
+    #     filename=out_dir / filename,
+    #     order=["PM08", "COPD", "IPF"],
+    #     ylim=ylim,
+    # )
+
+    raincloud_plot(
         data=df,
         x="Condition",
         y=y,
-        palette=condition_color_dict,
+        hue="run",
+        order=["PM08", "COPD", "IPF"],
+        hue_order=sorted(df["run"].unique()),
+        palette="Set2",
         title=title,
         ylabel=ylabel,
-        filename=out_dir / filename,
-        order=["PM08", "COPD", "IPF"],
+        xlabel="Condition",
         ylim=ylim,
+        filename=out_dir / f"raincloud_{filename}",
     )
 
 print("Plots saved successfully.")

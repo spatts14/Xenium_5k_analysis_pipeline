@@ -249,7 +249,7 @@ plots = [
         "fraction_empty_cells",
         "Fraction of Empty Cells by Condition",
         "Fraction of Empty Cells",
-        (-0.001, 0.3),
+        (-0.001, 0.5),
         "fraction_empty_cells_condition.png",
     ),
     (
@@ -269,17 +269,17 @@ plots = [
 ]
 
 for y, title, ylabel, ylim, filename in plots:
-    # plot_violin(
-    #     data=df,
-    #     x="Condition",
-    #     y=y,
-    #     palette=condition_color_dict,
-    #     title=title,
-    #     ylabel=ylabel,
-    #     filename=out_dir / filename,
-    #     order=["PM08", "COPD", "IPF"],
-    #     ylim=ylim,
-    # )
+    plot_violin(
+        data=df,
+        x="Condition",
+        y=y,
+        palette=condition_color_dict,
+        title=title,
+        ylabel=ylabel,
+        filename=out_dir / filename,
+        order=["PM08", "COPD", "IPF"],
+        ylim=ylim,
+    )
 
     raincloud_plot(
         data=df,

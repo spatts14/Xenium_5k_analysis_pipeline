@@ -249,7 +249,7 @@ plots = [
         "fraction_empty_cells",
         "Fraction of Empty Cells by Condition",
         "Fraction of Empty Cells",
-        (-0.001, 0.2),
+        (-0.001, 0.3),
         "fraction_empty_cells_condition.png",
     ),
     (

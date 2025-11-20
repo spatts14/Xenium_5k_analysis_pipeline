@@ -14,12 +14,16 @@ warnings.filterwarnings("ignore")
 
 logger = getLogger(__name__)
 
+INGEST_LABEL_COL = "ingest_pred_cell_type"
+SCANVI_LABEL_COL = "scANVI_pred_cell_type"
+REF_CELL_LABEL_COL = "cell_type"  # Column in reference data with cell type labels
+
 
 def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     """Run annotation on Xenium data."""
     # Set variables
     module_dir = io_config.output_dir / config.module_name
-    cluster_name = config.cluster_name
+    cluster_name = INGEST_LABEL_COL
     new_clusters = config.new_clusters
 
     # Create output directories if they do not exist

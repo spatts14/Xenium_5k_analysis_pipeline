@@ -232,6 +232,7 @@ def plot_dimensionality_reduction(
             "n_genes_by_counts",
             "ROI",
             "condition",
+            "run",
             cluster_name,
         ],
         ncols=3,
@@ -369,10 +370,12 @@ def run_dimension_reduction(
 
     logger.info("Plotting spatial distribution of clusters...")
     # Plot spatial distribution of clusters
+    spatial_plots_dir = module_dir / "spatial_plots"
+    spatial_plots_dir.mkdir(exist_ok=True, parents=True)
     plot_spatial_distribution(
         adata=adata,
         cluster_name=config.cluster_name,
-        module_dir=module_dir,
+        module_dir=spatial_plots_dir,
     )
 
     # Save final results

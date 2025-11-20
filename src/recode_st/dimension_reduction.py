@@ -251,7 +251,7 @@ def plot_dimensionality_reduction(
         "CD3E",
         "CD68",
         "EPCAM",
-        "COL1A1",
+        "KRT5",
         "PDGFRA",
         "ACTA2",
         "VWF",

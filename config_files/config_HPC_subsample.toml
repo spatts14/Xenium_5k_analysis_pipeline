@@ -11,7 +11,7 @@ xenium_dir = "xenium_raw"                                                       
 output_data_dir = "out_data"                                                                                                                           # Directory where processed data will be saved (relative to data_dir)
 adata_dir = "adata"                                                                                                                                    # Directory where AnnData objects will be saved (relative to output_data_dir)
 zarr_dir = "xenium.zarr"                                                                                                                               # Directory where Zarr data will be stored (relative to output_data_dir)
-output_dir = "out_run1_run2_run3"                                                                                                                           # Directory where the output will be saved (relative to base_dir)
+output_dir = "out_run1_run2_run3"                                                                                                                      # Directory where the output will be saved (relative to base_dir)
 path = "selected_cells_stats.csv"                                                                                                                      # Path to the CSV file containing selected cells statistics (relative to data_dir)
 logging_path = "logs"                                                                                                                                  # Directory where logs will be saved (relative to output_dir)
 hlca_path = "/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/hlca_full_processed.h5ad"                                                # Path to the reference scRNAseq data
@@ -21,11 +21,3 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 module_name = "0.5_subsample_data" # Name of the module - will be used in the output directory name
 n_cells = 5000                     # Total number of cells to include in the subsampled dataset
 replace = false                    # Whether to sample with replacement
-
-[modules.quality_control]
-module_name = "1_quality_control" # Name of the module - will be used in the output directory name
-min_counts = 10                   # Minimum number of counts required for a cell to pass filtering
-min_cells = 5                     # Minimum number of cells expressed required for a gene to pass filtering
-min_cell_area = 25                # Minimum cell area to filter cells required for a cell to pass filtering
-max_cell_area = 1000              # Maximum cell area to filter cells required for a cell to pass filtering
-norm_approach = "cell_area"       # Normalization approach to use

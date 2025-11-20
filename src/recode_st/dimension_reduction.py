@@ -317,6 +317,9 @@ def run_dimension_reduction(
     # Set figure directory for this module (overrides global setting)
     sc.settings.figdir = module_dir
 
+    # Define variables
+    CLUSTER_NAME = "leiden"
+
     # Get shared colormap from global visualization settings
     # This ensures consistency across all modules
     viz_assets = configure_scanpy_figures(str(io_config.output_dir))
@@ -352,7 +355,7 @@ def run_dimension_reduction(
         n_pca=config.n_pca,
         n_neighbors=config.n_neighbors,
         resolution=config.resolution,
-        cluster_name=config.cluster_name,
+        cluster_name=CLUSTER_NAME,
     )
 
     logger.info("Plotting dimension reduction...")
@@ -360,7 +363,7 @@ def run_dimension_reduction(
     # Plot results
     plot_dimensionality_reduction(
         adata=adata,
-        cluster_name=config.cluster_name,
+        cluster_name=CLUSTER_NAME,
         norm_approach=config.norm_approach,
         module_name=config.module_name,
         n_neighbors=config.n_neighbors,
@@ -374,7 +377,7 @@ def run_dimension_reduction(
     spatial_plots_dir.mkdir(exist_ok=True, parents=True)
     plot_spatial_distribution(
         adata=adata,
-        cluster_name=config.cluster_name,
+        cluster_name=CLUSTER_NAME,
         module_dir=spatial_plots_dir,
     )
 

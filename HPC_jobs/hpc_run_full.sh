@@ -1,6 +1,6 @@
 #!/bin/bash
-#PBS -l walltime=4:0:0
-#PBS -lselect=1:ncpus=32:mem=256gb
+#PBS -l walltime=5:0:0
+#PBS -lselect=1:ncpus=16:mem=512gb
 
 # Load production tools
 module load tools/prod
@@ -15,4 +15,4 @@ cd /rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline
 source xenium_5k_venv/bin/activate
 
 # Run
-python /rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline/src/manual_src/hlca_full_umap.py
+python -m recode_st config_files/config_HPC_runs.toml

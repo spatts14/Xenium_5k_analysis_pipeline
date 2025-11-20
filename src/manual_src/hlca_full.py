@@ -1,16 +1,17 @@
-from pathlib import Path
-import scanpy as sc
 import logging
 import sys
+from pathlib import Path
+
+import scanpy as sc
 
 log_file = "hlca_analysis.log"
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        logging.StreamHandler(sys.stdout),   # prints to console (stdout)
-        logging.FileHandler(log_file)        # also saves to file
-    ]
+        logging.StreamHandler(sys.stdout),  # prints to console (stdout)
+        logging.FileHandler(log_file),  # also saves to file
+    ],
 )
 
 logging.info("Starting HLCA plotting script...")

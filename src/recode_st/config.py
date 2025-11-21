@@ -65,8 +65,6 @@ class DimensionReductionModuleConfig(BaseModuleConfig):
     """ number of neighbors for the neighborhood graph"""
     resolution: float
     """resolution for leiden clustering"""
-    cluster_name: str
-    """Name of the cluster column in adata.obs."""
     norm_approach: Literal["scanpy_log", "sctransform", "cell_area", "none"] = (
         "cell_area"
     )
@@ -80,8 +78,6 @@ class IntegrateModuleConfig(BaseModuleConfig):
 class AnnotateModuleConfig(BaseModuleConfig):
     """Configuration for the Annotate module."""
 
-    cluster_name: str
-    """Name of the cluster column in adata.obs."""
     new_clusters: str
     """Name of the new cluster column in adata.obs."""
 

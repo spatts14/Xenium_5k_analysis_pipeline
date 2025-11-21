@@ -232,6 +232,7 @@ def plot_dimensionality_reduction(
             "n_genes_by_counts",
             "ROI",
             "condition",
+            "batch",
             cluster_name,
         ],
         ncols=3,
@@ -250,7 +251,7 @@ def plot_dimensionality_reduction(
         "CD3E",
         "CD68",
         "EPCAM",
-        "COL1A1",
+        "KRT5",
         "PDGFRA",
         "ACTA2",
         "VWF",
@@ -316,6 +317,9 @@ def run_dimension_reduction(
     # Set figure directory for this module (overrides global setting)
     sc.settings.figdir = module_dir
 
+    # Define variables
+    CLUSTER_NAME = "leiden"
+
     # Get shared colormap from global visualization settings
     # This ensures consistency across all modules
     viz_assets = configure_scanpy_figures(str(io_config.output_dir))
@@ -339,7 +343,7 @@ def run_dimension_reduction(
     sc.pl.pca_variance_ratio(
         adata,
         log=True,
-        n_pcs=config.n_pca,
+        n_pcs=80,
         show=False,
         save=f"_{config.module_name}.png",
     )
@@ -351,15 +355,20 @@ def run_dimension_reduction(
         n_pca=config.n_pca,
         n_neighbors=config.n_neighbors,
         resolution=config.resolution,
-        cluster_name=config.cluster_name,
+        cluster_name=CLUSTER_NAME,
     )
+
+    # Save final results
+    output_path = module_dir / "adata.h5ad"
+    adata.write_h5ad(output_path)
+    logger.info(f"\nFinal results saved to {output_path}")
 
     logger.info("Plotting dimension reduction...")
 
     # Plot results
     plot_dimensionality_reduction(
         adata=adata,
-        cluster_name=config.cluster_name,
+        cluster_name=CLUSTER_NAME,
         norm_approach=config.norm_approach,
         module_name=config.module_name,
         n_neighbors=config.n_neighbors,
@@ -369,13 +378,12 @@ def run_dimension_reduction(
 
     logger.info("Plotting spatial distribution of clusters...")
     # Plot spatial distribution of clusters
+    spatial_plots_dir = module_dir / "spatial_plots"
+    spatial_plots_dir.mkdir(exist_ok=True, parents=True)
     plot_spatial_distribution(
         adata=adata,
-        cluster_name=config.cluster_name,
-        module_dir=module_dir,
+        cluster_name=CLUSTER_NAME,
+        module_dir=spatial_plots_dir,
     )
 
-    # Save final results
-    output_path = module_dir / "adata.h5ad"
-    adata.write_h5ad(output_path)
-    logger.info(f"\nFinal results saved to {output_path}")
+    logger.info(f"\nDimension reduction module '{config.module_name}' complete.\n")

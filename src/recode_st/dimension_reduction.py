@@ -232,7 +232,7 @@ def plot_dimensionality_reduction(
             "n_genes_by_counts",
             "ROI",
             "condition",
-            "run",
+            "batch",
             cluster_name,
         ],
         ncols=3,
@@ -343,7 +343,7 @@ def run_dimension_reduction(
     sc.pl.pca_variance_ratio(
         adata,
         log=True,
-        n_pcs=config.n_pca,
+        n_pcs=80,
         show=False,
         save=f"_{config.module_name}.png",
     )
@@ -357,6 +357,11 @@ def run_dimension_reduction(
         resolution=config.resolution,
         cluster_name=CLUSTER_NAME,
     )
+
+    # Save final results
+    output_path = module_dir / "adata.h5ad"
+    adata.write_h5ad(output_path)
+    logger.info(f"\nFinal results saved to {output_path}")
 
     logger.info("Plotting dimension reduction...")
 
@@ -381,7 +386,4 @@ def run_dimension_reduction(
         module_dir=spatial_plots_dir,
     )
 
-    # Save final results
-    output_path = module_dir / "adata.h5ad"
-    adata.write_h5ad(output_path)
-    logger.info(f"\nFinal results saved to {output_path}")
+    logger.info(f"\nDimension reduction module '{config.module_name}' complete.\n")

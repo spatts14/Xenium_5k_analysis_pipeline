@@ -1,3 +1,5 @@
+"""Plot UMAPs for the HLCA full reference data after filtering out nose cells."""
+
 import logging
 import sys
 from pathlib import Path
@@ -21,6 +23,12 @@ fig_dir = Path(
     "/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/out/figures/"
 )
 
+# Set directories and file paths
+output_dir = Path("/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/")
+adata_path = output_dir / "hlca_full_unprocessed.h5ad"
+filtered_path = output_dir / "hlca_full_filtered.h5ad"
+processed_path = output_dir / "hlca_full_processed.h5ad"
+
 adata_path = base_dir / "hlca_full_processed.h5ad"
 if not adata_path.exists():
     raise FileNotFoundError(f"{adata_path} not found.")
@@ -31,9 +39,7 @@ adata = sc.read_h5ad(base_dir / "hlca_full_processed.h5ad")
 # Remove nose cells
 remove = ["nose", "inferior turbinate", "trachea"]
 adata = adata[~adata.obs["tissue_level_2"].isin(remove), :].copy()
-logging.info(
-    f"Filtered out nose cells. Remaining tissue types: {adata.obs['tissue_level_2'].unique()}"
-)
+logging.info(f"Remaining tissue types: {adata.obs['tissue_level_2'].unique()}")
 
 # Set figure directory
 sc.settings.figdir = fig_dir / "HLCA_full_figures_tissue_filtered"

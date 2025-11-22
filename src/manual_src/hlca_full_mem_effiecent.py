@@ -1,3 +1,5 @@
+"""Memory efficient loading and filtering of HLCA dataset."""
+
 import gc
 import logging
 import sys
@@ -20,7 +22,7 @@ logging.info("Starting HLCA plotting script...")
 
 # Set directories and file paths
 output_dir = Path("/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/")
-adata_path = output_dir / "HLCA_full.h5ad"
+adata_path = output_dir / "hlca_full_unprocessed.h5ad"
 filtered_path = output_dir / "hlca_full_filtered.h5ad"
 processed_path = output_dir / "hlca_full_processed.h5ad"
 
@@ -52,16 +54,5 @@ gc.collect()
 
 logging.info("Saving filtered data...")
 adata_subset.write_h5ad(filtered_path)
-
-# logging.info("Processing filtered data...")
-# sc.pp.normalize_total(adata_subset, target_sum=1e4)
-# sc.pp.log1p(adata_subset)
-# sc.pp.highly_variable_genes(adata_subset, n_top_genes=2000)
-# sc.tl.pca(adata_subset, n_comps=50)
-# sc.pp.neighbors(adata_subset, n_neighbors=15, n_pcs=40)
-# sc.tl.umap(adata_subset)
-
-# logging.info("Saving filtered and processed data...")
-# adata_subset.write_h5ad(processed_path)
 
 logging.info("HLCA plotting script completed successfully.")

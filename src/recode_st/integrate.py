@@ -960,7 +960,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     )
 
     # 3. Extract scANVI predictions and copy to original adata
-    logger.info("Extracting labels from scANVI...")
+    logger.info("Extracting predicted labels from scANVI...")
     if adata_combined is not None and trained_scanvi_model is not None:
         adata = extract_predictions_and_visualize(
             adata_combined, trained_scanvi_model, adata, module_dir

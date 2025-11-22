@@ -27,11 +27,8 @@ SCANVI_LABEL_COL = "scANVI_pred_cell_type"
 REF_CELL_LABEL_COL = "cell_type"  # Column in reference data with cell type labels
 BATCH_COL = "dataset_origin"
 SCANVI_LATENT_KEY = "X_scANVI"  # Key for scANVI latent representation
-PROCESS_REF_DATA = False  # Whether to preprocess reference data if PCA/UMAP missing
-
-
-hlca_int = Path(
-    "/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/hlca_full_processed.h5ad"
+HLCA_INT_SAVE = Path(
+    "/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/recode_hlca_full_processed.h5ad"
 )
 
 
@@ -148,10 +145,10 @@ def prepare_integrated_datasets(gene_id_dict_path, adata_ref, adata):
 def process_reference_data(config, io_config, adata_ref):
     """Preprocesses the reference scRNA-seq dataset if PCA and UMAP are missing.
 
-    This function checks whether the reference AnnData object already contains
-    computed PCA and UMAP embeddings. If not, it performs standard single-cell
-    preprocessing steps, including normalization, log-transformation, highly
-    variable gene selection, PCA, neighbor graph construction, and UMAP embedding.
+    This function checks whether the reference AnnData object already processed.
+    If not, it performs standard single-cell preprocessing steps, including
+    normalization, log-transformation, highly variable gene selection, PCA,
+    neighbor graph construction, and UMAP embedding.
     The resulting AnnData object is saved to disk and optionally visualized.
 
     Args:
@@ -165,7 +162,7 @@ def process_reference_data(config, io_config, adata_ref):
             HLCA) to be processed or verified. The object is modified in place.
 
     Side Effects:
-        - Writes the processed reference AnnData object to ``io_config.hlca_path``.
+        - Writes the processed reference AnnData object to `HLCA_INT_SAVE`.
         - Saves a UMAP visualization as a PNG file.
 
     Logs:
@@ -174,19 +171,57 @@ def process_reference_data(config, io_config, adata_ref):
         - Path to the saved output file.
 
     Returns:
-        None
+        adata_ref (anndata.AnnData): Processed reference AnnData object.
     """
     logger.info("Checking if reference scRNA-seq data needs processing...")
 
     # Check if we need to preprocess the reference data
-    if PROCESS_REF_DATA:
+    if HLCA_INT_SAVE.exists():
+        logger.info(f"Processed HLCA reference data found at {HLCA_INT_SAVE}.")
+        logger.info(f"Loading existing processed data from {HLCA_INT_SAVE}.")
+        adata_ref = sc.read_h5ad(HLCA_INT_SAVE)
+    else:
         logger.info("Preprocessing HLCA reference data...")
 
         # Basic filtering and normalization
         sc.pp.filter_cells(adata_ref, min_genes=200)
         sc.pp.filter_genes(adata_ref, min_cells=10)
-        sc.pp.normalize_total(adata_ref, target_sum=1e4)
-        sc.pp.log1p(adata_ref)
+
+        # Store raw counts
+        if "counts" not in adata_ref.layers:
+            if adata_ref.raw is not None:
+                adata_ref.layers["counts"] = adata_ref.raw.X.copy()
+                logger.info("Stored raw counts in adata.layers['counts'].")
+            else:
+                logger.warning("adata.raw is missing. Cannot store raw counts.")
+        else:
+            logger.info("Raw counts layer already exists. Skipping.")
+
+        # Check if data is already normalized
+        logger.info("Checking normalization...")
+        totals = adata_ref.X.sum(axis=1)
+        totals = totals.A1 if hasattr(totals, "A1") else np.array(totals).ravel()
+
+        if np.median(totals) > 2e4:  # crude but works for most scRNA-seq
+            logger.info("Data does not appear to be normalized! Normalizing...")
+            sc.pp.normalize_total(adata_ref, target_sum=1e4)
+            logger.info("Normalized total counts.")
+        else:
+            logger.info("Data already appears normalized. Skipping.")
+
+        # Check if data is log-transformed
+        logger.info("Checking log transformation...")
+        X_sample = adata_ref.X[:100, :100]
+        arr = X_sample.A if hasattr(X_sample, "A") else X_sample
+
+        if np.allclose(arr, np.round(arr)):  # looks like raw counts
+            logger.info(
+                "Data does not appear to be log transformed! Transforming data..."
+            )
+            sc.pp.log1p(adata_ref)
+            logger.info("Applied log1p transformation.")
+        else:
+            logger.info("Data already appears log-transformed. Skipping.")
 
         # Feature selection and scaling
         sc.pp.highly_variable_genes(adata_ref, n_top_genes=5000, flavor="seurat_v3")
@@ -206,21 +241,11 @@ def process_reference_data(config, io_config, adata_ref):
         )
 
         # Save processed reference
-        adata_ref.write_h5ad(hlca_int)
+        adata_ref.write_h5ad(HLCA_INT_SAVE)
         logger.info(
-            f"Finished preprocessing. Processed HLCA reference saved to {hlca_int}."
+            f"Finished preprocessing. Processed HLCA reference saved to {HLCA_INT_SAVE}"
         )
-
-    # Check if reference data already contains embeddings
-    elif "X_pca" not in adata_ref.obsm or "X_umap" not in adata_ref.obsm:
-        logger.warning(
-            "HLCA reference data missing PCA or UMAP embeddings. "
-            "Please preprocess the reference data before integration."
-        )
-    else:
-        logger.info(
-            "HLCA reference data already preprocessed & contains PCA & UMAP embeddings."
-        )
+    return adata_ref
 
 
 def ingest_integration(adata_ref, adata, adata_ingest):

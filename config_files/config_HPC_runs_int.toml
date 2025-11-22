@@ -14,7 +14,7 @@ zarr_dir = "xenium.zarr"                                                        
 output_dir = "out_1_2_3"                                                                                                                               # Directory where the output will be saved (relative to base_dir)
 path = "selected_cells_stats.csv"                                                                                                                      # Path to the CSV file containing selected cells statistics (relative to data_dir)
 logging_path = "logs"                                                                                                                                  # Directory where logs will be saved (relative to output_dir)
-hlca_path = "/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/hlca_full_processed.h5ad"                                                # Path to the reference scRNAseq data
+hlca_path = "/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/hlca_full_filtered.h5ad"                                                 # Path to the reference scRNAseq data
 gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/data/gene_id_dict.csv"
 
 [modules.integrate]

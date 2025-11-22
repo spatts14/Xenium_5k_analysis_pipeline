@@ -25,7 +25,7 @@ def create_subsample(
     adata: sc.AnnData,
     n_total: int = 10_000,
     min_cells_per_roi: int = 50,
-    n_pca: int = 50,
+    n_pca: int = 75,
 ) -> sc.AnnData:
     """Create a subsampled dataset using geosketch.
 
@@ -93,7 +93,7 @@ def load_data(
     subsample_path: Path,
     n_total: int = 10_000,
     min_cells_per_roi: int = 50,
-    n_pca: int = 50,
+    n_pca: int = 75,
 ) -> sc.AnnData:
     """Load data based on subsampling strategy.
 
@@ -120,11 +120,6 @@ def load_data(
     if subsample_strategy == "none":
         logger.info("Loading full dataset (no subsampling)...")
         adata = sc.read_h5ad(data_path)
-
-        # Compute PCA if needed
-        if "X_pca" not in adata.obsm:
-            logger.info("Computing PCA...")
-            sc.pp.pca(adata, n_comps=n_pca)
 
         logger.info(f"Loaded {len(adata)} cells")
         return adata
@@ -170,9 +165,10 @@ def load_data(
 
 
 def compute_dimensionality_reduction(
+    config: DimensionReductionModuleConfig,
     adata: sc.AnnData,
-    n_pca: int = 30,  # number of PCA components to use to compute neighbors
-    n_neighbors: int = 10,  # number of neighbors for graph
+    n_pca: int = 75,  # number of PCA components to use to compute neighbors
+    n_neighbors: int = 30,  # number of neighbors for graph
     min_dist: float = 0.5,  # minimum distance for UMAP
     resolution: float = 1,  # resolution for Leiden clustering
     cluster_name: str = "leiden",  # name for cluster annotation
@@ -180,6 +176,7 @@ def compute_dimensionality_reduction(
     """Compute PCA, neighbors, UMAP, and clustering.
 
     Args:
+        config: Module configuration
         adata: Input AnnData object
         n_pca: Number of PCA components to use
         n_neighbors: Number of neighbors for graph
@@ -191,6 +188,21 @@ def compute_dimensionality_reduction(
         Nothing. Saves figures and AnnData with computed dimensionality reduction.
     """
     logger.info(f"Computing neighbors (k={n_neighbors})...")
+
+    logger.info("Computing PCA...")
+    sc.pp.pca(adata, n_comps=100)  # compute 100 PCs for better representation
+
+    # Plot PCA variance
+    logger.info("Plotting PCA variance...")
+    sc.pl.pca_variance_ratio(
+        adata,
+        log=True,
+        n_pcs=100,
+        show=False,
+        save=f"_{config.module_name}.png",
+    )
+
+    logger.info("Computing neighbors...")
     sc.pp.neighbors(adata, n_neighbors=n_neighbors, n_pcs=n_pca)
 
     logger.info("Computing UMAP...")
@@ -225,23 +237,23 @@ def plot_dimensionality_reduction(
     logger.info("Plotting UMAPs...")
 
     # QC and metadata plots
-    sc.pl.umap(
-        adata,
-        color=[
-            "total_counts",
-            "n_genes_by_counts",
-            "ROI",
-            "condition",
-            "batch",
-            cluster_name,
-        ],
-        ncols=3,
-        cmap=cmap,
-        wspace=0.4,
-        show=False,
-        save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}.png",
-        frameon=False,
-    )
+    obs_list = [
+        "total_counts",
+        "n_genes_by_counts",
+        "ROI",
+        "condition",
+        "batch",
+        cluster_name,
+    ]
+    for obs in obs_list:
+        sc.pl.umap(
+            adata,
+            color=obs,
+            cmap=cmap,
+            show=False,
+            save=f"_{module_name}_{obs}_{norm_approach}_neighbors_{n_neighbors}.png",
+            frameon=False,
+        )
 
     logger.info("Plotting UMAPs with marker genes...")
 
@@ -261,6 +273,7 @@ def plot_dimensionality_reduction(
         color=marker_genes,
         cmap=cmap,
         ncols=4,
+        vmax="p75",  # change vmax to p75 to avoid outlier influence
         wspace=0.4,
         show=False,
         save=f"_{module_name}_cell_markers_{norm_approach}_neighbors_{n_neighbors}.png",
@@ -338,19 +351,10 @@ def run_dimension_reduction(
         n_pca=config.n_pca,
     )
 
-    # Plot PCA variance
-    logger.info("Plotting PCA variance...")
-    sc.pl.pca_variance_ratio(
-        adata,
-        log=True,
-        n_pcs=80,
-        show=False,
-        save=f"_{config.module_name}.png",
-    )
-
     # Compute dimensionality reduction
     logger.info("Computing dimension reduction...")
     adata = compute_dimensionality_reduction(
+        module_dir=module_dir,
         adata=adata,
         n_pca=config.n_pca,
         n_neighbors=config.n_neighbors,

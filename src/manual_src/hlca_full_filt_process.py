@@ -121,6 +121,7 @@ else:
     logging.info("Data already log-transformed.")
 
 # Dimensionality reduction
+logging.info("Calculating PCA and UMAP...")
 sc.tl.pca(adata, n_comps=75, svd_solver="arpack")
 sc.pp.neighbors(adata, n_neighbors=30, n_pcs=75)
 sc.tl.umap(adata)

@@ -1,4 +1,4 @@
-"""Filter and process the HLCA full reference dataset."""
+"""Filter and process the HLCA full reference dataset - Memory Optimized."""
 
 import logging
 import sys
@@ -12,8 +12,8 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        logging.StreamHandler(sys.stdout),  # prints to console (stdout)
-        logging.FileHandler(log_file),  # also saves to file
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler(log_file),
     ],
 )
 
@@ -25,7 +25,7 @@ adata_path = output_dir / "hlca_full_unprocessed.h5ad"
 filtered_path = output_dir / "hlca_full_filtered.h5ad"
 processed_path = output_dir / "hlca_full_processed.h5ad"
 
-# Set figure directory for this module (overrides global setting)
+# Set figure directory for this module
 sc.settings.figdir = output_dir / "figs" / "hlca_full_filt_process"
 sc.settings.figdir.mkdir(parents=True, exist_ok=True)
 
@@ -34,81 +34,91 @@ if not adata_path.exists():
     raise FileNotFoundError(f"{adata_path} not found.")
 
 logging.info(f"Loading adata file from {adata_path}...")
-adata = sc.read_h5ad(adata_path)
+# Use backed mode to avoid loading entire dataset into memory
+adata = sc.read_h5ad(adata_path, backed="r")
+logging.info(f"Original shape: {adata.shape}")
 
 logging.info("Filter for disease and tissue_level_2...")
 for key in ["disease", "tissue_level_2", "cell_type"]:
     if key not in adata.obs:
         raise KeyError(f"{key} not found in adata.obs columns.")
 
-# Filter for specific diseases
+# Create filter mask
 keep_diseases = [
     "normal",
     "pulmonary fibrosis",
     "interstitial lung disease",
     "chronic obstructive pulmonary disease",
 ]
-adata = adata[adata.obs["disease"].isin(keep_diseases), :].copy()
-logging.info(f"Remaining disease: {adata.obs['disease'].unique()}")
+remove_tissues = ["nose", "inferior turbinate", "trachea"]
 
-# Filter for specific tissues
-remove = ["nose", "inferior turbinate", "trachea"]
-adata = adata[~adata.obs["tissue_level_2"].isin(remove), :].copy()
-logging.info(
-    f"Removed {remove}. Remaining tissue types: {adata.obs['tissue_level_2'].unique()}"
-)
+disease_mask = adata.obs["disease"].isin(keep_diseases)
+tissue_mask = ~adata.obs["tissue_level_2"].isin(remove_tissues)
+combined_mask = disease_mask & tissue_mask
+
+logging.info(f"Cells passing filters: {combined_mask.sum()} / {len(combined_mask)}")
+
+# Load only filtered subset into memory
+adata = adata[combined_mask, :].to_memory()
+logging.info(f"Filtered shape: {adata.shape}")
+
+logging.info(f"Remaining diseases: {adata.obs['disease'].unique()}")
+logging.info(f"Remaining tissue types: {adata.obs['tissue_level_2'].unique()}")
 
 # Confirm filtering
 logging.info(f"Disease value counts:\n{adata.obs['disease'].value_counts()}")
 logging.info(f"Tissue value counts:\n{adata.obs['tissue_level_2'].value_counts()}")
 
+# Save filtered dataset
+logging.info(f"Saving filtered adata to {filtered_path}...")
 adata.write_h5ad(filtered_path)
-logging.info(f"Saved filtered adata to {filtered_path}...")
 
 logging.info("Process filtered dataset...")
 
-# Basic filtering and normalization
+# Basic filtering
+logging.info("Filtering cells and genes...")
 sc.pp.filter_cells(adata, min_genes=200)
 sc.pp.filter_genes(adata, min_cells=10)
+logging.info(f"Shape after filtering: {adata.shape}")
 
-# Store raw counts
+# Store raw counts BEFORE normalization
 if "counts" not in adata.layers:
     if adata.raw is not None:
-        # Subset raw to match current adata var_names
         adata.layers["counts"] = adata.raw[:, adata.var_names].X.copy()
         logging.info("Stored raw counts in adata.layers['counts'].")
     else:
-        logging.info("adata.raw is missing. Cannot store raw counts.")
+        # If no raw, store current X if it's counts
+        totals = adata.X.sum(axis=1)
+        totals = totals.A1 if hasattr(totals, "A1") else np.array(totals).ravel()
+        if np.median(totals) > 1e3:  # Looks like raw counts
+            adata.layers["counts"] = adata.X.copy()
+            logging.info("Stored current X as raw counts.")
+        else:
+            logging.warning("No raw counts available!")
 else:
-    logging.info("Raw counts layer already exists. Skipping.")
+    logging.info("Raw counts layer already exists.")
 
 # Check if data is already normalized
 logging.info("Checking normalization...")
 totals = adata.X.sum(axis=1)
 totals = totals.A1 if hasattr(totals, "A1") else np.array(totals).ravel()
 
-if np.median(totals) > 2e4:  # crude but works for most scRNA-seq
-    logging.info("Data does not appear to be normalized! Normalizing...")
+if np.median(totals) > 2e4:
+    logging.info("Normalizing data...")
     sc.pp.normalize_total(adata, target_sum=1e4)
-    logging.info("Normalized total counts.")
 else:
-    logging.info("Data already appears normalized. Skipping.")
+    logging.info("Data already normalized.")
 
 # Check if data is log-transformed
 logging.info("Checking log transformation...")
 X_sample = adata.X[:100, :100]
 arr = X_sample.A if hasattr(X_sample, "A") else X_sample
 
-if np.allclose(arr, np.round(arr)):  # looks like raw counts
-    logging.info("Data does not appear to be log transformed! Transforming data...")
+if np.allclose(arr, np.round(arr)):
+    logging.info("Applying log transformation...")
     sc.pp.log1p(adata)
-    logging.info("Applied log1p transformation.")
 else:
-    logging.info("Data already appears log-transformed. Skipping.")
-
-# Feature selection and scaling
-sc.pp.highly_variable_genes(adata, n_top_genes=5000, flavor="seurat_v3")
-sc.pp.scale(adata, max_value=10)
+    logging.info("Data already log-transformed.")
 
 # Dimensionality reduction
 sc.tl.pca(adata, n_comps=75, svd_solver="arpack")
@@ -118,8 +128,6 @@ sc.tl.umap(adata)
 # Save processed data
 adata.write_h5ad(processed_path)
 logging.info(f"Saved processed adata to {processed_path}...")
-
-# Plot UMAP
 
 # Plot UMAP
 obs_lists = ["disease", "tissue_coarse_unharmonized", "cell_type"]

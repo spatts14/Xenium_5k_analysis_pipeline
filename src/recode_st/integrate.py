@@ -190,7 +190,9 @@ def process_reference_data(config, io_config, adata_ref):
         # Store raw counts
         if "counts" not in adata_ref.layers:
             if adata_ref.raw is not None:
-                adata_ref.layers["counts"] = adata_ref.raw.X.copy()
+                adata_ref.layers["counts"] = adata_ref.raw[
+                    :, adata_ref.var_names
+                ].X.copy()
                 logger.info("Stored raw counts in adata.layers['counts'].")
             else:
                 logger.warning("adata.raw is missing. Cannot store raw counts.")

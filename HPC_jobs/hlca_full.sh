@@ -15,4 +15,4 @@ cd /rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline
 source xenium_5k_venv/bin/activate
 
 # Run
-python /rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline/src/manual_src/hlca_full_umap.py
+python /rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline/src/manual_src/hlca_full_filt_process.py

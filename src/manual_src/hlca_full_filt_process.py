@@ -74,7 +74,8 @@ sc.pp.filter_genes(adata, min_cells=10)
 # Store raw counts
 if "counts" not in adata.layers:
     if adata.raw is not None:
-        adata.layers["counts"] = adata.raw.X.copy()
+        # Subset raw to match current adata var_names
+        adata.layers["counts"] = adata.raw[:, adata.var_names].X.copy()
         logging.info("Stored raw counts in adata.layers['counts'].")
     else:
         logging.info("adata.raw is missing. Cannot store raw counts.")

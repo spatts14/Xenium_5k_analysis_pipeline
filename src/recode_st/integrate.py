@@ -1029,6 +1029,11 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
         gene_id_dict_path, adata_ref, adata
     )
 
+    logger.info("Processing subset of reference data for ingest...")
+    adata_ref_subset = process_subset_reference_data(
+        config, io_config, adata_ref_subset
+    )
+
     logger.info("Starting integration methods...")
 
     # 1. Perform ingest integration

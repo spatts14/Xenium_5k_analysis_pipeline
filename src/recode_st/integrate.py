@@ -191,17 +191,11 @@ def process_reference_data(config, io_config, adata_ref):
         sc.pp.filter_cells(adata_ref, min_genes=200)
         sc.pp.filter_genes(adata_ref, min_cells=10)
 
-        # Store raw counts
-        if "counts" not in adata_ref.layers:
-            if adata_ref.raw is not None:
-                adata_ref.layers["counts"] = adata_ref.raw[
-                    :, adata_ref.var_names
-                ].X.copy()
-                logger.info("Stored raw counts in adata.layers['counts'].")
-            else:
-                logger.warning("adata.raw is missing. Cannot store raw counts.")
+        # Checking for counts layer
+        if "counts" in adata_ref.layers:
+            logger.info("Counts layer present!")
         else:
-            logger.info("Raw counts layer already exists. Skipping.")
+            logger.warning("Counts layer not found in adata_ref.layers!")
 
         # Check if data is already normalized
         logger.info("Checking normalization...")

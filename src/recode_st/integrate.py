@@ -28,7 +28,7 @@ REF_CELL_LABEL_COL = "cell_type"  # Column in reference data with cell type labe
 BATCH_COL = "dataset_origin"
 SCANVI_LATENT_KEY = "X_scANVI"  # Key for scANVI latent representation
 HLCA_INT_SAVE = Path(
-    "/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/recode_hlca_full_processed.h5ad"
+    "/rds/general/user/sep22/ephemeral/recode_hlca_full_processed.h5ad"
 )
 
 

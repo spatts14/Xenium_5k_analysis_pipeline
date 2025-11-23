@@ -131,7 +131,7 @@ adata.write_h5ad(processed_path)
 logging.info(f"Saved processed adata to {processed_path}...")
 
 # Plot UMAP
-obs_lists = ["disease", "tissue_coarse_unharmonized", "cell_type"]
+obs_lists = ["disease", "tissue_level_2", "cell_type"]
 for obs in obs_lists:
     sc.pl.umap(
         adata,

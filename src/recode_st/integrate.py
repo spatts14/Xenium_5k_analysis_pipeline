@@ -957,14 +957,13 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
 
+    logger.info("Processing reference data...")
+    process_reference_data(config, io_config, adata_ref)
+
     logger.info("Formatting data for ingest integration...")
     adata_ref_subset, adata_ingest = prepare_integrated_datasets(
         gene_id_dict_path, adata_ref, adata
     )
-
-    logger.info("Processing reference data...")
-    process_reference_data(config, io_config, adata_ref)
-    process_reference_data(config, io_config, adata_ref_subset)
 
     logger.info("Starting integration methods...")
 

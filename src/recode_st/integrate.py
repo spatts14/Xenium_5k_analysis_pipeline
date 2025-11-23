@@ -225,13 +225,16 @@ def process_reference_data(config, io_config, adata_ref):
         else:
             logger.info("Data already appears log-transformed. Skipping.")
 
+        logger.info("Calculating HVG...")
         # Feature selection and scaling
         sc.pp.highly_variable_genes(adata_ref, n_top_genes=5000, flavor="seurat_v3")
         # sc.pp.scale(adata_ref, max_value=10) - scaling skipped for large datasets
 
         # Dimensionality reduction
+        logger.info("Computing PCA...")
         sc.tl.pca(adata_ref, n_comps=75, svd_solver="arpack")
         sc.pp.neighbors(adata_ref, n_neighbors=30, n_pcs=75)
+        logger.info("Computing UMAP...")
         sc.tl.umap(adata_ref)
 
         # Plot UMAP

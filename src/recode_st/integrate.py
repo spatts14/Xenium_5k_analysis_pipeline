@@ -389,8 +389,8 @@ def scVI_integration(config, adata_ref, adata, module_dir):
     MAX_EPOCHS_SCVI = 200
 
     # Ensure counts layer exists
-    assert "counts" in adata_ref.layers, "Reference missing counts layer"
     assert "counts" in adata.layers, "Spatial data missing counts layer"
+    assert "counts" in adata_ref.layers, "Reference missing counts layer"
 
     # Ensure REF_CELL_LABEL_COL column exists in reference
     adata.obs[REF_CELL_LABEL_COL] = (

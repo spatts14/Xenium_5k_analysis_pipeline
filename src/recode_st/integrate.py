@@ -30,6 +30,9 @@ SCANVI_LATENT_KEY = "X_scANVI"  # Key for scANVI latent representation
 HLCA_INT_SAVE = Path(
     "/rds/general/user/sep22/ephemeral/recode_hlca_full_processed.h5ad"
 )
+SUBSET_HLCA_INT_SAVE = Path(
+    "/rds/general/user/sep22/ephemeral/recode_subset_hlca_full_processed.h5ad"
+)
 
 
 def prepare_integrated_datasets(gene_id_dict_path, adata_ref, adata):
@@ -251,6 +254,66 @@ def process_reference_data(config, io_config, adata_ref):
             f"Finished preprocessing. Processed HLCA reference saved to {HLCA_INT_SAVE}"
         )
     return adata_ref
+
+
+def process_subset_reference_data(config, io_config, adata_ref_subset):
+    """Preprocesses the reference scRNA-seq dataset if PCA and UMAP are missing.
+
+    This function checks whether the reference AnnData object already processed.
+    If not, it performs standard single-cell preprocessing steps, including
+    normalization, log-transformation, highly variable gene selection, PCA,
+    neighbor graph construction, and UMAP embedding.
+    The resulting AnnData object is saved to disk and optionally visualized.
+
+    Args:
+        config (SimpleNamespace or dict): Configuration object containing
+            module-specific parameters, including the module name used to
+            construct figure filenames.
+        io_config (SimpleNamespace or dict): I/O configuration object with paths
+            to input and output data. Must include ``hlca_path`` to save the
+            processed reference dataset.
+        adata_ref_subset (anndata.AnnData): Subset of reference single-cell RNA-seq
+        dataset (e.g., HLCA) to be processed or verified.
+        The object is modified in place.
+
+    Side Effects:
+        - Writes the processed reference AnnData object to `SUBSET_HLCA_INT_SAVE`.
+        - Saves a UMAP visualization as a PNG file.
+
+    Logs:
+        - Whether preprocessing is needed.
+        - Each major preprocessing step.
+        - Path to the saved output file.
+
+    Returns:
+        adata_ref_subset (anndata.AnnData): Processed reference AnnData object.
+    """
+    logger.info("Checking if reference scRNA-seq data needs processing...")
+
+    # Check if we need to preprocess the reference data
+    if SUBSET_HLCA_INT_SAVE.exists():
+        logger.info(f"Processed HLCA reference data found at {SUBSET_HLCA_INT_SAVE}.")
+        logger.info(f"Loading existing processed data from {SUBSET_HLCA_INT_SAVE}.")
+        adata_ref_subset = sc.read_h5ad(SUBSET_HLCA_INT_SAVE)
+    else:
+        logger.info("Preprocessing subset of HLCA reference data...")
+        logger.info("Compute PCA and neighbors for ingest reference subset...")
+        sc.tl.pca(adata_ref_subset, n_comps=75, svd_solver="arpack")
+        sc.pp.neighbors(adata_ref_subset, n_neighbors=30, n_pcs=75)
+        sc.tl.umap(adata_ref_subset)
+        sc.pl.umap(
+            adata_ref_subset,
+            color=REF_CELL_LABEL_COL,
+            title="HLCA reference subset for ingest UMAP",
+            save=f"_{config.module_name}_hlca_subset_ingest_umap.png",
+        )
+        logger.info(f"UMAP for {REF_CELL_LABEL_COL} saved for adata_ref_subset")
+
+        # Save processed reference
+        adata_ref_subset.write_h5ad(SUBSET_HLCA_INT_SAVE)
+        logger.info("Finished preprocessing")
+        logger.info(f"Processed HLCA reference saved to {SUBSET_HLCA_INT_SAVE}")
+    return adata_ref_subset
 
 
 def ingest_integration(adata_ref, adata, adata_ingest):
@@ -965,18 +1028,6 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     adata_ref_subset, adata_ingest = prepare_integrated_datasets(
         gene_id_dict_path, adata_ref, adata
     )
-
-    logger.info("Compute PCA and neighbors for ingest reference subset...")
-    sc.tl.pca(adata_ref_subset, n_comps=75, svd_solver="arpack")
-    sc.pp.neighbors(adata_ref_subset, n_neighbors=30, n_pcs=75)
-    sc.tl.umap(adata_ref_subset)
-    sc.pl.umap(
-        adata_ref_subset,
-        color=REF_CELL_LABEL_COL,
-        title="HLCA reference subset for ingest UMAP",
-        save=f"_{config.module_name}_hlca_subset_ingest_umap.png",
-    )
-    logger.info(f"UMAP for {REF_CELL_LABEL_COL} saved for adata_ref_subset")
 
     logger.info("Starting integration methods...")
 

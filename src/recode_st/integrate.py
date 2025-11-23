@@ -26,7 +26,8 @@ INGEST_LABEL_COL = "ingest_pred_cell_type"
 SCANVI_LABEL_COL = "scANVI_pred_cell_type"
 REF_CELL_LABEL_COL = "cell_type"  # Column in reference data with cell type labels
 BATCH_COL = "dataset_origin"
-SCANVI_LATENT_KEY = "X_scANVI"  # Key for scANVI latent representation
+SCVI_LATENT_KEY = "X_scVI"
+SCANVI_LATENT_KEY = "X_scANVI"
 HLCA_INT_SAVE = Path(
     "/rds/general/user/sep22/ephemeral/recode_hlca_full_processed.h5ad"
 )
@@ -431,7 +432,6 @@ def scVI_integration(config, adata_ref, adata, module_dir):
     scvi_model.train(max_epochs=MAX_EPOCHS_SCVI, batch_size=128)
 
     logger.info("Obtain and visualize latent representation...")
-    SCVI_LATENT_KEY = "X_scVI"
     adata_combined.obsm[SCVI_LATENT_KEY] = scvi_model.get_latent_representation()
     sc.pp.pca(adata_combined)
     sc.pp.neighbors(adata_combined, use_rep=SCVI_LATENT_KEY)
@@ -620,7 +620,7 @@ def extract_predictions_and_visualize(adata_combined, scanvi_model, adata, modul
     adata_combined.obs["prediction_max_prob"] = max_prob
 
     # Extract spatial predictions
-    spatial_mask = adata_combined.obs["dataset_origin"] == "Spatial"
+    spatial_mask = adata_combined.obs[BATCH_COL] == "STx"
     adata_spatial_predicted = adata_combined[spatial_mask].copy()
 
     logger.info(f"Spatial cells annotated: {adata_spatial_predicted.n_obs}")

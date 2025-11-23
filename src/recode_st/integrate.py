@@ -960,10 +960,23 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Processing reference data...")
     process_reference_data(config, io_config, adata_ref)
 
+    # 1. INTEGRATION USING INGEST
     logger.info("Formatting data for ingest integration...")
     adata_ref_subset, adata_ingest = prepare_integrated_datasets(
         gene_id_dict_path, adata_ref, adata
     )
+
+    logger.info("Compute PCA and neighbors for ingest reference subset...")
+    sc.tl.pca(adata_ref_subset, n_comps=75, svd_solver="arpack")
+    sc.pp.neighbors(adata_ref_subset, n_neighbors=30, n_pcs=75)
+    sc.tl.umap(adata_ref_subset)
+    sc.pl.umap(
+        adata_ref_subset,
+        color=REF_CELL_LABEL_COL,
+        title="HLCA reference subset for ingest UMAP",
+        save=f"_{config.module_name}_hlca_subset_ingest_umap.png",
+    )
+    logger.info(f"UMAP for {REF_CELL_LABEL_COL} saved for adata_ref_subset")
 
     logger.info("Starting integration methods...")
 
@@ -971,7 +984,12 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Performing integration using: sc.tl.ingest...")
     ingest_integration(adata_ref_subset, adata, adata_ingest)
 
-    # 2. Perform scANVI integration (use adata_ingest which has matching genes)
+    # Delete adata_ref_subset and adata_ingest to free memory
+    logger.info("Delete adata_ref_subset and adata_ingest to free memory...")
+    del adata_ref_subset
+    del adata_ingest
+
+    # 2. INTEGRATION using scVI and scANVI
     logger.info("Performing integration using: scANVI...")
     logger.info(
         "Step 1. Harmoize scRNAseq reference dataset with STx dataset scVI model..."

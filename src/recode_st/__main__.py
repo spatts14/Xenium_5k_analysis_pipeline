@@ -72,6 +72,12 @@ def main(config: Config):
         logger.info("Running Module 5 - Spatial Statistics")
         run_spatial_statistics(config.modules.spatial_statistics, config.io)
 
+    if config.modules.drug2cell:
+        from recode_st.drug2cell import run_drug2cell
+
+        logger.info("Running Module ? - Drug2Cell")
+        run_drug2cell(config.modules.drug2cell, config.io)
+
     if config.modules.muspan:
         from recode_st.muspan import run_muspan
 

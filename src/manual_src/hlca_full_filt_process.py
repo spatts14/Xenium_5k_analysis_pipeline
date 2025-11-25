@@ -10,6 +10,12 @@ import scanpy as sc
 # Global variables
 REF_DATASET = "hlca_full_ref"
 
+# Set directories and file paths
+output_dir = Path("/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/")
+adata_path = output_dir / f"unprocessed_{REF_DATASET}.h5ad"
+filtered_path = output_dir / f"filtered_{REF_DATASET}.h5ad"
+processed_path = output_dir / f"processed_{REF_DATASET}.h5ad"
+
 
 # Define a functions
 def verify_counts_layer(adata, context=""):
@@ -35,7 +41,7 @@ def verify_counts_layer(adata, context=""):
 
 
 # Define logging configuration
-log_file = f"{REF_DATASET}_analysis.log"
+log_file = output_dir / f"{REF_DATASET}_analysis.log"
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -48,11 +54,6 @@ logging.basicConfig(
 logging.info("Starting reference plotting script...")
 logging.info(f"Reference dataset: {REF_DATASET}")
 
-# Set directories and file paths
-output_dir = Path("/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/")
-adata_path = output_dir / f"unprocessed_{REF_DATASET}.h5ad"
-filtered_path = output_dir / f"filtered_{REF_DATASET}.h5ad"
-processed_path = output_dir / f"processed_{REF_DATASET}.h5ad"
 
 # Set figure directory for this module
 sc.settings.figdir = output_dir / "figs" / REF_DATASET

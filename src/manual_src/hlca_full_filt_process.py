@@ -7,6 +7,30 @@ from pathlib import Path
 import numpy as np
 import scanpy as sc
 
+
+# Define a functions
+def verify_counts_layer(adata, context=""):
+    """Verify that counts layer exists and contains valid count data."""
+    if "counts" not in adata.layers:
+        logging.error(f"CRITICAL: Counts layer missing {context}!")
+        raise ValueError(f"Counts layer was lost {context}")
+
+    logging.info(f"✓ Counts layer verified: shape {adata.layers['counts'].shape}")
+
+    # Verify it contains actual count data
+    counts_sample = adata.layers["counts"][:100, :100]
+    counts_arr = counts_sample.A if hasattr(counts_sample, "A") else counts_sample
+    is_integer = np.allclose(counts_arr, np.round(counts_arr))
+    has_counts = np.median(counts_arr.sum(axis=1)) > 100
+
+    if is_integer and has_counts:
+        logging.info("✓ Counts layer contains valid count data")
+        return True
+    else:
+        logging.warning("⚠ Counts layer may not contain valid count data")
+        return False
+
+
 log_file = "hlca_analysis.log"
 logging.basicConfig(
     level=logging.INFO,
@@ -17,16 +41,18 @@ logging.basicConfig(
     ],
 )
 
-logging.info("Starting HLCA plotting script...")
+logging.info("Starting reference plotting script...")
+REF_DATASET = "hlca_full_ref"
+logging.info(f"Reference dataset: {REF_DATASET}")
 
 # Set directories and file paths
 output_dir = Path("/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/")
-adata_path = output_dir / "hlca_full_unprocessed.h5ad"
-filtered_path = output_dir / "hlca_full_filtered.h5ad"
-processed_path = output_dir / "hlca_full_processed.h5ad"
+adata_path = output_dir / f"unprocessed_{REF_DATASET}.h5ad"
+filtered_path = output_dir / f"filtered_{REF_DATASET}.h5ad"
+processed_path = output_dir / f"processed_{REF_DATASET}.h5ad"
 
 # Set figure directory for this module
-sc.settings.figdir = output_dir / "figs" / "hlca_full_filt_process"
+sc.settings.figdir = output_dir / "figs" / REF_DATASET
 sc.settings.figdir.mkdir(parents=True, exist_ok=True)
 
 # Check if adata file exists
@@ -74,12 +100,6 @@ logging.info(f"Saving filtered adata to {filtered_path}...")
 adata.write_h5ad(filtered_path)
 
 logging.info("Process filtered dataset...")
-
-# Basic filtering
-logging.info("Filtering cells and genes...")
-sc.pp.filter_cells(adata, min_genes=200)
-sc.pp.filter_genes(adata, min_cells=10)
-logging.info(f"Shape after filtering: {adata.shape}")
 
 # Store raw counts BEFORE normalization
 logging.info("Checking for counts layer...")
@@ -136,20 +156,7 @@ sc.tl.umap(adata)
 
 # Save processed data
 logging.info("Verifying counts layer before saving...")
-if "counts" not in adata.layers:
-    logging.error("CRITICAL: Counts layer missing before saving!")
-    raise ValueError("Counts layer was lost during processing")
-else:
-    logging.info(f"✓ Counts layer verified: shape {adata.layers['counts'].shape}")
-    # Verify it contains actual count data
-    counts_sample = adata.layers["counts"][:100, :100]
-    counts_arr = counts_sample.A if hasattr(counts_sample, "A") else counts_sample
-    is_integer = np.allclose(counts_arr, np.round(counts_arr))
-    has_counts = np.median(counts_arr.sum(axis=1)) > 100
-    if is_integer and has_counts:
-        logging.info("✓ Counts layer contains valid count data")
-    else:
-        logging.warning("⚠ Counts layer may not contain valid count data")
+verify_counts_layer(adata, "before saving")
 
 adata.write_h5ad(processed_path)
 logging.info(f"Saved processed adata to {processed_path}...")
@@ -166,6 +173,7 @@ else:
 del adata_test  # Clean up memory
 
 # Plot UMAP
+logging.info("Plotting UMAPs...")
 obs_lists = ["disease", "tissue_level_2", "cell_type"]
 for obs in obs_lists:
     sc.pl.umap(

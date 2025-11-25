@@ -82,21 +82,29 @@ sc.pp.filter_genes(adata, min_cells=10)
 logging.info(f"Shape after filtering: {adata.shape}")
 
 # Store raw counts BEFORE normalization
-if "counts" not in adata.layers:
-    if adata.raw is not None:
-        adata.layers["counts"] = adata.raw[:, adata.var_names].X.copy()
-        logging.info("Stored raw counts in adata.layers['counts'].")
-    else:
-        # If no raw, store current X if it's counts
-        totals = adata.X.sum(axis=1)
-        totals = totals.A1 if hasattr(totals, "A1") else np.array(totals).ravel()
-        if np.median(totals) > 1e3:  # Looks like raw counts
-            adata.layers["counts"] = adata.X.copy()
-            logging.info("Stored current X as raw counts.")
-        else:
-            logging.warning("No raw counts available!")
+logging.info("Checking for counts layer...")
+if "counts" in adata.layers:
+    logging.info("✓ Counts layer found - using existing counts layer")
+    # Verify existing counts layer is valid
+    counts_sample = adata.layers["counts"][:100, :100]
+    counts_arr = counts_sample.A if hasattr(counts_sample, "A") else counts_sample
+    if not np.allclose(counts_arr, np.round(counts_arr)):
+        logging.warning("⚠ Existing counts layer may not contain integer counts")
 else:
-    logging.info("Raw counts layer already exists.")
+    logging.info("Counts layer not found - attempting to create from adata.raw...")
+    if adata.raw is not None:
+        logging.info("✓ adata.raw found - creating counts layer from raw data")
+        adata.layers["counts"] = adata.raw[:, adata.var_names].X.copy()
+        logging.info("✓ Successfully created counts layer from adata.raw")
+    else:
+        logging.error("✗ No adata.raw found - cannot create counts layer")
+        logging.error("Please ensure your data has either:")
+        logging.error("  1. An existing 'counts' layer with raw count data, or")
+        logging.error("  2. An adata.raw attribute with the original count matrix")
+        raise ValueError(
+            "Cannot create counts layer: no 'counts' layer found and "
+            "no adata.raw available"
+        )
 
 # Check if data is already normalized
 logging.info("Checking normalization...")
@@ -127,8 +135,35 @@ sc.pp.neighbors(adata, n_neighbors=30, n_pcs=75)
 sc.tl.umap(adata)
 
 # Save processed data
+logging.info("Verifying counts layer before saving...")
+if "counts" not in adata.layers:
+    logging.error("CRITICAL: Counts layer missing before saving!")
+    raise ValueError("Counts layer was lost during processing")
+else:
+    logging.info(f"✓ Counts layer verified: shape {adata.layers['counts'].shape}")
+    # Verify it contains actual count data
+    counts_sample = adata.layers["counts"][:100, :100]
+    counts_arr = counts_sample.A if hasattr(counts_sample, "A") else counts_sample
+    is_integer = np.allclose(counts_arr, np.round(counts_arr))
+    has_counts = np.median(counts_arr.sum(axis=1)) > 100
+    if is_integer and has_counts:
+        logging.info("✓ Counts layer contains valid count data")
+    else:
+        logging.warning("⚠ Counts layer may not contain valid count data")
+
 adata.write_h5ad(processed_path)
 logging.info(f"Saved processed adata to {processed_path}...")
+
+# Verify the saved file has counts layer
+logging.info("Verifying saved file has counts layer...")
+adata_test = sc.read_h5ad(processed_path)
+if "counts" in adata_test.layers:
+    logging.info("✓ Counts layer successfully saved and verified!")
+    logging.info(f"✓ Saved counts layer shape: {adata_test.layers['counts'].shape}")
+else:
+    logging.error("✗ Counts layer lost during save/load!")
+    raise ValueError("Failed to save counts layer properly")
+del adata_test  # Clean up memory
 
 # Plot UMAP
 obs_lists = ["disease", "tissue_level_2", "cell_type"]

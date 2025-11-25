@@ -89,6 +89,7 @@ combined_mask = disease_mask & tissue_mask
 logging.info(f"Cells passing filters: {combined_mask.sum()} / {len(combined_mask)}")
 
 # Load only filtered subset into memory
+logging.info("Loading filtered subset into memory...")
 adata = adata[combined_mask, :].to_memory()
 logging.info(f"Filtered shape: {adata.shape}")
 

@@ -212,8 +212,8 @@ class IOConfig(BaseModel):
     area_path: Path = Path("selected_cells_stats.csv")
     """The path to the CSV file containing selected cells statistics."""
 
-    hlca_path: Path  # no default, must be explicitly set in config
-    """Path to the HLCA reference dataset in h5ad format."""
+    ref_path: Path  # no default, must be explicitly set in config
+    """Path to the reference dataset in h5ad format."""
 
     gene_id_dict_path: Path  # no default, must be explicitly set in config
     """Path to the gene ID dictionary CSV file.

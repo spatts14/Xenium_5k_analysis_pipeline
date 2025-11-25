@@ -112,8 +112,22 @@ def prepare_integrated_datasets(gene_id_dict_path, adata_ref, adata):
         raise ValueError("Duplicate Ensembl IDs detected in ST dataset after mapping.")
 
     logger.info(f"First 5 gene names in ST: {adata_ingest.var_names[:5].tolist()}")
-    # Subset reference datasets to common genes
+
+    # Subset reference datasets to common genes - preserve layers!
+    logger.info(f"Original reference layers: {list(adata_ref.layers.keys())}")
     adata_ref_subset = adata_ref[:, var_names].copy()
+
+    # Explicitly preserve counts layer if it exists
+    if "counts" in adata_ref.layers:
+        logger.info("Preserving counts layer during gene subsetting...")
+        adata_ref_subset.layers["counts"] = (
+            adata_ref[:, var_names].layers["counts"].copy()
+        )
+        logger.info("Counts layer preserved in subset!")
+    else:
+        logger.warning("No counts layer found in original reference data!")
+
+    logger.info(f"Subset reference layers: {list(adata_ref_subset.layers.keys())}")
 
     # After subsetting both datasets to common genes, add these checks:
     # 1. Check the sets of genes are the same
@@ -270,7 +284,7 @@ def process_subset_reference_data(config, io_config, adata_ref_subset):
             module-specific parameters, including the module name used to
             construct figure filenames.
         io_config (SimpleNamespace or dict): I/O configuration object with paths
-            to input and output data. Must include ``hlca_path`` to save the
+            to input and output data. Must include ``ref_path`` to save the
             processed reference dataset.
         adata_ref_subset (anndata.AnnData): Subset of reference single-cell RNA-seq
         dataset (e.g., HLCA) to be processed or verified.
@@ -388,9 +402,17 @@ def scVI_integration(config, adata_ref, adata, module_dir):
     # Training parameters
     MAX_EPOCHS_SCVI = 200
 
+    # Log available layers for debugging
+    logger.info(f"Reference layers: {list(adata_ref.layers.keys())}")
+    logger.info(f"Spatial layers: {list(adata.layers.keys())}")
+
     # Ensure counts layer exists
-    assert "counts" in adata.layers, "Spatial data missing counts layer"
     assert "counts" in adata_ref.layers, "Reference missing counts layer"
+    assert "counts" in adata.layers, "Spatial data missing counts layer"
+
+    # Log counts layer shapes
+    logger.info(f"Reference counts shape: {adata_ref.layers['counts'].shape}")
+    logger.info(f"Spatial counts shape: {adata.layers['counts'].shape}")
 
     # Ensure REF_CELL_LABEL_COL column exists in reference
     adata.obs[REF_CELL_LABEL_COL] = (
@@ -406,6 +428,25 @@ def scVI_integration(config, adata_ref, adata, module_dir):
         keys=["Ref", "STx"],
         index_unique="_",
     )
+
+    # Verify counts layer was preserved during concat
+    if "counts" not in adata_combined.layers:
+        logger.error("Counts layer lost during concat! Manually preserving...")
+        # Manually recreate counts layer from original data
+        ref_mask = adata_combined.obs[BATCH_COL] == "Ref"
+        stx_mask = adata_combined.obs[BATCH_COL] == "STx"
+
+        # Initialize counts layer
+        adata_combined.layers["counts"] = adata_combined.X.copy()  # temporary
+
+        # Fill with actual counts
+        adata_combined.layers["counts"][ref_mask, :] = adata_ref.layers["counts"]
+        adata_combined.layers["counts"][stx_mask, :] = adata.layers["counts"]
+        logger.info("Counts layer manually restored!")
+    else:
+        logger.info("✓ Counts layer preserved during concat")
+
+    logger.info(f"Combined data layers: {list(adata_combined.layers.keys())}")
 
     logger.info("Selecting highly variable genes...")
     sc.pp.highly_variable_genes(
@@ -997,7 +1038,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     module_dir = io_config.output_dir / config.module_name
 
     # Paths to input data
-    hcla_path = io_config.hlca_path
+    ref_path = io_config.hlca_path
     gene_id_dict_path = io_config.gene_id_dict_path
 
     # Create output directories if they do not exist
@@ -1014,10 +1055,67 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Starting integration of scRNAseq and spatial transcriptomics data...")
 
     logger.info("Loading scRNAseq data from HLCA ...")
-    adata_ref = sc.read_h5ad(hcla_path)
+    adata_ref = sc.read_h5ad(ref_path)
+
+    # Comprehensive verification of reference data integrity
+    logger.info("Verifying reference data integrity...")
+    if "counts" not in adata_ref.layers:
+        logger.error("✗ Reference data missing 'counts' layer!")
+        logger.error("Available layers: " + str(list(adata_ref.layers.keys())))
+        logger.error(
+            "Please run hlca_full_filt_process.py first to create "
+            "processed data with counts layer"
+        )
+        raise ValueError("Reference data missing required 'counts' layer")
+    else:
+        logger.info("✓ Reference data has counts layer")
+        logger.info(f"✓ Counts layer shape: {adata_ref.layers['counts'].shape}")
+        logger.info(f"✓ Reference data shape: {adata_ref.shape}")
+
+        # Verify counts layer matches main data dimensions
+        if adata_ref.layers["counts"].shape != adata_ref.X.shape:
+            counts_shape = adata_ref.layers["counts"].shape
+            x_shape = adata_ref.X.shape
+            logger.error(
+                f"✗ Counts layer shape mismatch: counts={counts_shape}, X={x_shape}"
+            )
+            raise ValueError("Counts layer dimensions don't match main data matrix")
+
+        # Validate counts data quality
+        logger.info("Validating counts data quality...")
+        counts_sample = adata_ref.layers["counts"][:100, :100]
+        counts_arr = counts_sample.A if hasattr(counts_sample, "A") else counts_sample
+        is_integer = np.allclose(counts_arr, np.round(counts_arr))
+        median_total = np.median(counts_arr.sum(axis=1))
+        has_positive_values = (counts_arr >= 0).all()
+
+        if is_integer and median_total > 100 and has_positive_values:
+            logger.info("✓ Counts layer contains valid integer count data")
+            logger.info(f"✓ Median counts per cell: {median_total:.0f}")
+        else:
+            logger.warning(
+                f"⚠ Counts layer validation issues: integer-like={is_integer}, "
+                f"median_total={median_total:.1f}, non_negative={has_positive_values}"
+            )
+            # Don't fail here, but warn user
+            if not has_positive_values:
+                logger.error("✗ Counts layer contains negative values!")
+                raise ValueError("Invalid counts layer: contains negative values")
 
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
+
+    # Verify spatial data has counts layer
+    logger.info("Verifying spatial data integrity...")
+    if "counts" not in adata.layers:
+        logger.error("✗ Spatial data missing 'counts' layer!")
+        logger.error(
+            "Please ensure your spatial data preprocessing preserves the counts layer"
+        )
+        raise ValueError("Spatial data missing required 'counts' layer")
+    else:
+        logger.info("✓ Spatial data has counts layer")
+        logger.info(f"✓ Spatial counts layer shape: {adata.layers['counts'].shape}")
 
     # logger.info("Processing reference data...")
     # process_reference_data(config, io_config, adata_ref)

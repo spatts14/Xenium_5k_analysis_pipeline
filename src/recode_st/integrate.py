@@ -21,6 +21,72 @@ warnings.filterwarnings("ignore")
 
 logger = getLogger(__name__)
 
+
+def verify_counts_layer(adata, data_type="data"):
+    """Verify that counts layer exists and contains valid count data.
+
+    Args:
+        adata (anndata.AnnData): AnnData object to verify
+        data_type (str): Description of data type for logging
+            (e.g., "reference", "spatial")
+
+    Raises:
+        ValueError: If counts layer is missing or invalid
+    """
+    logger.info(f"Verifying {data_type} data integrity...")
+
+    if "counts" in adata.layers:
+        logger.info(f"✓ {data_type.capitalize()} data has counts layer")
+        logger.info(f"✓ {data_type.capitalize()} layers: {list(adata.layers.keys())}")
+        logger.info(f"✓ Counts layer shape: {adata.layers['counts'].shape}")
+        logger.info(f"✓ {data_type.capitalize()} data shape: {adata.shape}")
+
+        # Verify counts layer matches main data dimensions
+        if adata.layers["counts"].shape != adata.X.shape:
+            counts_shape = adata.layers["counts"].shape
+            x_shape = adata.X.shape
+            logger.error(
+                f"✗ Counts layer shape mismatch: counts={counts_shape}, X={x_shape}"
+            )
+            raise ValueError("Counts layer dimensions don't match main data matrix")
+
+        # Validate counts data quality
+        logger.info("Validating counts data quality...")
+        counts_sample = adata.layers["counts"][:100, :100]
+        counts_arr = counts_sample.A if hasattr(counts_sample, "A") else counts_sample
+        is_integer = np.allclose(counts_arr, np.round(counts_arr))
+        median_total = np.median(counts_arr.sum(axis=1))
+        has_positive_values = (counts_arr >= 0).all()
+
+        if is_integer and median_total > 100 and has_positive_values:
+            logger.info("✓ Counts layer contains valid integer count data")
+            logger.info(f"✓ Median counts per cell: {median_total:.0f}")
+        else:
+            logger.warning(
+                f"⚠ Counts layer validation issues: integer-like={is_integer}, "
+                f"median_total={median_total:.1f}, non_negative={has_positive_values}"
+            )
+            # Don't fail here, but warn user
+            if not has_positive_values:
+                logger.error("✗ Counts layer contains negative values!")
+                raise ValueError("Invalid counts layer: contains negative values")
+    else:
+        logger.error(f"✗ {data_type.capitalize()} data missing 'counts' layer!")
+        logger.error("Available layers: " + str(list(adata.layers.keys())))
+        if data_type.lower() == "reference":
+            logger.error(
+                "Please run hlca_full_filt_process.py first to create "
+                "processed data with counts layer"
+            )
+        else:
+            logger.error(
+                "Please ensure your data preprocessing preserves the counts layer"
+            )
+        raise ValueError(
+            f"{data_type.capitalize()} data missing required 'counts' layer"
+        )
+
+
 # Define global variables - SHOULD THESE BE HERE OR INSIDE THE RUN FUNCTION?
 INGEST_LABEL_COL = "ingest_pred_cell_type"
 SCANVI_LABEL_COL = "scANVI_pred_cell_type"
@@ -198,23 +264,12 @@ def process_reference_data(config, io_config, adata_ref):
         logger.info(f"Processed HLCA reference data found at {HLCA_INT_SAVE}.")
         logger.info(f"Loading existing processed data from {HLCA_INT_SAVE}.")
         adata_ref = sc.read_h5ad(HLCA_INT_SAVE)
-        # Checking for counts layer
-        if "counts" in adata_ref.layers:
-            logger.info("Counts layer present!")
-        else:
-            logger.warning("Counts layer not found in adata_ref.layers!")
     else:
         logger.info("Preprocessing HLCA reference data...")
 
         # Basic filtering and normalization
         sc.pp.filter_cells(adata_ref, min_genes=200)
         sc.pp.filter_genes(adata_ref, min_cells=10)
-
-        # Checking for counts layer
-        if "counts" in adata_ref.layers:
-            logger.info("Counts layer present!")
-        else:
-            logger.warning("Counts layer not found in adata_ref.layers!")
 
         # Check if data is already normalized
         logger.info("Checking normalization...")
@@ -406,11 +461,7 @@ def scVI_integration(config, adata_ref, adata, module_dir):
     logger.info(f"Reference layers: {list(adata_ref.layers.keys())}")
     logger.info(f"Spatial layers: {list(adata.layers.keys())}")
 
-    # Ensure counts layer exists
-    assert "counts" in adata_ref.layers, "Reference missing counts layer"
-    assert "counts" in adata.layers, "Spatial data missing counts layer"
-
-    # Log counts layer shapes
+    # Log counts layer shapes (already verified to exist)
     logger.info(f"Reference counts shape: {adata_ref.layers['counts'].shape}")
     logger.info(f"Spatial counts shape: {adata.layers['counts'].shape}")
 
@@ -1058,71 +1109,13 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     adata_ref = sc.read_h5ad(ref_path)
 
     # Comprehensive verification of reference data integrity
-    logger.info("Verifying reference data integrity...")
-    if "counts" not in adata_ref.layers:
-        logger.error("✗ Reference data missing 'counts' layer!")
-        logger.error("Available layers: " + str(list(adata_ref.layers.keys())))
-        logger.error(
-            "Please run hlca_full_filt_process.py first to create "
-            "processed data with counts layer"
-        )
-        raise ValueError("Reference data missing required 'counts' layer")
-    else:
-        logger.info("✓ Reference data has counts layer")
-        logger.info(f"✓ Counts layer shape: {adata_ref.layers['counts'].shape}")
-        logger.info(f"✓ Reference data shape: {adata_ref.shape}")
-
-        # Verify counts layer matches main data dimensions
-        if adata_ref.layers["counts"].shape != adata_ref.X.shape:
-            counts_shape = adata_ref.layers["counts"].shape
-            x_shape = adata_ref.X.shape
-            logger.error(
-                f"✗ Counts layer shape mismatch: counts={counts_shape}, X={x_shape}"
-            )
-            raise ValueError("Counts layer dimensions don't match main data matrix")
-
-        # Validate counts data quality
-        logger.info("Validating counts data quality...")
-        counts_sample = adata_ref.layers["counts"][:100, :100]
-        counts_arr = counts_sample.A if hasattr(counts_sample, "A") else counts_sample
-        is_integer = np.allclose(counts_arr, np.round(counts_arr))
-        median_total = np.median(counts_arr.sum(axis=1))
-        has_positive_values = (counts_arr >= 0).all()
-
-        if is_integer and median_total > 100 and has_positive_values:
-            logger.info("✓ Counts layer contains valid integer count data")
-            logger.info(f"✓ Median counts per cell: {median_total:.0f}")
-        else:
-            logger.warning(
-                f"⚠ Counts layer validation issues: integer-like={is_integer}, "
-                f"median_total={median_total:.1f}, non_negative={has_positive_values}"
-            )
-            # Don't fail here, but warn user
-            if not has_positive_values:
-                logger.error("✗ Counts layer contains negative values!")
-                raise ValueError("Invalid counts layer: contains negative values")
+    verify_counts_layer(adata_ref, "reference")
 
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
 
     # Verify spatial data has counts layer
-    logger.info("Verifying spatial data integrity...")
-    if "counts" not in adata.layers:
-        logger.error("✗ Spatial data missing 'counts' layer!")
-        logger.error(
-            "Please ensure your spatial data preprocessing preserves the counts layer"
-        )
-        raise ValueError("Spatial data missing required 'counts' layer")
-    else:
-        logger.info("✓ Spatial data has counts layer")
-        logger.info(f"✓ Spatial counts layer shape: {adata.layers['counts'].shape}")
-
-    # logger.info("Processing reference data...")
-    # process_reference_data(config, io_config, adata_ref)
-    # Check if reference data has counts layer
-    if "counts" not in adata_ref.layers:
-        logger.error("Reference data missing 'counts' layer. Please preprocess first.")
-        return
+    verify_counts_layer(adata, "spatial")
 
     # 1. INTEGRATION using scVI and scANVI
     logger.info("Performing integration using: scANVI...")

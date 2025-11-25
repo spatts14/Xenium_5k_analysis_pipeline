@@ -1038,7 +1038,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     module_dir = io_config.output_dir / config.module_name
 
     # Paths to input data
-    ref_path = io_config.hlca_path
+    ref_path = io_config.ref_path
     gene_id_dict_path = io_config.gene_id_dict_path
 
     # Create output directories if they do not exist

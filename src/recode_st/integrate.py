@@ -13,6 +13,7 @@ import pandas as pd
 import scanpy as sc
 import seaborn as sns
 from scvi.model import SCANVI, SCVI
+from sklearn.metrics import confusion_matrix
 
 from recode_st.config import IntegrateModuleConfig, IOConfig
 from recode_st.helper_function import configure_scanpy_figures
@@ -28,6 +29,8 @@ INGEST_LABEL_COL = "ingest_pred_cell_type"
 SCANVI_LABEL_COL = "scANVI_pred_cell_type"
 REF_CELL_LABEL_COL = "cell_type"  # Column in reference data with cell type labels
 BATCH_COL = "dataset_origin"
+REFERENCE_KEY = "Ref"
+SPATIAL_KEY = "STx"
 SCVI_LATENT_KEY = "X_scVI"
 SCANVI_LATENT_KEY = "X_scANVI"
 HLCA_INT_SAVE = Path(
@@ -145,8 +148,8 @@ def scVI_integration_check(adata, batch_key=BATCH_COL, cell_type=REF_CELL_LABEL_
 def scVI_integration(config, adata_ref, adata, module_dir):
     """Integrates STx data with a reference scRNA-seq dataset using scVI.
 
-    This function performs harmonizes a reference single-cell dataset
-    (e.g., HLCA) to a STx dataset (e.g., Xenium).
+    This function harmonizes a reference single-cell dataset
+    (e.g., HLCA) with a STx dataset (e.g., Xenium).
 
     Args:
         config (SimpleNamespace or dict): Configuration object containing
@@ -175,10 +178,9 @@ def scVI_integration(config, adata_ref, adata, module_dir):
     logger.info(f"Reference counts shape: {adata_ref.layers['counts'].shape}")
     logger.info(f"Spatial counts shape: {adata.layers['counts'].shape}")
 
-    # Ensure REF_CELL_LABEL_COL column exists in reference
-    adata.obs[REF_CELL_LABEL_COL] = (
-        "STx_UNKNOWN"  # ensure column exists in spatial data
-    )
+    # Ensure REF_CELL_LABEL_COL column exists in spatial data
+    if REF_CELL_LABEL_COL not in adata.obs.columns:
+        adata.obs[REF_CELL_LABEL_COL] = "STx_UNKNOWN"  # placeholder for spatial cells
 
     logger.info("Verifying datasets for scVI integration...")
     scVI_integration_check(adata_ref, batch_key=BATCH_COL, cell_type=REF_CELL_LABEL_COL)
@@ -190,7 +192,7 @@ def scVI_integration(config, adata_ref, adata, module_dir):
         [adata_ref, adata],
         join="inner",  # only keeps genes present in both datasets
         label=BATCH_COL,
-        keys=["Ref", "STx"],
+        keys=[REFERENCE_KEY, SPATIAL_KEY],
         index_unique="_",
     )
 
@@ -198,8 +200,8 @@ def scVI_integration(config, adata_ref, adata, module_dir):
     if "counts" not in adata_combined.layers:
         logger.error("Counts layer lost during concat! Manually preserving...")
         # Manually recreate counts layer from original data
-        ref_mask = adata_combined.obs[BATCH_COL] == "Ref"
-        stx_mask = adata_combined.obs[BATCH_COL] == "STx"
+        ref_mask = adata_combined.obs[BATCH_COL] == REFERENCE_KEY
+        stx_mask = adata_combined.obs[BATCH_COL] == SPATIAL_KEY
 
         # Initialize counts layer
         adata_combined.layers["counts"] = adata_combined.X.copy()  # temporary
@@ -288,7 +290,7 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
         return None, None
 
     # Assign real labels to reference cells
-    ref_mask = adata_combined.obs[BATCH_COL] == "Ref"
+    ref_mask = adata_combined.obs[BATCH_COL] == REFERENCE_KEY
 
     # Ensure reference label column exists
     if REF_CELL_LABEL_COL not in adata_combined.obs.columns:
@@ -415,7 +417,7 @@ def extract_predictions_and_visualize(adata_combined, scanvi_model, adata, modul
     adata_combined.obs["prediction_max_prob"] = max_prob
 
     # Extract spatial predictions
-    spatial_mask = adata_combined.obs[BATCH_COL] == "STx"
+    spatial_mask = adata_combined.obs[BATCH_COL] == SPATIAL_KEY
     adata_spatial_predicted = adata_combined[spatial_mask].copy()
 
     logger.info(f"Spatial cells annotated: {adata_spatial_predicted.n_obs}")
@@ -423,7 +425,7 @@ def extract_predictions_and_visualize(adata_combined, scanvi_model, adata, modul
     logger.info(adata_spatial_predicted.obs[SCANVI_LABEL_COL].value_counts())
 
     # Map predictions back to original adata using cell names
-    # Remove the "_Spatial" suffix added by concat
+    # Remove the suffix added by concat (index_unique="_")
     spatial_indices = adata_spatial_predicted.obs_names.str.replace(
         "_Spatial", "", regex=False
     )
@@ -495,7 +497,7 @@ def extract_predictions_and_visualize(adata_combined, scanvi_model, adata, modul
     return adata
 
 
-def prepare_integrated_datasets(gene_id_dict_path, adata_ref, adata):
+def prepare_ingest_datasets(gene_id_dict_path, adata_ref, adata):
     """Ensures ST and reference dataset contain are in correct format for integration.
 
     Both datasets should have:
@@ -619,25 +621,19 @@ def prepare_integrated_datasets(gene_id_dict_path, adata_ref, adata):
     return adata_ref_subset, adata_ingest
 
 
-def process_subset_reference_data(config, io_config, adata_ref_subset):
+def process_subset_reference_data(config, adata_ref_ingest):
     """Preprocesses the reference scRNA-seq dataset if PCA and UMAP are missing.
 
-    This function checks whether the reference AnnData object already processed.
-    If not, it performs standard single-cell preprocessing steps, including
-    normalization, log-transformation, highly variable gene selection, PCA,
-    neighbor graph construction, and UMAP embedding.
-    The resulting AnnData object is saved to disk and optionally visualized.
+    Verify that a reference AnnData object has the components required for
+    sc.tl.ingest, and compute PCA/UMAP if they are missing.
 
     Args:
         config (SimpleNamespace or dict): Configuration object containing
             module-specific parameters, including the module name used to
             construct figure filenames.
-        io_config (SimpleNamespace or dict): I/O configuration object with paths
-            to input and output data. Must include ``ref_path`` to save the
-            processed reference dataset.
-        adata_ref_subset (anndata.AnnData): Subset of reference single-cell RNA-seq
-        dataset (e.g., HLCA) to be processed or verified.
-        The object is modified in place.
+        adata_ref_ingest (anndata.AnnData): Subset of reference single-cell RNA-seq
+            dataset (e.g., HLCA) to be processed or verified.
+            The object is modified in place.
 
     Side Effects:
         - Writes the processed reference AnnData object to `SUBSET_HLCA_INT_SAVE`.
@@ -649,34 +645,70 @@ def process_subset_reference_data(config, io_config, adata_ref_subset):
         - Path to the saved output file.
 
     Returns:
-        adata_ref_subset (anndata.AnnData): Processed reference AnnData object.
+        adata_ref_ingest (anndata.AnnData): Processed reference AnnData object.
     """
     logger.info("Checking if reference scRNA-seq data needs processing...")
 
-    # Check if we need to preprocess the reference data
-    if SUBSET_HLCA_INT_SAVE.exists():
-        logger.info(f"Processed HLCA reference data found at {SUBSET_HLCA_INT_SAVE}.")
-        logger.info(f"Loading existing processed data from {SUBSET_HLCA_INT_SAVE}.")
-        adata_ref_subset = sc.read_h5ad(SUBSET_HLCA_INT_SAVE)
-    else:
-        logger.info("Preprocessing subset of HLCA reference data...")
-        logger.info("Compute PCA and neighbors for ingest reference subset...")
-        sc.tl.pca(adata_ref_subset, n_comps=75, svd_solver="arpack")
-        sc.pp.neighbors(adata_ref_subset, n_neighbors=30, n_pcs=75)
-        sc.tl.umap(adata_ref_subset)
-        sc.pl.umap(
-            adata_ref_subset,
-            color=REF_CELL_LABEL_COL,
-            title="HLCA reference subset for ingest UMAP",
-            save=f"_{config.module_name}_hlca_subset_ingest_umap.png",
-        )
-        logger.info(f"UMAP for {REF_CELL_LABEL_COL} saved for adata_ref_subset")
+    if not isinstance(adata_ref_ingest, anndata.AnnData):
+        raise TypeError("adata_ref_ingest must be an AnnData object.")
 
-        # Save processed reference
-        adata_ref_subset.write_h5ad(SUBSET_HLCA_INT_SAVE)
-        logger.info("Finished preprocessing")
-        logger.info(f"Processed HLCA reference saved to {SUBSET_HLCA_INT_SAVE}")
-    return adata_ref_subset
+    if adata_ref_ingest.n_vars == 0 or adata_ref_ingest.n_obs == 0:
+        raise ValueError("adata_ref_ingest is empty or malformed.")
+
+    if adata_ref_ingest.var_names.has_duplicates:
+        raise ValueError("adata_ref_ingest.var_names contains duplicates.")
+
+    # Check label column required for visualization / QC
+    if REF_CELL_LABEL_COL not in adata_ref_ingest.obs.columns:
+        raise ValueError(
+            f"Reference data is missing required label column '{REF_CELL_LABEL_COL}'. "
+            "This column is needed for downstream mapping and visualization."
+        )
+
+    # Validate config has required attributes
+    if not hasattr(config, "module_name") or not config.module_name:
+        raise ValueError("config must have a non-empty 'module_name' attribute.")
+
+    # Constants for reproducibility
+    N_COMPONENTS = 50  # Number of PCA components
+    N_NEIGHBORS = 30  # Number of neighbors for graph construction
+
+    # Check and compute PCA if missing
+    if "X_pca" in adata_ref_ingest.obsm:
+        logger.info("PCA already computed.")
+    else:
+        logger.info("Calculating PCA...")
+        sc.tl.pca(adata_ref_ingest, n_comps=N_COMPONENTS)
+
+    # Check and compute neighbors if missing
+    if "neighbors" in adata_ref_ingest.uns:
+        logger.info("Neighbors already computed.")
+    else:
+        logger.info("Calculating neighbors...")
+        sc.pp.neighbors(adata_ref_ingest, n_neighbors=N_NEIGHBORS, n_pcs=N_COMPONENTS)
+
+    # Check and compute UMAP if missing
+    if "X_umap" in adata_ref_ingest.obsm:
+        logger.info("UMAP already computed.")
+    else:
+        logger.info("Calculating UMAP...")
+        sc.tl.umap(adata_ref_ingest)
+
+    # Generate UMAP visualization
+    sc.pl.umap(
+        adata_ref_ingest,
+        color=REF_CELL_LABEL_COL,
+        title="HLCA reference subset for ingest UMAP",
+        save=f"_{config.module_name}_hlca_subset_ingest_umap.png",
+    )
+    logger.info(f"UMAP for {REF_CELL_LABEL_COL} saved for adata_ref_ingest")
+
+    # Save processed reference
+    adata_ref_ingest.write_h5ad(SUBSET_HLCA_INT_SAVE)
+    logger.info("Finished preprocessing")
+    logger.info(f"Processed HLCA reference saved to {SUBSET_HLCA_INT_SAVE}")
+
+    return adata_ref_ingest
 
 
 def ingest_integration(adata_ref, adata, adata_ingest):
@@ -833,8 +865,6 @@ def compare(adata, module_dir):
     )
 
     # 2. Create confusion matrix
-    from sklearn.metrics import confusion_matrix
-
     ingest_labels = adata_valid.obs[INGEST_LABEL_COL].values
     scanvi_labels = adata_valid.obs[SCANVI_LABEL_COL].values
 
@@ -1008,7 +1038,7 @@ def compare(adata, module_dir):
 def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     """Integrate scRNAseq and STx data using scANVI and ingest.
 
-    adata_ref_subset and adata_ingest are used for ingest integration.
+    adata_ref_ingest and adata_ingest are used for ingest integration.
     adata_ref and data are used for scANVI integration.
 
     Args:
@@ -1089,24 +1119,22 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
 
     # 2. INTEGRATION USING INGEST
     logger.info("Formatting data for ingest integration...")
-    adata_ref_subset, adata_ingest = prepare_integrated_datasets(
+    adata_ref_ingest, adata_ingest = prepare_ingest_datasets(
         gene_id_dict_path, adata_ref, adata
     )
 
     logger.info("Processing subset of reference data for ingest...")
-    adata_ref_subset = process_subset_reference_data(
-        config, io_config, adata_ref_subset
-    )
+    adata_ref_ingest = process_subset_reference_data(config, adata_ref_ingest)
 
     logger.info("Starting integration methods...")
 
     # Perform ingest integration
     logger.info("Performing integration using: sc.tl.ingest...")
-    ingest_integration(adata_ref_subset, adata, adata_ingest)
+    ingest_integration(adata_ref_ingest, adata, adata_ingest)
 
-    # Delete adata_ref_subset and adata_ingest to free memory
-    logger.info("Delete adata_ref_subset and adata_ingest to free memory...")
-    del adata_ref_subset
+    # Delete adata_ref_ingest and adata_ingest to free memory
+    logger.info("Delete adata_ref_ingest and adata_ingest to free memory...")
+    del adata_ref_ingest
     del adata_ingest
 
     logger.info("Visualize data following label transfer...")

@@ -182,7 +182,7 @@ for obs in obs_lists:
     sc.pl.umap(
         adata,
         color=obs,
-        title=f"HLCA full reference data UMAP colored by {obs}",
+        title=f"{REF_DATASET} filtered and processed: UMAP colored by {obs}",
         save=f"{REF_DATASET}_{obs}.png",
     )
 

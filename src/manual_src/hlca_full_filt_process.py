@@ -193,7 +193,7 @@ for obs in obs_lists:
         adata,
         color=obs,
         title=f"{REF_DATASET} filtered and processed: UMAP colored by {obs}",
-        save=f"{REF_DATASET}_{obs}.png",
+        save=f"umap_{REF_DATASET}_{obs}.png",
     )
 
 logging.info("Filtering and processing script completed.")

@@ -101,7 +101,7 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
     # Variables
     CLUSTER_TYPE = "new_clusters"
     CELL_TYPE_LEVEL = "resolution"
-    CELL_TYPE = "macropghage"
+    CELL_TYPE = "macrophage"
 
     # Name of the column to store label transfer results in adata.obs
     module_dir = io_config.output_dir / config.module_name

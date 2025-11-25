@@ -183,7 +183,7 @@ for obs in obs_lists:
         adata,
         color=obs,
         title=f"HLCA full reference data UMAP colored by {obs}",
-        save=f"_hlca_full_ref_{obs}.png",
+        save=f"{REF_DATASET}_{obs}.png",
     )
 
 logging.info("Filtering and processing script completed.")

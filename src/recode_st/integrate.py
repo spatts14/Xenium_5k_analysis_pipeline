@@ -213,16 +213,6 @@ def scVI_integration(config, adata_ref, adata, module_dir):
 
     logger.info(f"Combined data layers: {list(adata_combined.layers.keys())}")
 
-    logger.info("Selecting highly variable genes...")
-    sc.pp.highly_variable_genes(
-        adata_combined,
-        n_top_genes=2000,
-        layer="counts",
-        flavor="seurat_v3",
-        batch_key=BATCH_COL,
-        subset=True,  # Subset to highly variable genes for integration
-    )
-
     # Setup scVI
     logger.info("Setting up scVI model...")
     SCVI.setup_anndata(
@@ -1055,6 +1045,16 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
 
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
+
+    logger.info("Selecting highly variable genes on reference dataset...")
+    sc.pp.highly_variable_genes(
+        adata_ref,
+        n_top_genes=5000,
+        layer="counts",
+        flavor="seurat_v3",
+        subset=True,  # Subset to highly variable genes for integration
+    )
+    logger.info(f"Number of highly variable genes selected: {adata_ref.n_vars}")
 
     # 1. INTEGRATION using scVI and scANVI
     logger.info("Verify adata compatibility for scVI/scANVI integration...")

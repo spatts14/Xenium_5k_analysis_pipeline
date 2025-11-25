@@ -105,23 +105,13 @@ adata.write_h5ad(filtered_path)
 
 logging.info("Process filtered dataset...")
 
-# Basic filtering
-logging.info("Filtering cells and genes...")
-sc.pp.filter_cells(adata, min_genes=200)
-sc.pp.filter_genes(adata, min_cells=10)
-logging.info(f"Shape after filtering: {adata.shape}")
-
-# Store raw counts BEFORE normalization
-logging.info("Checking for counts layer...")
-if "counts" in adata.layers:
-    logging.info("✓ Counts layer found - using existing counts layer")
-    # Verify existing counts layer is valid
-    verify_counts_layer(adata, "in existing data")
-else:
+# Store raw counts BEFORE any filtering
+logging.info("Checking for counts layer before filtering...")
+if "counts" not in adata.layers:
     logging.info("Counts layer not found - attempting to create from adata.raw...")
     if adata.raw is not None:
         logging.info("✓ adata.raw found - creating counts layer from raw data")
-        adata.layers["counts"] = adata.raw[:, adata.var_names].X.copy()
+        adata.layers["counts"] = adata.raw.X.copy()
         logging.info("✓ Successfully created counts layer from adata.raw")
     else:
         logging.error("✗ No adata.raw found - cannot create counts layer")
@@ -132,6 +122,21 @@ else:
             "Cannot create counts layer: no 'counts' layer found and "
             "no adata.raw available"
         )
+else:
+    logging.info("✓ Counts layer found - using existing counts layer")
+
+# Verify the counts layer before filtering
+verify_counts_layer(adata, "before filtering")
+
+# Basic filtering
+logging.info("Filtering cells and genes...")
+sc.pp.filter_cells(adata, min_genes=200)
+sc.pp.filter_genes(adata, min_cells=10)
+logging.info(f"Shape after filtering: {adata.shape}")
+
+# Verify counts layer survived filtering
+logging.info("Verifying counts layer after filtering...")
+verify_counts_layer(adata, "after filtering")
 
 # Check if data is already normalized
 logging.info("Checking normalization...")

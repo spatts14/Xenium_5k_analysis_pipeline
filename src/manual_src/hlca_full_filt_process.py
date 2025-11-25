@@ -7,6 +7,9 @@ from pathlib import Path
 import numpy as np
 import scanpy as sc
 
+# Global variables
+REF_DATASET = "hlca_full_ref"
+
 
 # Define a functions
 def verify_counts_layer(adata, context=""):
@@ -31,7 +34,8 @@ def verify_counts_layer(adata, context=""):
         return False
 
 
-log_file = "hlca_analysis.log"
+# Define logging configuration
+log_file = f"{REF_DATASET}_analysis.log"
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -42,7 +46,6 @@ logging.basicConfig(
 )
 
 logging.info("Starting reference plotting script...")
-REF_DATASET = "hlca_full_ref"
 logging.info(f"Reference dataset: {REF_DATASET}")
 
 # Set directories and file paths

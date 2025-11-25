@@ -101,15 +101,18 @@ adata.write_h5ad(filtered_path)
 
 logging.info("Process filtered dataset...")
 
+# Basic filtering
+logging.info("Filtering cells and genes...")
+sc.pp.filter_cells(adata, min_genes=200)
+sc.pp.filter_genes(adata, min_cells=10)
+logging.info(f"Shape after filtering: {adata.shape}")
+
 # Store raw counts BEFORE normalization
 logging.info("Checking for counts layer...")
 if "counts" in adata.layers:
     logging.info("✓ Counts layer found - using existing counts layer")
     # Verify existing counts layer is valid
-    counts_sample = adata.layers["counts"][:100, :100]
-    counts_arr = counts_sample.A if hasattr(counts_sample, "A") else counts_sample
-    if not np.allclose(counts_arr, np.round(counts_arr)):
-        logging.warning("⚠ Existing counts layer may not contain integer counts")
+    verify_counts_layer(adata, "in existing data")
 else:
     logging.info("Counts layer not found - attempting to create from adata.raw...")
     if adata.raw is not None:

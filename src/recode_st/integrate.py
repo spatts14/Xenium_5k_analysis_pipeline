@@ -23,6 +23,20 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 logger = getLogger(__name__)
 
+# Define global constants for integration
+INGEST_LABEL_COL = "ingest_pred_cell_type"
+SCANVI_LABEL_COL = "scANVI_pred_cell_type"
+REF_CELL_LABEL_COL = "cell_type"  # Column in reference data with cell type labels
+BATCH_COL = "dataset_origin"
+SCVI_LATENT_KEY = "X_scVI"
+SCANVI_LATENT_KEY = "X_scANVI"
+HLCA_INT_SAVE = Path(
+    "/rds/general/user/sep22/ephemeral/recode_hlca_full_processed.h5ad"
+)
+SUBSET_HLCA_INT_SAVE = Path(
+    "/rds/general/user/sep22/ephemeral/recode_subset_hlca_full_processed.h5ad"
+)
+
 
 def verify_counts_layer(adata, data_type="data"):
     """Verify that counts layer exists and contains valid count data.
@@ -89,27 +103,13 @@ def verify_counts_layer(adata, data_type="data"):
         )
 
 
-# Define global constants for integration
-INGEST_LABEL_COL = "ingest_pred_cell_type"
-SCANVI_LABEL_COL = "scANVI_pred_cell_type"
-REF_CELL_LABEL_COL = "cell_type"  # Column in reference data with cell type labels
-BATCH_COL = "dataset_origin"
-SCVI_LATENT_KEY = "X_scVI"
-SCANVI_LATENT_KEY = "X_scANVI"
-HLCA_INT_SAVE = Path(
-    "/rds/general/user/sep22/ephemeral/recode_hlca_full_processed.h5ad"
-)
-SUBSET_HLCA_INT_SAVE = Path(
-    "/rds/general/user/sep22/ephemeral/recode_subset_hlca_full_processed.h5ad"
-)
-
-
-def scVI_integration_check(adata, batch_key=BATCH_COL):
+def scVI_integration_check(adata, batch_key=BATCH_COL, cell_type=REF_CELL_LABEL_COL):
     """Check dataset readiness for scVI/scANVI integration.
 
     Args:
         adata (anndata.AnnData): AnnData object to validate.
         batch_key (str): Column name in adata.obs for batch ID.
+        cell_type (str): Column name in adata.obs for cell type labels.
 
     Returns:
         bool: True if dataset is ready, False otherwise.
@@ -127,6 +127,9 @@ def scVI_integration_check(adata, batch_key=BATCH_COL):
     # Batch
     if batch_key not in adata.obs.columns:
         issues.append(f"Missing batch column '{batch_key}' in adata.obs")
+
+    if cell_type not in adata.obs.columns:
+        issues.append(f"Missing cell type column '{cell_type}' in adata.obs")
 
     # Outcome
     if issues:
@@ -176,6 +179,10 @@ def scVI_integration(config, adata_ref, adata, module_dir):
     adata.obs[REF_CELL_LABEL_COL] = (
         "STx_UNKNOWN"  # ensure column exists in spatial data
     )
+
+    logger.info("Verifying datasets for scVI integration...")
+    scVI_integration_check(adata_ref, batch_key=BATCH_COL, cell_type=REF_CELL_LABEL_COL)
+    scVI_integration_check(adata, batch_key=BATCH_COL, cell_type=REF_CELL_LABEL_COL)
 
     # Combine datasets
     logger.info("Combining reference and spatial data...")
@@ -1049,15 +1056,10 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
 
-    # Verify spatial data has counts layer
-    logger.info("Verify adata has count layer...")
-    verify_counts_layer(adata_ref, "reference")
-    verify_counts_layer(adata, "spatial")
-
     # 1. INTEGRATION using scVI and scANVI
     logger.info("Verify adata compatibility for scVI/scANVI integration...")
-    scVI_integration_check(adata_ref, batch_key=BATCH_COL)
-    scVI_integration_check(adata, batch_key=BATCH_COL)
+    verify_counts_layer(adata_ref, "reference")
+    verify_counts_layer(adata, "spatial")
 
     logger.info("Performing integration using: scANVI...")
     logger.info(

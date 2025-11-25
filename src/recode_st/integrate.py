@@ -1,6 +1,6 @@
 """Integrate scRNAseq and STx."""
 
-import warnings  # ? what is the best way to suppress warnings from package inputs?
+import warnings
 from logging import getLogger
 from pathlib import Path
 
@@ -17,7 +17,9 @@ from scvi.model import SCANVI, SCVI
 from recode_st.config import IntegrateModuleConfig, IOConfig
 from recode_st.helper_function import configure_scanpy_figures
 
-warnings.filterwarnings("ignore")
+# Suppress specific warnings to reduce noise in logs
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 logger = getLogger(__name__)
 
@@ -87,7 +89,7 @@ def verify_counts_layer(adata, data_type="data"):
         )
 
 
-# Define global variables - SHOULD THESE BE HERE OR INSIDE THE RUN FUNCTION?
+# Define global constants for integration
 INGEST_LABEL_COL = "ingest_pred_cell_type"
 SCANVI_LABEL_COL = "scANVI_pred_cell_type"
 REF_CELL_LABEL_COL = "cell_type"  # Column in reference data with cell type labels
@@ -506,7 +508,7 @@ def scVI_integration(config, adata_ref, adata, module_dir):
         layer="counts",
         flavor="seurat_v3",
         batch_key=BATCH_COL,
-        subset=True,  # need to figure out best way to do this
+        subset=True,  # Subset to highly variable genes for integration
     )
 
     # Setup scVI
@@ -1120,7 +1122,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     # 1. INTEGRATION using scVI and scANVI
     logger.info("Performing integration using: scANVI...")
     logger.info(
-        "Step 1. Harmoize scRNAseq reference dataset with STx dataset scVI model..."
+        "Step 1. Harmonize scRNAseq reference dataset with STx dataset scVI model..."
     )
     adata_combined, trained_scvi_model = scVI_integration(
         config, adata_ref, adata, module_dir
@@ -1142,6 +1144,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
         )
     else:
         logger.error("scANVI integration failed. Skipping scANVI predictions.")
+        logger.warning("Continuing with ingest integration only...")
 
     # 2. INTEGRATION USING INGEST
     logger.info("Formatting data for ingest integration...")

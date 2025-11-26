@@ -42,7 +42,7 @@ SUBSET_HLCA_INT_SAVE = Path(
 
 
 def smart_subsample_reference(
-    config_base,
+    base_config,
     adata_ref: anndata.AnnData,
     target_cells: int = 200000,
     stratify_col: str = REF_CELL_LABEL_COL,
@@ -53,7 +53,7 @@ def smart_subsample_reference(
     """Subsample reference data while preserving cell type diversity.
 
     Args:
-        config_base (SimpleNamespace or dict): Configuration object used to set seed.
+        base_config (SimpleNamespace or dict): Configuration object used to set seed.
         adata_ref (anndata.AnnData): Reference AnnData object.
         target_cells (int): Target number of cells after subsampling.
         stratify_col (str): Column in adata_ref.obs to stratify sampling by.
@@ -67,7 +67,7 @@ def smart_subsample_reference(
     Returns:
         anndata.AnnData: Subsampled reference AnnData object.
     """
-    rng = np.random.default_rng(config_base.seed)
+    rng = np.random.default_rng(base_config.seed)
     cell_type_counts = adata_ref.obs[stratify_col].value_counts()
     n_types = len(cell_type_counts)
     total_cells = len(adata_ref)
@@ -1165,7 +1165,7 @@ def compare(adata, module_dir):
 
 
 def run_integration(
-    config: IntegrateModuleConfig, io_config: IOConfig, config_base: Config
+    config: IntegrateModuleConfig, io_config: IOConfig, base_config: Config
 ):
     """Integrate scRNAseq and STx data using scANVI and ingest.
 
@@ -1175,7 +1175,7 @@ def run_integration(
     Args:
         config (IntegrateModuleConfig): Integration module configuration object.
         io_config (IOConfig): IO configuration object.
-        config_base (Config): Base configuration object.
+        base_config (Config): Base configuration object.
 
     Returns:
         None
@@ -1222,7 +1222,7 @@ def run_integration(
     if adata_ref.n_obs > 300000:  # Only subsample very large references
         logger.info(f"Subsampling reference from {adata_ref.n_obs} to ~200k cells...")
         adata_ref = smart_subsample_reference(
-            config_base=config_base,
+            base_config=base_config,
             adata_ref=adata_ref,
             target_cells=200000,
             stratify_col=REF_CELL_LABEL_COL,

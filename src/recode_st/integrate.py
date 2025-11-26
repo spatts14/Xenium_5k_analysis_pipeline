@@ -1214,7 +1214,7 @@ def run_integration(
     logger.info("Selecting highly variable genes on reference dataset...")
     sc.pp.highly_variable_genes(
         adata_ref,
-        n_top_genes=5000,
+        n_top_genes=2000,
         layer="counts",
         flavor="seurat_v3",
         subset=True,  # Subset to highly variable genes for integration

@@ -15,7 +15,7 @@ import seaborn as sns
 from scvi.model import SCANVI, SCVI
 from sklearn.metrics import confusion_matrix
 
-from recode_st.config import IntegrateModuleConfig, IOConfig
+from recode_st.config import Config, IntegrateModuleConfig, IOConfig
 from recode_st.helper_function import configure_scanpy_figures
 
 # Suppress specific warnings to reduce noise in logs
@@ -39,6 +39,122 @@ HLCA_INT_SAVE = Path(
 SUBSET_HLCA_INT_SAVE = Path(
     "/rds/general/user/sep22/ephemeral/recode_subset_hlca_full_processed.h5ad"
 )
+
+
+def smart_subsample_reference(
+    config: Config,
+    adata_ref,
+    target_cells=200000,
+    stratify_col=REF_CELL_LABEL_COL,
+    min_per_type=100,
+    sampling_strategy="proportional",
+    rare_cell_boost=2.0,
+):
+    """Subsample reference data while preserving cell type diversity.
+
+    Args:
+        config (SimpleNamespace or dict): Configuration object used to set seed.
+        adata_ref (anndata.AnnData): Reference AnnData object.
+        target_cells (int): Target number of cells after subsampling.
+        stratify_col (str): Column in adata_ref.obs to stratify sampling by.
+        min_per_type (int): Minimum cells to sample per cell type.
+        sampling_strategy (str): One of:
+            - "proportional": Sample proportionally to original frequencies
+            - "balanced": Give equal weight to all cell types
+            - "sqrt": Compromise between proportional and balanced (sqrt of proportions)
+        rare_cell_boost (float): Multiplier for min_per_type for rare cell types.
+
+    Returns:
+        anndata.AnnData: Subsampled reference AnnData object.
+    """
+    rng = np.random.default_rng(config.seed)
+    cell_type_counts = adata_ref.obs[stratify_col].value_counts()
+    n_types = len(cell_type_counts)
+    total_cells = len(adata_ref)
+
+    # Calculate sampling targets based on strategy
+    if sampling_strategy == "proportional":
+        # Keep original proportions
+        sampling_fracs = cell_type_counts / total_cells
+        base_targets = (sampling_fracs * target_cells).round().astype(int)
+
+    elif sampling_strategy == "balanced":
+        # Equal representation for all cell types
+        base_targets = pd.Series(target_cells // n_types, index=cell_type_counts.index)
+
+    elif sampling_strategy == "sqrt":
+        # Square root transformation - compromise between proportional and balanced
+        sqrt_counts = np.sqrt(cell_type_counts)
+        sampling_weights = sqrt_counts / sqrt_counts.sum()
+        base_targets = (sampling_weights * target_cells).round().astype(int)
+
+    else:
+        raise ValueError(f"Unknown sampling_strategy: {sampling_strategy}")
+
+    # Apply minimum per type, with boost for very rare cell types
+    rare_threshold = total_cells * 0.001  # <0.1% of total
+    final_targets = {}
+
+    for ct, count in cell_type_counts.items():
+        base_target = base_targets[ct]
+
+        # Determine minimum based on rarity
+        if count < rare_threshold:
+            effective_min = int(min_per_type * rare_cell_boost)
+        else:
+            effective_min = min_per_type
+
+        # Don't sample more than available, but ensure minimum
+        final_targets[ct] = min(count, max(base_target, effective_min))
+
+    # Adjust if we're over target_cells due to minimums
+    total_target = sum(final_targets.values())
+    if total_target > target_cells:
+        # Scale down proportionally, but preserve minimums
+        excess = total_target - target_cells
+        adjustable_cts = {
+            ct: target for ct, target in final_targets.items() if target > min_per_type
+        }
+
+        if adjustable_cts:
+            # Remove excess proportionally from adjustable cell types
+            total_adjustable = sum(adjustable_cts.values())
+            for ct in adjustable_cts:
+                reduction = int(excess * (adjustable_cts[ct] / total_adjustable))
+                final_targets[ct] = max(min_per_type, final_targets[ct] - reduction)
+
+    # Perform sampling
+    sampled_indices = []
+    for ct, n_sample in final_targets.items():
+        idx = adata_ref.obs.loc[adata_ref.obs[stratify_col] == ct].index
+        sampled = rng.choice(idx, size=n_sample, replace=False)
+        sampled_indices.extend(sampled)
+
+    # Shuffle to avoid any ordering bias
+    rng.shuffle(sampled_indices)
+
+    adata_subsampled = adata_ref[sampled_indices].copy()
+
+    # Report sampling statistics
+    print(f"Subsampled from {total_cells:,} to {len(adata_subsampled):,} cells")
+    print(f"Cell types: {n_types}")
+    print(f"Sampling strategy: {sampling_strategy}")
+    print("\nCell type distribution:")
+
+    orig_pcts = (cell_type_counts / total_cells * 100).round(2)
+    new_counts = adata_subsampled.obs[stratify_col].value_counts()
+    new_pcts = (new_counts / len(adata_subsampled) * 100).round(2)
+
+    for ct in cell_type_counts.index[:10]:  # Show top 10
+        print(
+            f"  {ct}: {cell_type_counts[ct]:,} ({orig_pcts[ct]:.2f}%) → "
+            f"{new_counts.get(ct, 0):,} ({new_pcts.get(ct, 0):.2f}%)"
+        )
+
+    if n_types > 10:
+        print(f"  ... and {n_types - 10} more cell types")
+
+    return adata_subsampled
 
 
 def verify_counts_layer(adata, data_type="data"):
@@ -224,9 +340,16 @@ def scVI_integration(config, adata_ref, adata, module_dir):
     )
 
     logger.info("Initializing scVI model...")
-    scvi_model = SCVI(adata_combined, n_layers=2, n_latent=30, n_hidden=128)
+    scvi_model = SCVI(adata_combined, n_layers=1, n_latent=20, n_hidden=128)
     logger.info("Training SCVI model...")
-    scvi_model.train(max_epochs=MAX_EPOCHS_SCVI, batch_size=128)
+    scvi_model.train(
+        max_epochs=MAX_EPOCHS_SCVI,
+        batch_size=512,  # Increase from 128
+        early_stopping=True,
+        early_stopping_patience=15,
+        use_gpu=True,  # Ensure GPU usage
+        plan_kwargs={"lr": 1e-3},  # Explicit learning rate
+    )
 
     logger.info("Obtain and visualize latent representation...")
     adata_combined.obsm[SCVI_LATENT_KEY] = scvi_model.get_latent_representation()
@@ -266,7 +389,7 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
         tuple: (adata_combined, scanvi_model) - Combined dataset and trained model
     """
     # Set constant variables
-    MAX_EPOCHS_SCANVI = 200
+    MAX_EPOCHS_SCANVI = 50
 
     # Format labels for scANVI
     # Create scANVI labels (reference has labels, spatial is 'Unknown')
@@ -339,7 +462,13 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
 
     # Train scANVI
     logger.info("Training scANVI model...")
-    scanvi_model.train(max_epochs=MAX_EPOCHS_SCANVI, batch_size=128)
+    scanvi_model.train(
+        max_epochs=MAX_EPOCHS_SCANVI,
+        batch_size=512,  # Increase from 128
+        early_stopping=True,
+        early_stopping_patience=15,
+        use_gpu=True,
+    )
     logger.info("scANVI training completed!")
 
     logger.info("Get latent representation...")
@@ -1079,12 +1208,24 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Selecting highly variable genes on reference dataset...")
     sc.pp.highly_variable_genes(
         adata_ref,
-        n_top_genes=5000,
+        n_top_genes=2000,
         layer="counts",
         flavor="seurat_v3",
         subset=True,  # Subset to highly variable genes for integration
     )
     logger.info(f"Number of highly variable genes selected: {adata_ref.n_vars}")
+
+    logger.info("Sub sample cells from reference dataset for faster integration...")
+    if adata_ref.n_obs > 300000:  # Only subsample very large references
+        logger.info(f"Subsampling reference from {adata_ref.n_obs} to ~200k cells...")
+        adata_ref = smart_subsample_reference(
+            adata_ref,
+            target_cells=200000,
+            stratify_col=REF_CELL_LABEL_COL,
+            min_per_type=100,
+            sampling_strategy="proportional",
+            rare_cell_boost=2.0,
+        )
 
     # 1. INTEGRATION using scVI and scANVI
     logger.info("Verify adata compatibility for scVI/scANVI integration...")

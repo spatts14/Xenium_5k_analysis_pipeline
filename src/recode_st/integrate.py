@@ -42,18 +42,18 @@ SUBSET_HLCA_INT_SAVE = Path(
 
 
 def smart_subsample_reference(
-    config: Config,
-    adata_ref,
-    target_cells=200000,
-    stratify_col=REF_CELL_LABEL_COL,
-    min_per_type=100,
+    config_base,
+    adata_ref: anndata.AnnData,
+    target_cells: int = 200000,
+    stratify_col: str = REF_CELL_LABEL_COL,
+    min_per_type: int = 100,
     sampling_strategy="proportional",
-    rare_cell_boost=2.0,
+    rare_cell_boost: float = 2.0,
 ):
     """Subsample reference data while preserving cell type diversity.
 
     Args:
-        config (SimpleNamespace or dict): Configuration object used to set seed.
+        config_base (SimpleNamespace or dict): Configuration object used to set seed.
         adata_ref (anndata.AnnData): Reference AnnData object.
         target_cells (int): Target number of cells after subsampling.
         stratify_col (str): Column in adata_ref.obs to stratify sampling by.
@@ -67,7 +67,7 @@ def smart_subsample_reference(
     Returns:
         anndata.AnnData: Subsampled reference AnnData object.
     """
-    rng = np.random.default_rng(config.seed)
+    rng = np.random.default_rng(config_base.seed)
     cell_type_counts = adata_ref.obs[stratify_col].value_counts()
     n_types = len(cell_type_counts)
     total_cells = len(adata_ref)
@@ -1164,7 +1164,9 @@ def compare(adata, module_dir):
     return metrics
 
 
-def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
+def run_integration(
+    config: IntegrateModuleConfig, io_config: IOConfig, config_base: Config
+):
     """Integrate scRNAseq and STx data using scANVI and ingest.
 
     adata_ref_ingest and adata_ingest are used for ingest integration.
@@ -1173,6 +1175,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     Args:
         config (IntegrateModuleConfig): Integration module configuration object.
         io_config (IOConfig): IO configuration object.
+        config_base (Config): Base configuration object.
 
     Returns:
         None
@@ -1219,7 +1222,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     if adata_ref.n_obs > 300000:  # Only subsample very large references
         logger.info(f"Subsampling reference from {adata_ref.n_obs} to ~200k cells...")
         adata_ref = smart_subsample_reference(
-            adata_ref,
+            adata_ref=adata_ref,
             target_cells=200000,
             stratify_col=REF_CELL_LABEL_COL,
             min_per_type=100,

@@ -331,6 +331,11 @@ def scVI_integration(config, adata_ref, adata, module_dir):
 
     logger.info(f"Combined data layers: {list(adata_combined.layers.keys())}")
 
+    # Look at combined data shape
+    logger.info(
+        f"Combined adata: {adata_combined.n_obs} cells & {adata_combined.n_vars} genes"
+    )
+
     # Setup scVI
     logger.info("Setting up scVI model...")
     SCVI.setup_anndata(
@@ -352,9 +357,9 @@ def scVI_integration(config, adata_ref, adata, module_dir):
 
     logger.info("Obtain and visualize latent representation...")
     adata_combined.obsm[SCVI_LATENT_KEY] = scvi_model.get_latent_representation()
-    sc.pp.pca(adata_combined)
-    sc.pp.neighbors(adata_combined, use_rep=SCVI_LATENT_KEY)
-    sc.tl.umap(adata_combined)
+    sc.pp.pca(adata_combined, n_comps=50)
+    sc.pp.neighbors(adata_combined, use_rep=SCVI_LATENT_KEY, n_neighbors=15)
+    sc.tl.umap(adata_combined, min_dist=0.3, spread=1.0)
     sc.pl.umap(
         adata_combined,
         color=[BATCH_COL, REF_CELL_LABEL_COL],
@@ -1209,7 +1214,7 @@ def run_integration(
     logger.info("Selecting highly variable genes on reference dataset...")
     sc.pp.highly_variable_genes(
         adata_ref,
-        n_top_genes=2000,
+        n_top_genes=5000,
         layer="counts",
         flavor="seurat_v3",
         subset=True,  # Subset to highly variable genes for integration

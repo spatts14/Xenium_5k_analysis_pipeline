@@ -347,7 +347,6 @@ def scVI_integration(config, adata_ref, adata, module_dir):
         batch_size=512,  # Increase from 128
         early_stopping=True,
         early_stopping_patience=15,
-        use_gpu=True,  # Ensure GPU usage
         plan_kwargs={"lr": 1e-3},  # Explicit learning rate
     )
 
@@ -467,7 +466,6 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
         batch_size=512,  # Increase from 128
         early_stopping=True,
         early_stopping_patience=15,
-        use_gpu=True,
     )
     logger.info("scANVI training completed!")
 

@@ -1222,6 +1222,7 @@ def run_integration(
     if adata_ref.n_obs > 300000:  # Only subsample very large references
         logger.info(f"Subsampling reference from {adata_ref.n_obs} to ~200k cells...")
         adata_ref = smart_subsample_reference(
+            config_base=config_base,
             adata_ref=adata_ref,
             target_cells=200000,
             stratify_col=REF_CELL_LABEL_COL,

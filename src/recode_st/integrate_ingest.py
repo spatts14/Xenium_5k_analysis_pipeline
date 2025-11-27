@@ -383,8 +383,9 @@ def visualize_integration(config, cmap, adata):
             adata,
             color=method,
             title=f"INTEGRATION WITH HLCA - {method}",
-            save=f"_{config.module_name}_{method}.png",
             show=False,  # change to True if you want inline display
+            cmap=cmap,
+            save=f"_{config.module_name}_{method}.png",
         )
 
     logger.info(f"UMAP plots saved to {sc.settings.figdir}")
@@ -456,26 +457,8 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     del adata_ref_subset
     del adata_ingest
 
-    color_list = ["condition", "ROI", INGEST_LABEL_COL]
-
-    logger.info("Plotting UMAPs...")
-    sc.pl.umap(
-        adata,
-        color=color_list,
-        title="Xenium data mapped to HLCA",
-        save=f"_{config.module_name}_{INGEST_LABEL_COL}.png",  # save figure
-        cmap=cmap,
-    )
-
-    sc.pl.umap(
-        adata,
-        color=INGEST_LABEL_COL,
-        title="Xenium data mapped to HLCA",
-        save=f"_{config.module_name}_{INGEST_LABEL_COL}.png",  # save figure
-        cmap=cmap,
-    )
-
-    logger.info(f"UMAP plot saved to {sc.settings.figdir}")
+    logger.info("Visualizing integration results...")
+    visualize_integration(config, cmap, adata)
 
     logger.info("Saving integrated data...")
     adata.write_h5ad(module_dir / "adata.h5ad")

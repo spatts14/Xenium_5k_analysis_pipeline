@@ -71,8 +71,8 @@ class DimensionReductionModuleConfig(BaseModuleConfig):
     """Normalization approach to use."""
 
 
-class IntegrateModuleConfig(BaseModuleConfig):
-    """Configuration for the Integration module."""
+class IntegrateIngestModuleConfig(BaseModuleConfig):
+    """Configuration for the Integration Ingest module."""
 
 
 class AnnotateModuleConfig(BaseModuleConfig):
@@ -170,8 +170,8 @@ class ModulesConfig(BaseModel):
     dimension_reduction: DimensionReductionModuleConfig | None = None
     """Configuration for the Dimension Reduction module."""
 
-    integrate: IntegrateModuleConfig | None = None
-    """Configuration for the Integration module."""
+    integrate_ingest: IntegrateIngestModuleConfig | None = None
+    """Configuration for the Integration (ingest) module."""
 
     annotate: AnnotateModuleConfig | None = None
     """Configuration for the Annotate module."""
@@ -222,8 +222,8 @@ class IOConfig(BaseModel):
     area_path: Path = Path("selected_cells_stats.csv")
     """The path to the CSV file containing selected cells statistics."""
 
-    hlca_path: Path  # no default, must be explicitly set in config
-    """Path to the HLCA reference dataset in h5ad format."""
+    ref_path: Path  # no default, must be explicitly set in config
+    """Path to the reference dataset in h5ad format."""
 
     gene_id_dict_path: Path  # no default, must be explicitly set in config
     """Path to the gene ID dictionary CSV file.

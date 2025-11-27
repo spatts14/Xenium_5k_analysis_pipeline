@@ -91,6 +91,7 @@ def visualize_drug2cell(config, adata, cell_type_top, cmap):
     )
     logger.info("Visualize drug score in spatial scatter plots")
     for roi in adata.obs["ROI"].unique():
+        logger.info(f"Visualizing ROI: {roi}")
         subset = adata[adata.obs["ROI"] == roi]
         sq.pl.spatial_scatter(
             subset.uns["drug2cell"],

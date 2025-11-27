@@ -15,7 +15,7 @@ warnings.filterwarnings("ignore")
 logger = getLogger(__name__)
 
 # Variables
-CELL_TYPE_TOP = "cell_type"
+CELL_TYPE_TOP = "ingest_pred_cell_type"
 CELL_TYPE_LEVEL = "transf_ann_level_2_label"
 KEY_CELL_TYPE = "myeloid cell"
 
@@ -127,7 +127,14 @@ def visualize_drug2cell(config, adata, cell_type_top, cmap):
     )
 
 
-def celltype_level(config, adata, cell_type, cell_type_level, cmap):
+def celltype_level(
+    config,
+    adata,
+    cell_type: str = KEY_CELL_TYPE,
+    cell_type_level: str = CELL_TYPE_LEVEL,
+    cell_type_top: str = CELL_TYPE_TOP,
+    cmap=None,
+):
     """Calculate drug2cell for specified cell type for set cell type level.
 
     Args:
@@ -135,6 +142,7 @@ def celltype_level(config, adata, cell_type, cell_type_level, cmap):
         adata (anndata.AnnData): Annotated data object
         cell_type (str): Cell type to subset on
         cell_type_level (str): Cell type level or resolution of interest
+        cell_type_top (str): Column name for cell type annotations
         cmap: Color map for visualization
 
     Returns:
@@ -146,6 +154,12 @@ def celltype_level(config, adata, cell_type, cell_type_level, cmap):
         logger.error(f"Column '{cell_type_level}' not found in adata.obs")
         return
 
+    if cell_type not in adata.obs[cell_type_level].values:
+        logger.warning(
+            f"Cell type '{cell_type}' not found in column '{cell_type_level}'"
+        )
+        return
+
     subset = adata[adata.obs[cell_type_level] == cell_type]
 
     if len(subset) == 0:
@@ -155,11 +169,16 @@ def celltype_level(config, adata, cell_type, cell_type_level, cmap):
         )
         return
 
+    # Copy drug2cell scores to subset if they exist
+    if "drug2cell" in adata.uns:
+        subset.uns["drug2cell"] = adata.uns["drug2cell"]
+    else:
+        logger.error("No drug2cell scores found in adata.uns. Cannot visualize subset.")
+        return
+
     logger.info(f"Visualizing on {cell_type} in {cell_type_level}")
     # Fix parameter name mismatch: CLUSTER_TYPE should be CELL_TYPE_LEVEL_ALL
-    visualize_drug2cell(
-        config, adata=subset, CELL_TYPE_LEVEL_ALL=cell_type_level, cmap=cmap
-    )
+    visualize_drug2cell(config, adata=subset, cell_type_top=cell_type_top, cmap=cmap)
 
 
 def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
@@ -209,12 +228,14 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
             f"Available columns: {list(adata.obs.columns)}"
         )
         logger.info("Proceeding with cell_type_level_all only...")
-    visualize_drug2cell(config, adata, CELL_TYPE_TOP, cmap=cmap)
+    visualize_drug2cell(config, adata=adata, cell_type_top=CELL_TYPE_TOP, cmap=cmap)
 
     # Only run cell type specific analysis if the column exists
     if CELL_TYPE_LEVEL in adata.obs.columns:
         logger.info(f"Examine drug score in {KEY_CELL_TYPE} in {CELL_TYPE_LEVEL}")
-        celltype_level(config, adata, KEY_CELL_TYPE, CELL_TYPE_LEVEL, cmap=cmap)
+        celltype_level(
+            config, adata, KEY_CELL_TYPE, CELL_TYPE_LEVEL, CELL_TYPE_TOP, cmap
+        )
     else:
         logger.info(
             f"Skipping cell type specific analysis - "

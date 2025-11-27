@@ -52,7 +52,7 @@ def main(config: Config):
         from recode_st.integrate import run_integration
 
         logger.info("Running Module 3a - Integration")
-        run_integration(config.modules.integrate, config.io)
+        run_integration(config.modules.integrate, config.io, config)
 
     if config.modules.annotate:
         from recode_st.annotate import run_annotate

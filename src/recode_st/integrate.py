@@ -1,6 +1,6 @@
 """Integrate scRNAseq and STx."""
 
-import warnings  # ? what is the best way to suppress warnings from package inputs?
+import warnings
 from logging import getLogger
 from pathlib import Path
 
@@ -13,19 +13,24 @@ import pandas as pd
 import scanpy as sc
 import seaborn as sns
 from scvi.model import SCANVI, SCVI
+from sklearn.metrics import confusion_matrix
 
-from recode_st.config import IntegrateModuleConfig, IOConfig
+from recode_st.config import Config, IntegrateModuleConfig, IOConfig
 from recode_st.helper_function import configure_scanpy_figures
 
-warnings.filterwarnings("ignore")
+# Suppress specific warnings to reduce noise in logs
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 logger = getLogger(__name__)
 
-# Define global variables - SHOULD THESE BE HERE OR INSIDE THE RUN FUNCTION?
+# Define global constants for integration
 INGEST_LABEL_COL = "ingest_pred_cell_type"
 SCANVI_LABEL_COL = "scANVI_pred_cell_type"
 REF_CELL_LABEL_COL = "cell_type"  # Column in reference data with cell type labels
 BATCH_COL = "dataset_origin"
+REFERENCE_KEY = "Ref"
+SPATIAL_KEY = "STx"
 SCVI_LATENT_KEY = "X_scVI"
 SCANVI_LATENT_KEY = "X_scANVI"
 HLCA_INT_SAVE = Path(
@@ -36,333 +41,231 @@ SUBSET_HLCA_INT_SAVE = Path(
 )
 
 
-def prepare_integrated_datasets(gene_id_dict_path, adata_ref, adata):
-    """Ensures ST and reference dataset contain are in correct format for integration.
-
-    Both datasets should have:
-    1. The same list of genes
-    2. Labeled by the ensembl ID rather than gene symbol
-    3. Genes are in the same order.
-    This needs to be done prior to integration!
+def smart_subsample_reference(
+    base_config,
+    adata_ref: anndata.AnnData,
+    target_cells: int = 200000,
+    stratify_col: str = REF_CELL_LABEL_COL,
+    min_per_type: int = 100,
+    sampling_strategy="proportional",
+    rare_cell_boost: float = 2.0,
+):
+    """Subsample reference data while preserving cell type diversity.
 
     Args:
-        gene_id_dict_path (str | Path): Path to gene ID dictionary .csv file.
-        First column: named "gene_symbol" containing the gene ID for all genes in
-        STx dataset.
-        Second column:  named "ensembl_ID" containing the ensembl ID of the
-        corresponding gene.
-        adata_ref (anndata.AnnData)): Reference scRNAseq AnnData object.
-        adata (anndata.AnnData): STx AnnData object.
+        base_config (SimpleNamespace or dict): Configuration object used to set seed.
+        adata_ref (anndata.AnnData): Reference AnnData object.
+        target_cells (int): Target number of cells after subsampling.
+        stratify_col (str): Column in adata_ref.obs to stratify sampling by.
+        min_per_type (int): Minimum cells to sample per cell type.
+        sampling_strategy (str): One of:
+            - "proportional": Sample proportionally to original frequencies
+            - "balanced": Give equal weight to all cell types
+            - "sqrt": Compromise between proportional and balanced (sqrt of proportions)
+        rare_cell_boost (float): Multiplier for min_per_type for rare cell types.
+
+    Returns:
+        anndata.AnnData: Subsampled reference AnnData object.
+    """
+    rng = np.random.default_rng(base_config.seed)
+    cell_type_counts = adata_ref.obs[stratify_col].value_counts()
+    n_types = len(cell_type_counts)
+    total_cells = len(adata_ref)
+
+    # Calculate sampling targets based on strategy
+    if sampling_strategy == "proportional":
+        # Keep original proportions
+        sampling_fracs = cell_type_counts / total_cells
+        base_targets = (sampling_fracs * target_cells).round().astype(int)
+
+    elif sampling_strategy == "balanced":
+        # Equal representation for all cell types
+        base_targets = pd.Series(target_cells // n_types, index=cell_type_counts.index)
+
+    elif sampling_strategy == "sqrt":
+        # Square root transformation - compromise between proportional and balanced
+        sqrt_counts = np.sqrt(cell_type_counts)
+        sampling_weights = sqrt_counts / sqrt_counts.sum()
+        base_targets = (sampling_weights * target_cells).round().astype(int)
+
+    else:
+        raise ValueError(f"Unknown sampling_strategy: {sampling_strategy}")
+
+    # Apply minimum per type, with boost for very rare cell types
+    rare_threshold = total_cells * 0.001  # <0.1% of total
+    final_targets = {}
+
+    for ct, count in cell_type_counts.items():
+        base_target = base_targets[ct]
+
+        # Determine minimum based on rarity
+        if count < rare_threshold:
+            effective_min = int(min_per_type * rare_cell_boost)
+        else:
+            effective_min = min_per_type
+
+        # Don't sample more than available, but ensure minimum
+        final_targets[ct] = min(count, max(base_target, effective_min))
+
+    # Adjust if we're over target_cells due to minimums
+    total_target = sum(final_targets.values())
+    if total_target > target_cells:
+        # Scale down proportionally, but preserve minimums
+        excess = total_target - target_cells
+        adjustable_cts = {
+            ct: target for ct, target in final_targets.items() if target > min_per_type
+        }
+
+        if adjustable_cts:
+            # Remove excess proportionally from adjustable cell types
+            total_adjustable = sum(adjustable_cts.values())
+            for ct in adjustable_cts:
+                reduction = int(excess * (adjustable_cts[ct] / total_adjustable))
+                final_targets[ct] = max(min_per_type, final_targets[ct] - reduction)
+
+    # Perform sampling
+    sampled_indices = []
+    for ct, n_sample in final_targets.items():
+        idx = adata_ref.obs.loc[adata_ref.obs[stratify_col] == ct].index
+        sampled = rng.choice(idx, size=n_sample, replace=False)
+        sampled_indices.extend(sampled)
+
+    # Shuffle to avoid any ordering bias
+    rng.shuffle(sampled_indices)
+
+    adata_subsampled = adata_ref[sampled_indices].copy()
+
+    # Report sampling statistics
+    print(f"Subsampled from {total_cells:,} to {len(adata_subsampled):,} cells")
+    print(f"Cell types: {n_types}")
+    print(f"Sampling strategy: {sampling_strategy}")
+    print("\nCell type distribution:")
+
+    orig_pcts = (cell_type_counts / total_cells * 100).round(2)
+    new_counts = adata_subsampled.obs[stratify_col].value_counts()
+    new_pcts = (new_counts / len(adata_subsampled) * 100).round(2)
+
+    for ct in cell_type_counts.index[:10]:  # Show top 10
+        print(
+            f"  {ct}: {cell_type_counts[ct]:,} ({orig_pcts[ct]:.2f}%) → "
+            f"{new_counts.get(ct, 0):,} ({new_pcts.get(ct, 0):.2f}%)"
+        )
+
+    if n_types > 10:
+        print(f"  ... and {n_types - 10} more cell types")
+
+    return adata_subsampled
+
+
+def verify_counts_layer(adata, data_type="data"):
+    """Verify that counts layer exists and contains valid count data.
+
+    Args:
+        adata (anndata.AnnData): AnnData object to verify
+        data_type (str): Description of data type for logging
+            (e.g., "reference", "spatial")
 
     Raises:
-        FileNotFoundError: _description_
-        ValueError: _description_
-
-    Returns:
-        anndata.AnnData: formatted adata_ref_subset and adata_ingest AnnData objects.
-
+        ValueError: If counts layer is missing or invalid
     """
-    logger.info("Confirm Xenium data and reference data have the same genes...")
-    # Replace ensembl ID with gene symbols from adata_ref for matching
-    try:
-        gene_id_dict = pd.read_csv(
-            gene_id_dict_path, index_col=0
-        )  # dictionary with ensembl and gene symbols
-    except FileNotFoundError as e:
-        logger.error(f"Gene ID dictionary file not found: {gene_id_dict_path}")
-        raise FileNotFoundError(
-            f"Gene ID dictionary file not found: {gene_id_dict_path}"
-        ) from e
-    except pd.errors.ParserError as e:
-        logger.error(f"Error parsing gene ID dictionary file: {gene_id_dict_path}")
-        raise ValueError(
-            f"Error parsing gene ID dictionary file: {gene_id_dict_path}"
-        ) from e
-    except Exception as e:
-        logger.error(f"Error reading gene ID dictionary file: {gene_id_dict_path}: {e}")
-        raise
+    logger.info(f"Verifying {data_type} data integrity...")
 
-    # Add ensembl_id to STx data
-    adata.var["ensembl_id"] = adata.var.index.map(gene_id_dict["ensembl_id"])
-    missing = adata.var["ensembl_id"].isna().sum()
-    if missing > 0:
-        logger.warning(f"{missing} genes in STx have no matching Ensembl ID.")
+    if "counts" in adata.layers:
+        logger.info(f"✓ {data_type.capitalize()} data has counts layer")
+        logger.info(f"✓ {data_type.capitalize()} layers: {list(adata.layers.keys())}")
+        logger.info(f"✓ Counts layer shape: {adata.layers['counts'].shape}")
+        logger.info(f"✓ {data_type.capitalize()} data shape: {adata.shape}")
 
-    # List of genes shared between datasets based on ensembl IDs
-    var_names = adata_ref.var_names.intersection(adata.var["ensembl_id"])
-    logger.info(f"Number of common genes: {len(var_names)}")
-    if len(var_names) < 500:
-        logger.warning(
-            "Warning: Less than 500 common genes found between datasets. "
-            "Integration may not perform well."
-        )
-
-    # Subset STx data to common genes
-    mask = adata.var["ensembl_id"].isin(
-        var_names
-    )  # Create mask to filter genes based on ensembl IDs
-    adata_ingest = adata[:, mask].copy()
-
-    adata_ingest.var_names = adata_ingest.var[
-        "ensembl_id"
-    ]  # Rename var_names to the Ensembl IDs
-
-    # Check for duplicate gene names in ST dataset
-    if adata_ingest.var_names.has_duplicates:
-        raise ValueError("Duplicate Ensembl IDs detected in ST dataset after mapping.")
-
-    logger.info(f"First 5 gene names in ST: {adata_ingest.var_names[:5].tolist()}")
-    # Subset reference datasets to common genes
-    adata_ref_subset = adata_ref[:, var_names].copy()
-
-    # After subsetting both datasets to common genes, add these checks:
-    # 1. Check the sets of genes are the same
-    ref_genes = set(adata_ref_subset.var_names)
-    st_genes = set(adata_ingest.var_names)
-    same_set = ref_genes == st_genes
-    logger.info(f"Gene sets identical: {same_set}")
-
-    if not same_set:
-        missing_in_ref = st_genes - ref_genes
-        missing_in_ingest = ref_genes - st_genes
-        logger.warning(f"Genes in ST but not in reference: {len(missing_in_ref)}")
-        logger.warning(f"Genes in reference but not in ST: {len(missing_in_ingest)}")
-        raise ValueError("Datasets do not have identical gene sets. Cannot reorder!")
-
-    # 2. Check order
-    same_order = adata_ref_subset.var_names.equals(adata_ingest.var_names)
-    logger.info(f"Genes in same order: {same_order}")
-
-    # 3. If order doesn't match, reorder adata_ingest to match adata_ref
-    if not same_order:
-        logger.info("Reordering adata_ingest genes to match reference...")
-        adata_ingest = adata_ingest[:, adata_ref_subset.var_names].copy()
-        logger.info("Genes reordered successfully.")
-
-    # Confirm shapes
-    logger.info(f"Reference dataset shape: {adata_ref_subset.shape}")
-    logger.info(f"ST dataset shape: {adata_ingest.shape}")
-
-    return adata_ref_subset, adata_ingest
-
-
-def process_reference_data(config, io_config, adata_ref):
-    """Preprocesses the reference scRNA-seq dataset if PCA and UMAP are missing.
-
-    This function checks whether the reference AnnData object already processed.
-    If not, it performs standard single-cell preprocessing steps, including
-    normalization, log-transformation, highly variable gene selection, PCA,
-    neighbor graph construction, and UMAP embedding.
-    The resulting AnnData object is saved to disk and optionally visualized.
-
-    Args:
-        config (SimpleNamespace or dict): Configuration object containing
-            module-specific parameters, including the module name used to
-            construct figure filenames.
-        io_config (SimpleNamespace or dict): I/O configuration object with paths
-            to input and output data. Must include ``hlca_path`` to save the
-            processed reference dataset.
-        adata_ref (anndata.AnnData): Reference single-cell RNA-seq dataset (e.g.,
-            HLCA) to be processed or verified. The object is modified in place.
-
-    Side Effects:
-        - Writes the processed reference AnnData object to `HLCA_INT_SAVE`.
-        - Saves a UMAP visualization as a PNG file.
-
-    Logs:
-        - Whether preprocessing is needed.
-        - Each major preprocessing step.
-        - Path to the saved output file.
-
-    Returns:
-        adata_ref (anndata.AnnData): Processed reference AnnData object.
-    """
-    logger.info("Checking if reference scRNA-seq data needs processing...")
-
-    # Check if we need to preprocess the reference data
-    if HLCA_INT_SAVE.exists():
-        logger.info(f"Processed HLCA reference data found at {HLCA_INT_SAVE}.")
-        logger.info(f"Loading existing processed data from {HLCA_INT_SAVE}.")
-        adata_ref = sc.read_h5ad(HLCA_INT_SAVE)
-    else:
-        logger.info("Preprocessing HLCA reference data...")
-
-        # Basic filtering and normalization
-        sc.pp.filter_cells(adata_ref, min_genes=200)
-        sc.pp.filter_genes(adata_ref, min_cells=10)
-
-        # Checking for counts layer
-        if "counts" in adata_ref.layers:
-            logger.info("Counts layer present!")
-        else:
-            logger.warning("Counts layer not found in adata_ref.layers!")
-
-        # Check if data is already normalized
-        logger.info("Checking normalization...")
-        totals = adata_ref.X.sum(axis=1)
-        totals = totals.A1 if hasattr(totals, "A1") else np.array(totals).ravel()
-
-        if np.median(totals) > 2e4:  # crude but works for most scRNA-seq
-            logger.info("Data does not appear to be normalized! Normalizing...")
-            sc.pp.normalize_total(adata_ref, target_sum=1e4)
-            logger.info("Normalized total counts.")
-        else:
-            logger.info("Data already appears normalized. Skipping.")
-
-        # Check if data is log-transformed
-        logger.info("Checking log transformation...")
-        X_sample = adata_ref.X[:100, :100]
-        arr = X_sample.A if hasattr(X_sample, "A") else X_sample
-
-        if np.allclose(arr, np.round(arr)):  # looks like raw counts
-            logger.info(
-                "Data does not appear to be log transformed! Transforming data..."
+        # Verify counts layer matches main data dimensions
+        if adata.layers["counts"].shape != adata.X.shape:
+            counts_shape = adata.layers["counts"].shape
+            x_shape = adata.X.shape
+            logger.error(
+                f"✗ Counts layer shape mismatch: counts={counts_shape}, X={x_shape}"
             )
-            sc.pp.log1p(adata_ref)
-            logger.info("Applied log1p transformation.")
+            raise ValueError("Counts layer dimensions don't match main data matrix")
+
+        # Validate counts data quality
+        logger.info("Validating counts data quality...")
+        counts_sample = adata.layers["counts"][:100, :100]
+        counts_arr = counts_sample.A if hasattr(counts_sample, "A") else counts_sample
+        is_integer = np.allclose(counts_arr, np.round(counts_arr))
+        median_total = np.median(counts_arr.sum(axis=1))
+        has_positive_values = (counts_arr >= 0).all()
+
+        if is_integer and median_total > 100 and has_positive_values:
+            logger.info("✓ Counts layer contains valid integer count data")
+            logger.info(f"✓ Median counts per cell: {median_total:.0f}")
         else:
-            logger.info("Data already appears log-transformed. Skipping.")
-
-        logger.info("Calculating HVG...")
-        # Feature selection and scaling
-        sc.pp.highly_variable_genes(adata_ref, n_top_genes=5000, flavor="seurat_v3")
-        # sc.pp.scale(adata_ref, max_value=10) - scaling skipped for large datasets
-
-        # Dimensionality reduction
-        logger.info("Computing PCA...")
-        sc.tl.pca(adata_ref, n_comps=75, svd_solver="arpack")
-        sc.pp.neighbors(adata_ref, n_neighbors=30, n_pcs=75)
-        logger.info("Computing UMAP...")
-        sc.tl.umap(adata_ref)
-
-        # Plot UMAP
-        sc.pl.umap(
-            adata_ref,
-            color=REF_CELL_LABEL_COL,
-            title="HLCA reference data UMAP",
-            save=f"_{config.module_name}_hlca_umap.png",
-        )
-
-        # Save processed reference
-        adata_ref.write_h5ad(HLCA_INT_SAVE)
-        logger.info(
-            f"Finished preprocessing. Processed HLCA reference saved to {HLCA_INT_SAVE}"
-        )
-    return adata_ref
-
-
-def process_subset_reference_data(config, io_config, adata_ref_subset):
-    """Preprocesses the reference scRNA-seq dataset if PCA and UMAP are missing.
-
-    This function checks whether the reference AnnData object already processed.
-    If not, it performs standard single-cell preprocessing steps, including
-    normalization, log-transformation, highly variable gene selection, PCA,
-    neighbor graph construction, and UMAP embedding.
-    The resulting AnnData object is saved to disk and optionally visualized.
-
-    Args:
-        config (SimpleNamespace or dict): Configuration object containing
-            module-specific parameters, including the module name used to
-            construct figure filenames.
-        io_config (SimpleNamespace or dict): I/O configuration object with paths
-            to input and output data. Must include ``hlca_path`` to save the
-            processed reference dataset.
-        adata_ref_subset (anndata.AnnData): Subset of reference single-cell RNA-seq
-        dataset (e.g., HLCA) to be processed or verified.
-        The object is modified in place.
-
-    Side Effects:
-        - Writes the processed reference AnnData object to `SUBSET_HLCA_INT_SAVE`.
-        - Saves a UMAP visualization as a PNG file.
-
-    Logs:
-        - Whether preprocessing is needed.
-        - Each major preprocessing step.
-        - Path to the saved output file.
-
-    Returns:
-        adata_ref_subset (anndata.AnnData): Processed reference AnnData object.
-    """
-    logger.info("Checking if reference scRNA-seq data needs processing...")
-
-    # Check if we need to preprocess the reference data
-    if SUBSET_HLCA_INT_SAVE.exists():
-        logger.info(f"Processed HLCA reference data found at {SUBSET_HLCA_INT_SAVE}.")
-        logger.info(f"Loading existing processed data from {SUBSET_HLCA_INT_SAVE}.")
-        adata_ref_subset = sc.read_h5ad(SUBSET_HLCA_INT_SAVE)
+            logger.warning(
+                f"⚠ Counts layer validation issues: integer-like={is_integer}, "
+                f"median_total={median_total:.1f}, non_negative={has_positive_values}"
+            )
+            # Don't fail here, but warn user
+            if not has_positive_values:
+                logger.error("✗ Counts layer contains negative values!")
+                raise ValueError("Invalid counts layer: contains negative values")
     else:
-        logger.info("Preprocessing subset of HLCA reference data...")
-        logger.info("Compute PCA and neighbors for ingest reference subset...")
-        sc.tl.pca(adata_ref_subset, n_comps=75, svd_solver="arpack")
-        sc.pp.neighbors(adata_ref_subset, n_neighbors=30, n_pcs=75)
-        sc.tl.umap(adata_ref_subset)
-        sc.pl.umap(
-            adata_ref_subset,
-            color=REF_CELL_LABEL_COL,
-            title="HLCA reference subset for ingest UMAP",
-            save=f"_{config.module_name}_hlca_subset_ingest_umap.png",
+        logger.error(f"✗ {data_type.capitalize()} data missing 'counts' layer!")
+        logger.error("Available layers: " + str(list(adata.layers.keys())))
+        if data_type.lower() == "reference":
+            logger.error(
+                "Please run hlca_full_filt_process.py first to create "
+                "processed data with counts layer"
+            )
+        else:
+            logger.error(
+                "Please ensure your data preprocessing preserves the counts layer"
+            )
+        raise ValueError(
+            f"{data_type.capitalize()} data missing required 'counts' layer"
         )
-        logger.info(f"UMAP for {REF_CELL_LABEL_COL} saved for adata_ref_subset")
-
-        # Save processed reference
-        adata_ref_subset.write_h5ad(SUBSET_HLCA_INT_SAVE)
-        logger.info("Finished preprocessing")
-        logger.info(f"Processed HLCA reference saved to {SUBSET_HLCA_INT_SAVE}")
-    return adata_ref_subset
 
 
-def ingest_integration(adata_ref, adata, adata_ingest):
-    """Integrates STx data with a reference scRNA-seq dataset using ingest.
-
-    This function performs label transfer from a reference single-cell dataset
-    (e.g., HLCA) to a STx dataset (e.g., Xenium).
-    The ingest approach uses Scanpys `tl.ingest` to
-    project query data into the references PCA space and transfer cell-type labels.
+def scVI_integration_check(adata, batch_key=BATCH_COL, cell_type=REF_CELL_LABEL_COL):
+    """Check dataset readiness for scVI/scANVI integration.
 
     Args:
-        adata_ref (anndata.AnnData): Reference scRNA-seq AnnData object containing
-            precomputed embeddings (PCA or UMAP) and cell-type annotations.
-        adata (anndata.AnnData): Original STx dataset to which
-            transferred labels will be written.
-        adata_ingest (anndata.AnnData): Copy of the spatial dataset formatted for
-            ingestion, aligned by gene set with the reference.
+        adata (anndata.AnnData): AnnData object to validate.
+        batch_key (str): Column name in adata.obs for batch ID.
+        cell_type (str): Column name in adata.obs for cell type labels.
 
     Returns:
-        adata (anndata.AnnData): Original STx dataset with transferred labels added.
+        bool: True if dataset is ready, False otherwise.
     """
-    logger.info("Starting integration...")
-    logger.info("Integrating data using ingest...")
+    issues = []
 
-    # Run ingest to map Xenium data onto HLCA reference
-    sc.tl.ingest(
-        adata_ingest,
-        adata_ref,
-        obs=REF_CELL_LABEL_COL,  # Annotation column to use in adata_ref.obs
-        # For core HLCA, "cell_type"
-        embedding_method="pca",  # or 'umap'
-        labeling_method="knn",  # how to transfer labels
-        neighbors_key=None,  # use default neighbors from reference
-        inplace=True,
-    )
+    # Expression matrix
+    if adata.X is None:
+        issues.append("No expression matrix (adata.X) present")
 
-    # Rename predicted cell type column
-    adata_ingest.obs[INGEST_LABEL_COL] = adata_ingest.obs[REF_CELL_LABEL_COL]
-    del adata_ingest.obs[REF_CELL_LABEL_COL]
+    # Raw count layer
+    if "counts" not in adata.layers:
+        issues.append("Missing 'counts' layer in adata.layers (required for scVI)")
 
-    # Copy cell type predictions back to original adata
-    adata.obs[INGEST_LABEL_COL] = adata_ingest.obs.loc[
-        adata.obs_names, INGEST_LABEL_COL
-    ]
-    logger.info("Ingest integration complete.")
+    # Batch
+    if batch_key not in adata.obs.columns:
+        issues.append(f"Missing batch column '{batch_key}' in adata.obs")
 
-    return adata
+    if cell_type not in adata.obs.columns:
+        issues.append(f"Missing cell type column '{cell_type}' in adata.obs")
+
+    # Outcome
+    if issues:
+        print("NOT READY FOR scANVI:")
+        for issue in issues:
+            print(f"  - {issue}")
+        return False
+
+    logger.info("Dataset is ready for scVI/scANVI integration.")
+    return True
 
 
 def scVI_integration(config, adata_ref, adata, module_dir):
     """Integrates STx data with a reference scRNA-seq dataset using scVI.
 
-    This function performs harmonizes a reference single-cell dataset
-    (e.g., HLCA) to a STx dataset (e.g., Xenium).
+    This function harmonizes a reference single-cell dataset
+    (e.g., HLCA) with a STx dataset (e.g., Xenium).
 
     Args:
         config (SimpleNamespace or dict): Configuration object containing
@@ -383,14 +286,21 @@ def scVI_integration(config, adata_ref, adata, module_dir):
     # Training parameters
     MAX_EPOCHS_SCVI = 200
 
-    # Ensure counts layer exists
-    assert "counts" in adata_ref.layers, "Reference missing counts layer"
-    assert "counts" in adata.layers, "Spatial data missing counts layer"
+    # Log available layers for debugging
+    logger.info(f"Reference layers: {list(adata_ref.layers.keys())}")
+    logger.info(f"Spatial layers: {list(adata.layers.keys())}")
 
-    # Ensure REF_CELL_LABEL_COL column exists in reference
-    adata.obs[REF_CELL_LABEL_COL] = (
-        "STx_UNKNOWN"  # ensure column exists in spatial data
-    )
+    # Log counts layer shapes (already verified to exist)
+    logger.info(f"Reference counts shape: {adata_ref.layers['counts'].shape}")
+    logger.info(f"Spatial counts shape: {adata.layers['counts'].shape}")
+
+    # Ensure REF_CELL_LABEL_COL column exists in spatial data
+    if REF_CELL_LABEL_COL not in adata.obs.columns:
+        adata.obs[REF_CELL_LABEL_COL] = "STx_UNKNOWN"  # placeholder for spatial cells
+
+    logger.info("Verifying datasets for scVI integration...")
+    scVI_integration_check(adata_ref, batch_key=BATCH_COL, cell_type=REF_CELL_LABEL_COL)
+    scVI_integration_check(adata, batch_key=BATCH_COL, cell_type=REF_CELL_LABEL_COL)
 
     # Combine datasets
     logger.info("Combining reference and spatial data...")
@@ -398,18 +308,32 @@ def scVI_integration(config, adata_ref, adata, module_dir):
         [adata_ref, adata],
         join="inner",  # only keeps genes present in both datasets
         label=BATCH_COL,
-        keys=["Ref", "STx"],
+        keys=[REFERENCE_KEY, SPATIAL_KEY],
         index_unique="_",
     )
 
-    logger.info("Selecting highly variable genes...")
-    sc.pp.highly_variable_genes(
-        adata_combined,
-        n_top_genes=2000,
-        layer="counts",
-        flavor="seurat_v3",
-        batch_key=BATCH_COL,
-        subset=True,  # need to figure out best way to do this
+    # Verify counts layer was preserved during concat
+    if "counts" not in adata_combined.layers:
+        logger.error("Counts layer lost during concat! Manually preserving...")
+        # Manually recreate counts layer from original data
+        ref_mask = adata_combined.obs[BATCH_COL] == REFERENCE_KEY
+        stx_mask = adata_combined.obs[BATCH_COL] == SPATIAL_KEY
+
+        # Initialize counts layer
+        adata_combined.layers["counts"] = adata_combined.X.copy()  # temporary
+
+        # Fill with actual counts
+        adata_combined.layers["counts"][ref_mask, :] = adata_ref.layers["counts"]
+        adata_combined.layers["counts"][stx_mask, :] = adata.layers["counts"]
+        logger.info("Counts layer manually restored!")
+    else:
+        logger.info("✓ Counts layer preserved during concat")
+
+    logger.info(f"Combined data layers: {list(adata_combined.layers.keys())}")
+
+    # Look at combined data shape
+    logger.info(
+        f"Combined adata: {adata_combined.n_obs} cells & {adata_combined.n_vars} genes"
     )
 
     # Setup scVI
@@ -421,15 +345,21 @@ def scVI_integration(config, adata_ref, adata, module_dir):
     )
 
     logger.info("Initializing scVI model...")
-    scvi_model = SCVI(adata_combined, n_layers=2, n_latent=30, n_hidden=128)
+    scvi_model = SCVI(adata_combined, n_layers=1, n_latent=20, n_hidden=128)
     logger.info("Training SCVI model...")
-    scvi_model.train(max_epochs=MAX_EPOCHS_SCVI, batch_size=128)
+    scvi_model.train(
+        max_epochs=MAX_EPOCHS_SCVI,
+        batch_size=512,  # Increase from 128
+        early_stopping=True,
+        early_stopping_patience=15,
+        plan_kwargs={"lr": 1e-3},  # Explicit learning rate
+    )
 
     logger.info("Obtain and visualize latent representation...")
     adata_combined.obsm[SCVI_LATENT_KEY] = scvi_model.get_latent_representation()
-    sc.pp.pca(adata_combined)
-    sc.pp.neighbors(adata_combined, use_rep=SCVI_LATENT_KEY)
-    sc.tl.umap(adata_combined)
+    sc.pp.pca(adata_combined, n_comps=50)
+    sc.pp.neighbors(adata_combined, use_rep=SCVI_LATENT_KEY, n_neighbors=15)
+    sc.tl.umap(adata_combined, min_dist=0.3, spread=1.0)
     sc.pl.umap(
         adata_combined,
         color=[BATCH_COL, REF_CELL_LABEL_COL],
@@ -463,7 +393,7 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
         tuple: (adata_combined, scanvi_model) - Combined dataset and trained model
     """
     # Set constant variables
-    MAX_EPOCHS_SCANVI = 200
+    MAX_EPOCHS_SCANVI = 50
 
     # Format labels for scANVI
     # Create scANVI labels (reference has labels, spatial is 'Unknown')
@@ -487,7 +417,7 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
         return None, None
 
     # Assign real labels to reference cells
-    ref_mask = adata_combined.obs[BATCH_COL] == "Ref"
+    ref_mask = adata_combined.obs[BATCH_COL] == REFERENCE_KEY
 
     # Ensure reference label column exists
     if REF_CELL_LABEL_COL not in adata_combined.obs.columns:
@@ -536,7 +466,12 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
 
     # Train scANVI
     logger.info("Training scANVI model...")
-    scanvi_model.train(max_epochs=MAX_EPOCHS_SCANVI, batch_size=128)
+    scanvi_model.train(
+        max_epochs=MAX_EPOCHS_SCANVI,
+        batch_size=512,  # Increase from 128
+        early_stopping=True,
+        early_stopping_patience=15,
+    )
     logger.info("scANVI training completed!")
 
     logger.info("Get latent representation...")
@@ -614,7 +549,7 @@ def extract_predictions_and_visualize(adata_combined, scanvi_model, adata, modul
     adata_combined.obs["prediction_max_prob"] = max_prob
 
     # Extract spatial predictions
-    spatial_mask = adata_combined.obs[BATCH_COL] == "STx"
+    spatial_mask = adata_combined.obs[BATCH_COL] == SPATIAL_KEY
     adata_spatial_predicted = adata_combined[spatial_mask].copy()
 
     logger.info(f"Spatial cells annotated: {adata_spatial_predicted.n_obs}")
@@ -622,7 +557,7 @@ def extract_predictions_and_visualize(adata_combined, scanvi_model, adata, modul
     logger.info(adata_spatial_predicted.obs[SCANVI_LABEL_COL].value_counts())
 
     # Map predictions back to original adata using cell names
-    # Remove the "_Spatial" suffix added by concat
+    # Remove the suffix added by concat (index_unique="_")
     spatial_indices = adata_spatial_predicted.obs_names.str.replace(
         "_Spatial", "", regex=False
     )
@@ -690,6 +625,267 @@ def extract_predictions_and_visualize(adata_combined, scanvi_model, adata, modul
     plt.close()
 
     logger.info(f"scANVI results plot saved: {plot_path}")
+
+    return adata
+
+
+def prepare_ingest_datasets(gene_id_dict_path, adata_ref, adata):
+    """Ensures ST and reference dataset contain are in correct format for integration.
+
+    Both datasets should have:
+    1. The same list of genes
+    2. Labeled by the ensembl ID rather than gene symbol
+    3. Genes are in the same order.
+    This needs to be done prior to integration!
+
+    Args:
+        gene_id_dict_path (str | Path): Path to gene ID dictionary .csv file.
+        First column: named "gene_symbol" containing the gene ID for all genes in
+        STx dataset.
+        Second column:  named "ensembl_ID" containing the ensembl ID of the
+        corresponding gene.
+        adata_ref (anndata.AnnData)): Reference scRNAseq AnnData object.
+        adata (anndata.AnnData): STx AnnData object.
+
+    Raises:
+        FileNotFoundError: _description_
+        ValueError: _description_
+
+    Returns:
+        anndata.AnnData: formatted adata_ref_subset and adata_ingest AnnData objects.
+
+    """
+    logger.info("Confirm Xenium data and reference data have the same genes...")
+    # Replace ensembl ID with gene symbols from adata_ref for matching
+    try:
+        gene_id_dict = pd.read_csv(
+            gene_id_dict_path, index_col=0
+        )  # dictionary with ensembl and gene symbols
+    except FileNotFoundError as e:
+        logger.error(f"Gene ID dictionary file not found: {gene_id_dict_path}")
+        raise FileNotFoundError(
+            f"Gene ID dictionary file not found: {gene_id_dict_path}"
+        ) from e
+    except pd.errors.ParserError as e:
+        logger.error(f"Error parsing gene ID dictionary file: {gene_id_dict_path}")
+        raise ValueError(
+            f"Error parsing gene ID dictionary file: {gene_id_dict_path}"
+        ) from e
+    except Exception as e:
+        logger.error(f"Error reading gene ID dictionary file: {gene_id_dict_path}: {e}")
+        raise
+
+    # Add ensembl_id to STx data
+    adata.var["ensembl_id"] = adata.var.index.map(gene_id_dict["ensembl_id"])
+    missing = adata.var["ensembl_id"].isna().sum()
+    if missing > 0:
+        logger.warning(f"{missing} genes in STx have no matching Ensembl ID.")
+
+    # List of genes shared between datasets based on ensembl IDs
+    var_names = adata_ref.var_names.intersection(adata.var["ensembl_id"])
+    logger.info(f"Number of common genes: {len(var_names)}")
+    if len(var_names) < 500:
+        logger.warning(
+            "Warning: Less than 500 common genes found between datasets. "
+            "Integration may not perform well."
+        )
+
+    # Subset STx data to common genes
+    mask = adata.var["ensembl_id"].isin(
+        var_names
+    )  # Create mask to filter genes based on ensembl IDs
+    adata_ingest = adata[:, mask].copy()
+
+    adata_ingest.var_names = adata_ingest.var[
+        "ensembl_id"
+    ]  # Rename var_names to the Ensembl IDs
+
+    # Check for duplicate gene names in ST dataset
+    if adata_ingest.var_names.has_duplicates:
+        raise ValueError("Duplicate Ensembl IDs detected in ST dataset after mapping.")
+
+    logger.info(f"First 5 gene names in ST: {adata_ingest.var_names[:5].tolist()}")
+
+    # Subset reference datasets to common genes - preserve layers!
+    logger.info(f"Original reference layers: {list(adata_ref.layers.keys())}")
+    adata_ref_subset = adata_ref[:, var_names].copy()
+
+    # Explicitly preserve counts layer if it exists
+    if "counts" in adata_ref.layers:
+        logger.info("Preserving counts layer during gene subsetting...")
+        adata_ref_subset.layers["counts"] = (
+            adata_ref[:, var_names].layers["counts"].copy()
+        )
+        logger.info("Counts layer preserved in subset!")
+    else:
+        logger.warning("No counts layer found in original reference data!")
+
+    logger.info(f"Subset reference layers: {list(adata_ref_subset.layers.keys())}")
+
+    # After subsetting both datasets to common genes, add these checks:
+    # 1. Check the sets of genes are the same
+    ref_genes = set(adata_ref_subset.var_names)
+    st_genes = set(adata_ingest.var_names)
+    same_set = ref_genes == st_genes
+    logger.info(f"Gene sets identical: {same_set}")
+
+    if not same_set:
+        missing_in_ref = st_genes - ref_genes
+        missing_in_ingest = ref_genes - st_genes
+        logger.warning(f"Genes in ST but not in reference: {len(missing_in_ref)}")
+        logger.warning(f"Genes in reference but not in ST: {len(missing_in_ingest)}")
+        raise ValueError("Datasets do not have identical gene sets. Cannot reorder!")
+
+    # 2. Check order
+    same_order = adata_ref_subset.var_names.equals(adata_ingest.var_names)
+    logger.info(f"Genes in same order: {same_order}")
+
+    # 3. If order doesn't match, reorder adata_ingest to match adata_ref
+    if not same_order:
+        logger.info("Reordering adata_ingest genes to match reference...")
+        adata_ingest = adata_ingest[:, adata_ref_subset.var_names].copy()
+        logger.info("Genes reordered successfully.")
+
+    # Confirm shapes
+    logger.info(f"Reference dataset shape: {adata_ref_subset.shape}")
+    logger.info(f"ST dataset shape: {adata_ingest.shape}")
+
+    return adata_ref_subset, adata_ingest
+
+
+def process_subset_reference_data(config, adata_ref_ingest):
+    """Preprocesses the reference scRNA-seq dataset if PCA and UMAP are missing.
+
+    Verify that a reference AnnData object has the components required for
+    sc.tl.ingest, and compute PCA/UMAP if they are missing.
+
+    Args:
+        config (SimpleNamespace or dict): Configuration object containing
+            module-specific parameters, including the module name used to
+            construct figure filenames.
+        adata_ref_ingest (anndata.AnnData): Subset of reference single-cell RNA-seq
+            dataset (e.g., HLCA) to be processed or verified.
+            The object is modified in place.
+
+    Side Effects:
+        - Writes the processed reference AnnData object to `SUBSET_HLCA_INT_SAVE`.
+        - Saves a UMAP visualization as a PNG file.
+
+    Logs:
+        - Whether preprocessing is needed.
+        - Each major preprocessing step.
+        - Path to the saved output file.
+
+    Returns:
+        adata_ref_ingest (anndata.AnnData): Processed reference AnnData object.
+    """
+    logger.info("Checking if reference scRNA-seq data needs processing...")
+
+    if not isinstance(adata_ref_ingest, anndata.AnnData):
+        raise TypeError("adata_ref_ingest must be an AnnData object.")
+
+    if adata_ref_ingest.n_vars == 0 or adata_ref_ingest.n_obs == 0:
+        raise ValueError("adata_ref_ingest is empty or malformed.")
+
+    if adata_ref_ingest.var_names.has_duplicates:
+        raise ValueError("adata_ref_ingest.var_names contains duplicates.")
+
+    # Check label column required for visualization / QC
+    if REF_CELL_LABEL_COL not in adata_ref_ingest.obs.columns:
+        raise ValueError(
+            f"Reference data is missing required label column '{REF_CELL_LABEL_COL}'. "
+            "This column is needed for downstream mapping and visualization."
+        )
+
+    # Validate config has required attributes
+    if not hasattr(config, "module_name") or not config.module_name:
+        raise ValueError("config must have a non-empty 'module_name' attribute.")
+
+    # Constants for reproducibility
+    N_COMPONENTS = 50  # Number of PCA components
+    N_NEIGHBORS = 30  # Number of neighbors for graph construction
+
+    # Check and compute PCA if missing
+    if "X_pca" in adata_ref_ingest.obsm:
+        logger.info("PCA already computed.")
+    else:
+        logger.info("Calculating PCA...")
+        sc.tl.pca(adata_ref_ingest, n_comps=N_COMPONENTS)
+
+    # Check and compute neighbors if missing
+    if "neighbors" in adata_ref_ingest.uns:
+        logger.info("Neighbors already computed.")
+    else:
+        logger.info("Calculating neighbors...")
+        sc.pp.neighbors(adata_ref_ingest, n_neighbors=N_NEIGHBORS, n_pcs=N_COMPONENTS)
+
+    # Check and compute UMAP if missing
+    if "X_umap" in adata_ref_ingest.obsm:
+        logger.info("UMAP already computed.")
+    else:
+        logger.info("Calculating UMAP...")
+        sc.tl.umap(adata_ref_ingest)
+
+    # Generate UMAP visualization
+    sc.pl.umap(
+        adata_ref_ingest,
+        color=REF_CELL_LABEL_COL,
+        title="HLCA reference subset for ingest UMAP",
+        save=f"_{config.module_name}_ingest.png",
+    )
+    logger.info(f"UMAP for {REF_CELL_LABEL_COL} saved for adata_ref_ingest")
+
+    # Save processed reference
+    adata_ref_ingest.write_h5ad(SUBSET_HLCA_INT_SAVE)
+    logger.info("Finished preprocessing")
+    logger.info(f"Processed HLCA reference saved to {SUBSET_HLCA_INT_SAVE}")
+
+    return adata_ref_ingest
+
+
+def ingest_integration(adata_ref, adata, adata_ingest):
+    """Integrates STx data with a reference scRNA-seq dataset using ingest.
+
+    This function performs label transfer from a reference single-cell dataset
+    (e.g., HLCA) to a STx dataset (e.g., Xenium).
+    The ingest approach uses Scanpys `tl.ingest` to
+    project query data into the references PCA space and transfer cell-type labels.
+
+    Args:
+        adata_ref (anndata.AnnData): Reference scRNA-seq AnnData object containing
+            precomputed embeddings (PCA or UMAP) and cell-type annotations.
+        adata (anndata.AnnData): Original STx dataset to which
+            transferred labels will be written.
+        adata_ingest (anndata.AnnData): Copy of the spatial dataset formatted for
+            ingestion, aligned by gene set with the reference.
+
+    Returns:
+        adata (anndata.AnnData): Original STx dataset with transferred labels added.
+    """
+    logger.info("Starting integration...")
+    logger.info("Integrating data using ingest...")
+
+    # Run ingest to map Xenium data onto HLCA reference
+    sc.tl.ingest(
+        adata_ingest,
+        adata_ref,
+        obs=REF_CELL_LABEL_COL,  # Annotation column to use in adata_ref.obs
+        # For core HLCA, "cell_type"
+        embedding_method="pca",  # or 'umap'
+        labeling_method="knn",  # how to transfer labels
+        neighbors_key=None,  # use default neighbors from reference
+        inplace=True,
+    )
+
+    # Rename predicted cell type column
+    adata_ingest.obs[INGEST_LABEL_COL] = adata_ingest.obs[REF_CELL_LABEL_COL]
+    del adata_ingest.obs[REF_CELL_LABEL_COL]
+
+    # Copy cell type predictions back to original adata
+    adata.obs[INGEST_LABEL_COL] = adata_ingest.obs.loc[
+        adata.obs_names, INGEST_LABEL_COL
+    ]
+    logger.info("Ingest integration complete.")
 
     return adata
 
@@ -801,8 +997,6 @@ def compare(adata, module_dir):
     )
 
     # 2. Create confusion matrix
-    from sklearn.metrics import confusion_matrix
-
     ingest_labels = adata_valid.obs[INGEST_LABEL_COL].values
     scanvi_labels = adata_valid.obs[SCANVI_LABEL_COL].values
 
@@ -973,15 +1167,18 @@ def compare(adata, module_dir):
     return metrics
 
 
-def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
+def run_integration(
+    config: IntegrateModuleConfig, io_config: IOConfig, base_config: Config
+):
     """Integrate scRNAseq and STx data using scANVI and ingest.
 
-    adata_ref_subset and adata_ingest are used for ingest integration.
+    adata_ref_ingest and adata_ingest are used for ingest integration.
     adata_ref and data are used for scANVI integration.
 
     Args:
         config (IntegrateModuleConfig): Integration module configuration object.
         io_config (IOConfig): IO configuration object.
+        base_config (Config): Base configuration object.
 
     Returns:
         None
@@ -992,7 +1189,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     module_dir = io_config.output_dir / config.module_name
 
     # Paths to input data
-    hcla_path = io_config.hlca_path
+    ref_path = io_config.ref_path
     gene_id_dict_path = io_config.gene_id_dict_path
 
     # Create output directories if they do not exist
@@ -1009,40 +1206,42 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
     logger.info("Starting integration of scRNAseq and spatial transcriptomics data...")
 
     logger.info("Loading scRNAseq data from HLCA ...")
-    adata_ref = sc.read_h5ad(hcla_path)
+    adata_ref = sc.read_h5ad(ref_path)
 
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
 
-    logger.info("Processing reference data...")
-    process_reference_data(config, io_config, adata_ref)
-
-    # 1. INTEGRATION USING INGEST
-    logger.info("Formatting data for ingest integration...")
-    adata_ref_subset, adata_ingest = prepare_integrated_datasets(
-        gene_id_dict_path, adata_ref, adata
+    logger.info("Selecting highly variable genes on reference dataset...")
+    sc.pp.highly_variable_genes(
+        adata_ref,
+        n_top_genes=5000,
+        layer="counts",
+        flavor="seurat_v3",
+        subset=True,  # Subset to highly variable genes for integration
     )
+    logger.info(f"Number of highly variable genes selected: {adata_ref.n_vars}")
 
-    logger.info("Processing subset of reference data for ingest...")
-    adata_ref_subset = process_subset_reference_data(
-        config, io_config, adata_ref_subset
-    )
+    logger.info("Sub sample cells from reference dataset for faster integration...")
+    if adata_ref.n_obs > 300000:  # Only subsample very large references
+        logger.info(f"Subsampling reference from {adata_ref.n_obs} to ~200k cells...")
+        adata_ref = smart_subsample_reference(
+            base_config=base_config,
+            adata_ref=adata_ref,
+            target_cells=200000,
+            stratify_col=REF_CELL_LABEL_COL,
+            min_per_type=100,
+            sampling_strategy="proportional",
+            rare_cell_boost=2.0,
+        )
 
-    logger.info("Starting integration methods...")
+    # 1. INTEGRATION using scVI and scANVI
+    logger.info("Verify adata compatibility for scVI/scANVI integration...")
+    verify_counts_layer(adata_ref, "reference")
+    verify_counts_layer(adata, "spatial")
 
-    # 1. Perform ingest integration
-    logger.info("Performing integration using: sc.tl.ingest...")
-    ingest_integration(adata_ref_subset, adata, adata_ingest)
-
-    # Delete adata_ref_subset and adata_ingest to free memory
-    logger.info("Delete adata_ref_subset and adata_ingest to free memory...")
-    del adata_ref_subset
-    del adata_ingest
-
-    # 2. INTEGRATION using scVI and scANVI
     logger.info("Performing integration using: scANVI...")
     logger.info(
-        "Step 1. Harmoize scRNAseq reference dataset with STx dataset scVI model..."
+        "Step 1. Harmonize scRNAseq reference dataset with STx dataset scVI model..."
     )
     adata_combined, trained_scvi_model = scVI_integration(
         config, adata_ref, adata, module_dir
@@ -1056,7 +1255,7 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
         config, adata_combined, trained_scvi_model, module_dir
     )
 
-    # 3. Extract scANVI predictions and copy to original adata
+    # Extract scANVI predictions and copy to original adata
     logger.info("Extracting predicted labels from scANVI...")
     if adata_combined is not None and trained_scanvi_model is not None:
         adata = extract_predictions_and_visualize(
@@ -1064,6 +1263,27 @@ def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
         )
     else:
         logger.error("scANVI integration failed. Skipping scANVI predictions.")
+        logger.warning("Continuing with ingest integration only...")
+
+    # 2. INTEGRATION USING INGEST
+    logger.info("Formatting data for ingest integration...")
+    adata_ref_ingest, adata_ingest = prepare_ingest_datasets(
+        gene_id_dict_path, adata_ref, adata
+    )
+
+    logger.info("Processing subset of reference data for ingest...")
+    adata_ref_ingest = process_subset_reference_data(config, adata_ref_ingest)
+
+    logger.info("Starting integration methods...")
+
+    # Perform ingest integration
+    logger.info("Performing integration using: sc.tl.ingest...")
+    ingest_integration(adata_ref_ingest, adata, adata_ingest)
+
+    # Delete adata_ref_ingest and adata_ingest to free memory
+    logger.info("Delete adata_ref_ingest and adata_ingest to free memory...")
+    del adata_ref_ingest
+    del adata_ingest
 
     logger.info("Visualize data following label transfer...")
     visualize_integration(config, cmap, adata)

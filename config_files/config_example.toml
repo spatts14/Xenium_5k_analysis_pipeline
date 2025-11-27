@@ -33,7 +33,7 @@ area_path = "selected_cells_stats.csv"
 logging_dir = "logs"
 # Subdirectory (inside output_dir) where log files will be saved.
 
-hlca_path = "/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/hlca_full_processed.h5ad"
+ref_path = "/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/hlca_full_processed.h5ad"
 # Full path to the HLCA reference dataset used for annotation.
 
 gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/data/gene_id_dict.csv"

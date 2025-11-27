@@ -7,7 +7,41 @@ from pathlib import Path
 import numpy as np
 import scanpy as sc
 
-log_file = "hlca_analysis.log"
+# Global variables
+REF_DATASET = "hlca_full_ref"
+
+# Set directories and file paths
+output_dir = Path("/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/")
+adata_path = output_dir / f"unprocessed_{REF_DATASET}.h5ad"
+filtered_path = output_dir / f"filtered_{REF_DATASET}.h5ad"
+processed_path = output_dir / f"processed_{REF_DATASET}.h5ad"
+
+
+# Define a functions
+def verify_counts_layer(adata, context=""):
+    """Verify that counts layer exists and contains valid count data."""
+    if "counts" not in adata.layers:
+        logging.error(f"CRITICAL: Counts layer missing {context}!")
+        raise ValueError(f"Counts layer was lost {context}")
+
+    logging.info(f"✓ Counts layer verified: shape {adata.layers['counts'].shape}")
+
+    # Verify it contains actual count data
+    counts_sample = adata.layers["counts"][:100, :100]
+    counts_arr = counts_sample.A if hasattr(counts_sample, "A") else counts_sample
+    is_integer = np.allclose(counts_arr, np.round(counts_arr))
+    has_counts = np.median(counts_arr.sum(axis=1)) > 100
+
+    if is_integer and has_counts:
+        logging.info("✓ Counts layer contains valid count data")
+        return True
+    else:
+        logging.warning("⚠ Counts layer may not contain valid count data")
+        return False
+
+
+# Define logging configuration
+log_file = output_dir / f"{REF_DATASET}_analysis.log"
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -17,16 +51,12 @@ logging.basicConfig(
     ],
 )
 
-logging.info("Starting HLCA plotting script...")
+logging.info("Starting reference plotting script...")
+logging.info(f"Reference dataset: {REF_DATASET}")
 
-# Set directories and file paths
-output_dir = Path("/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/")
-adata_path = output_dir / "hlca_full_unprocessed.h5ad"
-filtered_path = output_dir / "hlca_full_filtered.h5ad"
-processed_path = output_dir / "hlca_full_processed.h5ad"
 
 # Set figure directory for this module
-sc.settings.figdir = output_dir / "figs" / "hlca_full_filt_process"
+sc.settings.figdir = output_dir / "figs" / REF_DATASET
 sc.settings.figdir.mkdir(parents=True, exist_ok=True)
 
 # Check if adata file exists
@@ -59,6 +89,7 @@ combined_mask = disease_mask & tissue_mask
 logging.info(f"Cells passing filters: {combined_mask.sum()} / {len(combined_mask)}")
 
 # Load only filtered subset into memory
+logging.info("Loading filtered subset into memory...")
 adata = adata[combined_mask, :].to_memory()
 logging.info(f"Filtered shape: {adata.shape}")
 
@@ -75,28 +106,38 @@ adata.write_h5ad(filtered_path)
 
 logging.info("Process filtered dataset...")
 
+# Store raw counts BEFORE any filtering
+logging.info("Checking for counts layer before filtering...")
+if "counts" not in adata.layers:
+    logging.info("Counts layer not found - attempting to create from adata.raw...")
+    if adata.raw is not None:
+        logging.info("✓ adata.raw found - creating counts layer from raw data")
+        adata.layers["counts"] = adata.raw.X.copy()
+        logging.info("✓ Successfully created counts layer from adata.raw")
+    else:
+        logging.error("✗ No adata.raw found - cannot create counts layer")
+        logging.error("Please ensure your data has either:")
+        logging.error("  1. An existing 'counts' layer with raw count data, or")
+        logging.error("  2. An adata.raw attribute with the original count matrix")
+        raise ValueError(
+            "Cannot create counts layer: no 'counts' layer found and "
+            "no adata.raw available"
+        )
+else:
+    logging.info("✓ Counts layer found - using existing counts layer")
+
+# Verify the counts layer before filtering
+verify_counts_layer(adata, "before filtering")
+
 # Basic filtering
 logging.info("Filtering cells and genes...")
 sc.pp.filter_cells(adata, min_genes=200)
 sc.pp.filter_genes(adata, min_cells=10)
 logging.info(f"Shape after filtering: {adata.shape}")
 
-# Store raw counts BEFORE normalization
-if "counts" not in adata.layers:
-    if adata.raw is not None:
-        adata.layers["counts"] = adata.raw[:, adata.var_names].X.copy()
-        logging.info("Stored raw counts in adata.layers['counts'].")
-    else:
-        # If no raw, store current X if it's counts
-        totals = adata.X.sum(axis=1)
-        totals = totals.A1 if hasattr(totals, "A1") else np.array(totals).ravel()
-        if np.median(totals) > 1e3:  # Looks like raw counts
-            adata.layers["counts"] = adata.X.copy()
-            logging.info("Stored current X as raw counts.")
-        else:
-            logging.warning("No raw counts available!")
-else:
-    logging.info("Raw counts layer already exists.")
+# Verify counts layer survived filtering
+logging.info("Verifying counts layer after filtering...")
+verify_counts_layer(adata, "after filtering")
 
 # Check if data is already normalized
 logging.info("Checking normalization...")
@@ -122,22 +163,37 @@ else:
 
 # Dimensionality reduction
 logging.info("Calculating PCA and UMAP...")
-sc.tl.pca(adata, n_comps=75, svd_solver="arpack")
-sc.pp.neighbors(adata, n_neighbors=30, n_pcs=75)
+sc.tl.pca(adata, n_comps=30, svd_solver="arpack")
+sc.pp.neighbors(adata, n_neighbors=30, n_pcs=30)
 sc.tl.umap(adata)
 
 # Save processed data
+logging.info("Verifying counts layer before saving...")
+verify_counts_layer(adata, "before saving")
+
 adata.write_h5ad(processed_path)
 logging.info(f"Saved processed adata to {processed_path}...")
 
+# Verify the saved file has counts layer
+logging.info("Verifying saved file has counts layer...")
+adata_test = sc.read_h5ad(processed_path)
+if "counts" in adata_test.layers:
+    logging.info("✓ Counts layer successfully saved and verified!")
+    logging.info(f"✓ Saved counts layer shape: {adata_test.layers['counts'].shape}")
+else:
+    logging.error("✗ Counts layer lost during save/load!")
+    raise ValueError("Failed to save counts layer properly")
+del adata_test  # Clean up memory
+
 # Plot UMAP
+logging.info("Plotting UMAPs...")
 obs_lists = ["disease", "tissue_level_2", "cell_type"]
 for obs in obs_lists:
     sc.pl.umap(
         adata,
         color=obs,
-        title=f"HLCA full reference data UMAP colored by {obs}",
-        save=f"_hlca_full_ref_{obs}.png",
+        title=f"{REF_DATASET} filtered and processed: UMAP colored by {obs}",
+        save=f"umap_{REF_DATASET}_{obs}.png",
     )
 
 logging.info("Filtering and processing script completed.")

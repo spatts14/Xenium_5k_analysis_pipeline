@@ -48,10 +48,10 @@ def main(config: Config):
         logger.info("Running Module 2 - Dimension Reduction")
         run_dimension_reduction(config.modules.dimension_reduction, config.io)
 
-    if config.modules.integrate:
-        from recode_st.integrate import run_integration
+    if config.modules.integrate_ingest:
+        from recode_st.integrate_ingest import run_integration
 
-        logger.info("Running Module 3a - Integration")
+        logger.info("Running Module 3a - Integration: Ingest")
         run_integration(config.modules.integrate, config.io)
 
     if config.modules.annotate:

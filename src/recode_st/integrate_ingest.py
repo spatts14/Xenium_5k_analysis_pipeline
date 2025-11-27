@@ -21,6 +21,13 @@ logger = getLogger(__name__)
 INGEST_LABEL_COL = "ingest_pred_cell_type"
 REF_CELL_LABEL_COL = "cell_type"  # Column in reference data with cell type labels
 BATCH_COL = "dataset_origin"
+ANNOTATION_COLS = [  # Define the annotation columns to transfer
+    "transf_ann_level_1_label",
+    "transf_ann_level_2_label",
+    "transf_ann_level_3_label",
+    "transf_ann_level_4_label",
+    "transf_ann_level_5_label",
+]
 HLCA_INT_SAVE = Path(
     "/rds/general/user/sep22/ephemeral/recode_hlca_full_processed.h5ad"
 )
@@ -351,6 +358,107 @@ def ingest_integration(adata_ref, adata, adata_ingest):
     return adata
 
 
+def transfer_hierarchical_annotations(
+    adata_ref, adata, ANNOTATION_COLS=ANNOTATION_COLS
+):
+    """Transfer hierarchical annotation levels from reference to spatial data.
+
+    This function creates a mapping from cell types to their hierarchical annotations
+    and transfers them to the spatial dataset based on the predicted cell types.
+
+    Args:
+        adata_ref (anndata.AnnData): Reference dataset containing the hierarchical
+            annotation columns.
+        adata (anndata.AnnData): Spatial dataset with predicted cell types that will
+            receive the transferred annotations.
+        ANNOTATION_COLS (list of str): List of hierarchical annotation column names
+            in the reference dataset to be transferred.
+
+    Returns:
+        adata (anndata.AnnData): Spatial dataset with added hierarchical annotations.
+    """
+    logger.info(
+        "Transferring hierarchical annotations from reference to spatial data..."
+    )
+
+    # Check which columns exist in reference data
+    available_cols = [col for col in ANNOTATION_COLS if col in adata_ref.obs.columns]
+    missing_cols = [col for col in ANNOTATION_COLS if col not in adata_ref.obs.columns]
+
+    if missing_cols:
+        logger.warning(f"Missing annotation columns in reference: {missing_cols}")
+
+    if not available_cols:
+        logger.error("No hierarchical annotation columns found in reference data!")
+        return adata
+
+    logger.info(f"Found annotation columns: {available_cols}")
+
+    # Check if spatial data has the predicted cell type column
+    if INGEST_LABEL_COL not in adata.obs.columns:
+        logger.error(
+            f"Spatial data missing {INGEST_LABEL_COL} column! Run integration first."
+        )
+        return adata
+
+    # Create mapping from cell type to hierarchical annotations
+    # Group by cell type and take the most common annotation for each level
+    logger.info("Creating cell type to annotation mappings...")
+
+    mappings = {}
+    for col in available_cols:
+        # For each cell type, find the most common annotation at each level
+        cell_type_mapping = {}
+
+        for cell_type in adata_ref.obs[REF_CELL_LABEL_COL].unique():
+            mask = adata_ref.obs[REF_CELL_LABEL_COL] == cell_type
+            annotations = adata_ref.obs.loc[mask, col]
+
+            # Get the most common annotation for this cell type
+            if len(annotations) > 0:
+                most_common = annotations.mode()
+                if len(most_common) > 0:
+                    cell_type_mapping[cell_type] = most_common.iloc[0]
+                else:
+                    cell_type_mapping[cell_type] = "Unknown"
+            else:
+                cell_type_mapping[cell_type] = "Unknown"
+
+        mappings[col] = cell_type_mapping
+        logger.info(f"Created mapping for {col}: {len(cell_type_mapping)} cell types")
+
+    # Apply mappings to spatial data
+    logger.info("Applying mappings to spatial data...")
+
+    for col in available_cols:
+        # Map predicted cell types to hierarchical annotations
+        adata.obs[col] = adata.obs[INGEST_LABEL_COL].map(mappings[col])
+
+        # Fill any unmapped values with "Unknown"
+        adata.obs[col] = adata.obs[col].fillna("Unknown")
+
+        # Convert to categorical for efficiency
+        adata.obs[col] = adata.obs[col].astype("category")
+
+        # Log statistics
+        n_mapped = (adata.obs[col] != "Unknown").sum()
+        n_total = len(adata.obs[col])
+        logger.info(
+            f"Transferred {col}: {n_mapped}/{n_total} cells mapped successfully"
+        )
+
+    # Log final results
+    logger.info("Hierarchical annotation transfer completed!")
+    logger.info(f"Added columns to spatial data: {available_cols}")
+
+    # Show example of the mapping
+    if len(available_cols) > 0:
+        sample_data = adata.obs[[INGEST_LABEL_COL, *available_cols]].head(3)
+        logger.info(f"Sample annotations:\n{sample_data.to_string()}")
+
+    return adata
+
+
 def visualize_integration(config, cmap, adata):
     """Visualize integration results using UMAPs.
 
@@ -386,6 +494,20 @@ def visualize_integration(config, cmap, adata):
             show=False,  # change to True if you want inline display
             cmap=cmap,
             save=f"_{config.module_name}_{method}.png",
+        )
+
+    for obs in ANNOTATION_COLS:
+        if obs not in adata.obs.columns:
+            print(f"Missing column: {obs}")
+            continue
+
+        sc.pl.umap(
+            adata,
+            color=obs,
+            title=f"HLCA integration: {obs}",
+            show=False,  # change to True if you want inline display
+            cmap=cmap,
+            save=f"_{config.module_name}_{obs}.png",
         )
 
     logger.info(f"UMAP plots saved to {sc.settings.figdir}")
@@ -451,6 +573,10 @@ def run_integration(config: IntegrateIngestModuleConfig, io_config: IOConfig):
     # 1. Perform ingest integration
     logger.info("Performing integration using: sc.tl.ingest...")
     ingest_integration(adata_ref_subset, adata, adata_ingest)
+
+    # 2. Transfer hierarchical annotations
+    logger.info("Transferring hierarchical annotations...")
+    transfer_hierarchical_annotations(adata_ref, adata)
 
     # Delete adata_ref_subset and adata_ingest to free memory
     logger.info("Delete adata_ref_subset and adata_ingest to free memory...")

@@ -83,20 +83,24 @@ def visualize_drug2cell(config, adata, cell_type_top, cmap):
             return
 
     logger.info("Visualize drug score in UMAP")
-    sc.pl.umap(adata.uns["drug2cell"], color=drug_list, color_map=cmap)
-
-    logger.info("Visualize on tissue")
-    sq.pl.spatial_scatter(
+    sc.pl.umap(
         adata.uns["drug2cell"],
-        library_id="spatial",
-        shape=None,
         color=drug_list,
-        wspace=0.4,
-        size=2,
-        figsize=(6, 6),
-        cmap=cmap,
-        save=f"_{config.module_name}_{cell_type_top}_scatter.png",
+        color_map=cmap,
+        save=f"_{config.module_name}_drug2cell_umap.png",
     )
+    logger.info("Visualize drug score in spatial scatter plots")
+    for roi in adata.obs["ROI"].unique():
+        subset = adata[adata.obs["ROI"] == roi]
+        sq.pl.spatial_scatter(
+            subset.uns["drug2cell"],
+            library_id="spatial",
+            shape=None,
+            color=drug_list,
+            wspace=0.4,
+            cmap=cmap,
+            save=f"_{config.module_name}_{cell_type_top}_scatter.png",
+        )
 
     logger.info("Calculating differential expression...")
     sc.tl.rank_genes_groups(

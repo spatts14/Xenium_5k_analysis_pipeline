@@ -103,30 +103,6 @@ def visualize_drug2cell(config, adata, cell_type_top, cmap):
             save=f"_{config.module_name}_{cell_type_top}_scatter.png",
         )
 
-    logger.info("Calculating differential expression...")
-    sc.tl.rank_genes_groups(
-        adata.uns["drug2cell"], method="wilcoxon", groupby=cell_type_top
-    )
-    sc.pl.rank_genes_groups_dotplot(
-        adata.uns["drug2cell"],
-        swap_axes=True,
-        dendrogram=False,
-        n_genes=3,
-        cmap=cmap,
-        save=f"_{config.module_name}_{cell_type_top}_dotplot.png",
-    )
-
-    logger.info("Visualize only respiratory drugs")
-    plot_args = d2c.util.prepare_plot_args(adata.uns["drug2cell"], categories=["R"])
-    sc.pl.dotplot(
-        adata.uns["drug2cell"],
-        groupby=cell_type_top,
-        swap_axes=True,
-        **plot_args,
-        cmap=cmap,
-        save=f"_{config.module_name}_{cell_type_top}_respiratory_drugs_by.png",
-    )
-
 
 def celltype_level(
     config,
@@ -230,6 +206,30 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
         )
         logger.info("Proceeding with cell_type_level_all only...")
     visualize_drug2cell(config, adata=adata, cell_type_top=CELL_TYPE_TOP, cmap=cmap)
+
+    logger.info("Calculating differential expression...")
+    sc.tl.rank_genes_groups(
+        adata.uns["drug2cell"], method="wilcoxon", groupby=CELL_TYPE_TOP
+    )
+    sc.pl.rank_genes_groups_dotplot(
+        adata.uns["drug2cell"],
+        swap_axes=True,
+        dendrogram=False,
+        n_genes=3,
+        cmap=cmap,
+        save=f"_{config.module_name}_{CELL_TYPE_TOP}_dotplot.png",
+    )
+
+    logger.info("Visualize only respiratory drugs")
+    plot_args = d2c.util.prepare_plot_args(adata.uns["drug2cell"], categories=["R"])
+    sc.pl.dotplot(
+        adata.uns["drug2cell"],
+        groupby=CELL_TYPE_TOP,
+        swap_axes=True,
+        **plot_args,
+        cmap=cmap,
+        save=f"_{config.module_name}_{CELL_TYPE_TOP}_respiratory_drugs_by.png",
+    )
 
     # Only run cell type specific analysis if the column exists
     if CELL_TYPE_LEVEL in adata.obs.columns:

@@ -10,7 +10,7 @@ import pandas as pd
 # import torch
 import scanpy as sc
 
-from recode_st.config import IntegrateModuleConfig, IOConfig
+from recode_st.config import IntegrateIngestModuleConfig, IOConfig
 from recode_st.helper_function import configure_scanpy_figures
 
 warnings.filterwarnings("ignore")
@@ -391,7 +391,7 @@ def visualize_integration(config, cmap, adata):
     logger.info(f"UMAP plots saved to {sc.settings.figdir}")
 
 
-def run_integration(config: IntegrateModuleConfig, io_config: IOConfig):
+def run_integration(config: IntegrateIngestModuleConfig, io_config: IOConfig):
     """Integrate scRNAseq and STx data using scANVI and ingest.
 
     adata_ref_subset and adata_ingest are used for ingest integration.

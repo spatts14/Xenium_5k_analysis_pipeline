@@ -5,6 +5,7 @@ from logging import getLogger
 
 import drug2cell as d2c
 import scanpy as sc
+import seaborn as sns
 import squidpy as sq
 
 from recode_st.config import Drug2CellModuleConfig, IOConfig
@@ -118,7 +119,6 @@ def visualize_drug2cell(config, adata, cell_type_top: str = CELL_TYPE_TOP, cmap=
             shape=None,
             color=drug_list,
             wspace=0.4,
-            vmax="p99",  # avoid outliers
             cmap=cmap,
             save=f"_{config.module_name}_{roi}_scatter.png",
         )
@@ -235,7 +235,7 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
     # Get shared colormap from global visualization settings
     # This ensures consistency across all modules
     viz_assets = configure_scanpy_figures(str(io_config.output_dir))
-    cmap = viz_assets["cmap"]
+    cmap = sns.color_palette("Spectral", as_cmap=True)
 
     logger.info("Starting Drug2Cell module...")
 

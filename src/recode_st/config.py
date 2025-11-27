@@ -96,7 +96,7 @@ class SpatialStatisticsModuleConfig(BaseModuleConfig):
 class Drug2CellModuleConfig(BaseModuleConfig):
     """Configuration for Drug2Cell."""
 
-    drug_list: list[str, ...]
+    drug_list: list[str]
     """List of drugs to visualize on UMAP and spatially in tissue"""
 
 

@@ -20,3 +20,4 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 
 [modules.drug2cell]
 module_name = "drug2cell"
+drug_list = ["PIRFENIDONE", "NINTEDANIB"]

@@ -68,8 +68,21 @@ def visualize_drug2cell(config, adata, cell_type_top, cmap):
     Returns:
         None
     """
-    logger.info("Visualize drug score in UMAP")
+    logger.info("Checking drugs in drug_list against calculated drugs...")
     drug_list = config.drug_list
+    available_drugs = adata.uns["drug2cell"].var_names.tolist()
+    missing_drugs = [drug for drug in drug_list if drug not in available_drugs]
+    if missing_drugs:
+        logger.warning(
+            f"The following drugs from the config are not found in the "
+            f"calculated drug2cell scores: {missing_drugs}"
+        )
+        drug_list = [drug for drug in drug_list if drug in available_drugs]
+        if not drug_list:
+            logger.error("No valid drugs found for visualization. Skipping.")
+            return
+
+    logger.info("Visualize drug score in UMAP")
     sc.pl.umap(adata.uns["drug2cell"], color=drug_list, color_map=cmap)
 
     logger.info("Visualize on tissue")

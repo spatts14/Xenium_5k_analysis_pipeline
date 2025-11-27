@@ -25,34 +25,51 @@ def drug2cell_calculation(adata, module_dir):
 
     Args:
         adata (anndata.AnnData): Annotated data object
-        module_dir (str): Directory to save module outputs
+        module_dir (Path): Directory to save module outputs
 
     Returns:
-        adata (anndata.AnnData): adata with drug2cell scores added
+        anndata.AnnData or None: adata with drug2cell scores added, or None if failed
     """
     # Computes the mean of the expression of each gene group in each cell.
     # By default, the function will load a set of ChEMBL drugs and their targets
-    try:
-        d2c.score(adata, use_raw=False)
-    except Exception as e:
-        logger.error(f"Failed to calculate drug2cell scores: {e}")
-        return
+    drug2cell_path = module_dir / "adata_drug2cell.h5ad"
+
+    if drug2cell_path.exists():
+        logger.info("Loading existing drug2cell results...")
+        adata = sc.read_h5ad(module_dir / "adata_drug2cell.h5ad")
+        return adata
+    else:
+        logger.info("Calculating drug2cell scores...")
+        try:
+            d2c.score(adata, use_raw=False)
+        except Exception as e:
+            logger.error(f"Failed to calculate drug2cell scores: {e}")
+            return None
 
     # Validate that drug2cell results were generated
     if "drug2cell" not in adata.uns:
         logger.error(
             "drug2cell scores not found in adata.uns. Drug scoring may have failed."
         )
-        return
+        return None
 
     logger.info(
         f"Successfully calculated drug scores for "
         f"{adata.uns['drug2cell'].shape[1]} drugs"
     )
 
-    logger.info("Save csv of all drugs identified in dataset")
-    drugs_present = adata.uns["drug2cell"].var
-    drugs_present.to_csv(module_dir / "drug2cell_drugs.csv")
+    # Save results
+    try:
+        logger.info("Saving drug list CSV...")
+        drugs_present = adata.uns["drug2cell"].var
+        drugs_present.to_csv(module_dir / "drug2cell_drugs.csv")
+
+        logger.info("Saving adata with drug2cell scores...")
+        adata.write_h5ad(drug2cell_path)
+        logger.info(f"Results saved to {drug2cell_path}")
+    except Exception as e:
+        logger.warning(f"Failed to save results: {e}. Continuing anyway...")
+
     return adata
 
 
@@ -195,7 +212,10 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
     adata = sc.read_h5ad(input_file)
 
     logger.info("Calculating drug score every cell in adata using ChEMBL database")
-    drug2cell_calculation(adata, module_dir)
+    adata = drug2cell_calculation(adata, module_dir)
+    if adata is None:
+        logger.error("Failed to calculate drug2cell scores. Aborting module.")
+        return
 
     logger.info("Visualize drug2cell...")
     # Validate required columns exist

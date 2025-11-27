@@ -14,16 +14,58 @@ warnings.filterwarnings("ignore")
 
 logger = getLogger(__name__)
 
+# Variables
+CELL_TYPE_TOP = "cell_type"
+CELL_TYPE_LEVEL = "transf_ann_level_2_label"
+KEY_CELL_TYPE = "myeloid cell"
 
-def visualize_drug2cell(config, adata, CELL_TYPE_LEVEL_ALL, cmap):
+
+def drug2cell_calculation(adata, module_dir):
+    """Calculate drug2cell scores.
+
+    Args:
+        adata (anndata.AnnData): Annotated data object
+        module_dir (str): Directory to save module outputs
+
+    Returns:
+        adata (anndata.AnnData): adata with drug2cell scores added
+    """
+    # Computes the mean of the expression of each gene group in each cell.
+    # By default, the function will load a set of ChEMBL drugs and their targets
+    try:
+        d2c.score(adata, use_raw=False)
+    except Exception as e:
+        logger.error(f"Failed to calculate drug2cell scores: {e}")
+        return
+
+    # Validate that drug2cell results were generated
+    if "drug2cell" not in adata.uns:
+        logger.error(
+            "drug2cell scores not found in adata.uns. Drug scoring may have failed."
+        )
+        return
+
+    logger.info(
+        f"Successfully calculated drug scores for "
+        f"{adata.uns['drug2cell'].shape[1]} drugs"
+    )
+
+    logger.info("Save csv of all drugs identified in dataset")
+    drugs_present = adata.uns["drug2cell"].var
+    drugs_present.to_csv(module_dir / "drug2cell_drugs.csv")
+    return adata
+
+
+def visualize_drug2cell(config, adata, cell_type_top, cmap):
     """Visualize drug2cell scores.
 
     Args:
-        config (_type_): _description_
-        adata (_type_): _description_
-        CELL_TYPE_LEVEL_ALL (_type_): _description_
-        cmap (_type_): _description_
-    Return:
+        config (Drug2CellModuleConfig): Configuration object
+        adata (anndata.AnnData): Annotated data object with drug2cell scores
+        cell_type_top (str): Column name for cell type annotations
+        cmap: Color map for visualization
+
+    Returns:
         None
     """
     logger.info("Visualize drug score in UMAP")
@@ -40,12 +82,12 @@ def visualize_drug2cell(config, adata, CELL_TYPE_LEVEL_ALL, cmap):
         size=2,
         figsize=(6, 6),
         cmap=cmap,
-        save=f"_{config.module_name}_{CELL_TYPE_LEVEL_ALL}_scatter.png",
+        save=f"_{config.module_name}_{cell_type_top}_scatter.png",
     )
 
     logger.info("Calculating differential expression...")
     sc.tl.rank_genes_groups(
-        adata.uns["drug2cell"], method="wilcoxon", groupby=CELL_TYPE_LEVEL_ALL
+        adata.uns["drug2cell"], method="wilcoxon", groupby=cell_type_top
     )
     sc.pl.rank_genes_groups_dotplot(
         adata.uns["drug2cell"],
@@ -53,56 +95,66 @@ def visualize_drug2cell(config, adata, CELL_TYPE_LEVEL_ALL, cmap):
         dendrogram=False,
         n_genes=3,
         cmap=cmap,
-        save=f"_{config.module_name}_{CELL_TYPE_LEVEL_ALL}_dotplot.png",
+        save=f"_{config.module_name}_{cell_type_top}_dotplot.png",
     )
 
     logger.info("Visualize only respiratory drugs")
     plot_args = d2c.util.prepare_plot_args(adata.uns["drug2cell"], categories=["R"])
     sc.pl.dotplot(
         adata.uns["drug2cell"],
-        groupby=CELL_TYPE_LEVEL_ALL,
+        groupby=cell_type_top,
         swap_axes=True,
         **plot_args,
         cmap=cmap,
-        save=f"_{config.module_name}_{CELL_TYPE_LEVEL_ALL}_respiratory_drugs_by.png",
+        save=f"_{config.module_name}_{cell_type_top}_respiratory_drugs_by.png",
     )
 
 
-def celltype_level(config, adata, CELL_TYPE, CELL_TYPE_LEVEL, cmap):
+def celltype_level(config, adata, cell_type, cell_type_level, cmap):
     """Calculate drug2cell for specified cell type for set cell type level.
 
     Args:
-        config: Configuration
-        adata (_type_): _description_
-        CELL_TYPE (str): Cell type to subset on
-        CELL_TYPE_LEVEL (str): Cell type level or resolution of interest
-        cmap (_type_): Color map for visualization.
+        config: Configuration object
+        adata (anndata.AnnData): Annotated data object
+        cell_type (str): Cell type to subset on
+        cell_type_level (str): Cell type level or resolution of interest
+        cmap: Color map for visualization
 
-    Return:
+    Returns:
         None
     """
-    logger.info(f"Subsetting on {CELL_TYPE} in {CELL_TYPE_LEVEL}")
-    subset = adata[adata.obs[CELL_TYPE_LEVEL == CELL_TYPE]]
+    logger.info(f"Subsetting on {cell_type} in {cell_type_level}")
+    # Fix critical bug: was using assignment (=) instead of comparison (==)
+    if cell_type_level not in adata.obs.columns:
+        logger.error(f"Column '{cell_type_level}' not found in adata.obs")
+        return
 
-    logger.info(f"Visualizing on {CELL_TYPE} in {CELL_TYPE_LEVEL}")
-    visualize_drug2cell(config, adata=subset, CLUSTER_TYPE=CELL_TYPE, cmap=cmap)
+    subset = adata[adata.obs[cell_type_level] == cell_type]
+
+    if len(subset) == 0:
+        logger.warning(
+            f"No cells found for {cell_type} in {cell_type_level}. "
+            "Skipping visualization."
+        )
+        return
+
+    logger.info(f"Visualizing on {cell_type} in {cell_type_level}")
+    # Fix parameter name mismatch: CLUSTER_TYPE should be CELL_TYPE_LEVEL_ALL
+    visualize_drug2cell(
+        config, adata=subset, CELL_TYPE_LEVEL_ALL=cell_type_level, cmap=cmap
+    )
 
 
 def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
     """Calculate drug score using drug2cell.
 
     Args:
-        config (Drug2CellModuleConfig): _description_
-        io_config (IOConfig): _description_
+        config (Drug2CellModuleConfig): Drug2Cell module configuration
+        io_config (IOConfig): IO configuration object
 
     Returns:
         None
     """
-    # Variables
-    CELL_TYPE_LEVEL_ALL = "cell_type"
-    CELL_TYPE_LEVEL = "transf_ann_level_2_label"
-    CELL_TYPE = "myeloid cell"
-
     # Name of the column to store label transfer results in adata.obs
     module_dir = io_config.output_dir / config.module_name
 
@@ -120,21 +172,36 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
     logger.info("Starting Drug2Cell module...")
 
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "drug2cell" / "adata.h5ad")
+    # Fix path - should load from integrate_ingest module output
+    input_file = io_config.output_dir / "3_integrate_ingest" / "adata.h5ad"
+    if not input_file.exists():
+        logger.error(f"Input file not found: {input_file}")
+        logger.error("Please run the integrate_ingest module first.")
+        return
+
+    adata = sc.read_h5ad(input_file)
 
     logger.info("Calculating drug score every cell in adata using ChEMBL database")
-    # Computes the mean of the expression of each gene group in each cell.
-    # By default, the function will load a set of ChEMBL drugs and their targets
-    d2c.score(adata, use_raw=False)
-
-    logger.info("Save csv of all drugs identified in dataset")
-    drugs_present = adata.uns["drug2cell"].var
-    drugs_present.to_csv(module_dir / "drug2cell_drugs.csv")
+    drug2cell_calculation(adata, module_dir)
 
     logger.info("Visualize drug2cell...")
-    visualize_drug2cell(config, adata, CELL_TYPE_LEVEL_ALL, cmap=cmap)
+    # Validate required columns exist
+    if CELL_TYPE_LEVEL not in adata.obs.columns:
+        logger.warning(
+            f"Column '{CELL_TYPE_LEVEL}' not found in adata.obs. "
+            f"Available columns: {list(adata.obs.columns)}"
+        )
+        logger.info("Proceeding with cell_type_level_all only...")
+    visualize_drug2cell(config, adata, CELL_TYPE_TOP, cmap=cmap)
 
-    logger.info(f"Examine drug score in {CELL_TYPE} in {CELL_TYPE_LEVEL}")
-    celltype_level(config, adata, CELL_TYPE, CELL_TYPE_LEVEL, cmap=cmap)
+    # Only run cell type specific analysis if the column exists
+    if CELL_TYPE_LEVEL in adata.obs.columns:
+        logger.info(f"Examine drug score in {KEY_CELL_TYPE} in {CELL_TYPE_LEVEL}")
+        celltype_level(config, adata, KEY_CELL_TYPE, CELL_TYPE_LEVEL, cmap=cmap)
+    else:
+        logger.info(
+            f"Skipping cell type specific analysis - "
+            f"column '{CELL_TYPE_LEVEL}' not available"
+        )
 
     logger.info("Drug2Cell module finished.")

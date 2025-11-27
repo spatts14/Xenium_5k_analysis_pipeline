@@ -153,7 +153,7 @@ def process_reference_data(config, io_config, adata_ref):
             module-specific parameters, including the module name used to
             construct figure filenames.
         io_config (SimpleNamespace or dict): I/O configuration object with paths
-            to input and output data. Must include ``hlca_path`` to save the
+            to input and output data. Must include ``ref_path`` to save the
             processed reference dataset.
         adata_ref (anndata.AnnData): Reference single-cell RNA-seq dataset (e.g.,
             HLCA) to be processed or verified. The object is modified in place.
@@ -258,7 +258,7 @@ def process_subset_reference_data(config, io_config, adata_ref_subset):
             module-specific parameters, including the module name used to
             construct figure filenames.
         io_config (SimpleNamespace or dict): I/O configuration object with paths
-            to input and output data. Must include ``hlca_path`` to save the
+            to input and output data. Must include ``ref_path`` to save the
             processed reference dataset.
         adata_ref_subset (anndata.AnnData): Subset of reference single-cell RNA-seq
         dataset (e.g., HLCA) to be processed or verified.
@@ -410,7 +410,7 @@ def run_integration(config: IntegrateIngestModuleConfig, io_config: IOConfig):
     module_dir = io_config.output_dir / config.module_name
 
     # Paths to input data
-    hcla_path = io_config.hlca_path
+    ref_path = io_config.ref_path
     gene_id_dict_path = io_config.gene_id_dict_path
 
     # Create output directories if they do not exist
@@ -427,7 +427,7 @@ def run_integration(config: IntegrateIngestModuleConfig, io_config: IOConfig):
     logger.info("Starting integration of scRNAseq and spatial transcriptomics data...")
 
     logger.info("Loading scRNAseq data from HLCA ...")
-    adata_ref = sc.read_h5ad(hcla_path)
+    adata_ref = sc.read_h5ad(ref_path)
 
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")

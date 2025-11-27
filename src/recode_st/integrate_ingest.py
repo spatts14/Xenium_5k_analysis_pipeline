@@ -382,7 +382,7 @@ def visualize_integration(config, cmap, adata):
         sc.pl.umap(
             adata,
             color=method,
-            title=f"INTEGRATION WITH HLCA - {method}",
+            title=f"HLCA integration: {method}",
             show=False,  # change to True if you want inline display
             cmap=cmap,
             save=f"_{config.module_name}_{method}.png",

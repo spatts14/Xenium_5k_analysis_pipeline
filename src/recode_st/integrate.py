@@ -831,7 +831,7 @@ def process_subset_reference_data(config, adata_ref_ingest):
         adata_ref_ingest,
         color=REF_CELL_LABEL_COL,
         title="HLCA reference subset for ingest UMAP",
-        save=f"_{config.module_name}_hlca_subset_ingest_umap.png",
+        save=f"_{config.module_name}_ingest.png",
     )
     logger.info(f"UMAP for {REF_CELL_LABEL_COL} saved for adata_ref_ingest")
 

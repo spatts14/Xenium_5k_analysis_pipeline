@@ -73,7 +73,7 @@ def drug2cell_calculation(adata, module_dir):
     return adata
 
 
-def visualize_drug2cell(config, adata, cell_type_top, cmap):
+def visualize_drug2cell(config, adata, cell_type_top: str = CELL_TYPE_TOP, cmap=None):
     """Visualize drug2cell scores.
 
     Args:
@@ -118,8 +118,44 @@ def visualize_drug2cell(config, adata, cell_type_top, cmap):
             shape=None,
             color=drug_list,
             wspace=0.4,
+            vmax="p99",  # avoid outliers
             cmap=cmap,
-            save=f"_{config.module_name}_{cell_type_top}_scatter.png",
+            save=f"_{config.module_name}_{roi}_scatter.png",
+        )
+
+
+def calc_DE(adata, config, cell_type_top: str = CELL_TYPE_TOP, cmap=None):
+    """Calculate differential expression for drug2cell scores."""
+    # Check if we have enough cells per group for differential expression
+    group_counts = adata.obs[cell_type_top].value_counts()
+    min_cells_per_group = 10  # Need at least 10 cells per group
+    valid_groups = group_counts[group_counts >= min_cells_per_group].index.tolist()
+
+    if len(valid_groups) < 2:
+        logger.warning(
+            f"Not enough groups with >= {min_cells_per_group} cells "
+            f"for differential expression. Skipping rank_genes_groups analysis."
+        )
+    else:
+        # Filter to only valid groups
+        valid_mask = adata.obs[cell_type_top].isin(valid_groups)
+        adata_filtered = adata.uns["drug2cell"][valid_mask, :]
+
+        logger.info(
+            f"Running differential expression on {len(valid_groups)} groups "
+            f"with >= {min_cells_per_group} cells each"
+        )
+
+        sc.tl.rank_genes_groups(
+            adata_filtered, method="wilcoxon", groupby=CELL_TYPE_TOP
+        )
+        sc.pl.rank_genes_groups_dotplot(
+            adata_filtered,
+            swap_axes=True,
+            dendrogram=False,
+            n_genes=3,
+            cmap=cmap,
+            save=f"_{config.module_name}_{CELL_TYPE_TOP}_dotplot.png",
         )
 
 
@@ -230,17 +266,7 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
     visualize_drug2cell(config, adata=adata, cell_type_top=CELL_TYPE_TOP, cmap=cmap)
 
     logger.info("Calculating differential expression...")
-    sc.tl.rank_genes_groups(
-        adata.uns["drug2cell"], method="wilcoxon", groupby=CELL_TYPE_TOP
-    )
-    sc.pl.rank_genes_groups_dotplot(
-        adata.uns["drug2cell"],
-        swap_axes=True,
-        dendrogram=False,
-        n_genes=3,
-        cmap=cmap,
-        save=f"_{config.module_name}_{CELL_TYPE_TOP}_dotplot.png",
-    )
+    calc_DE(adata, config, cell_type_top=CELL_TYPE_TOP, cmap=cmap)
 
     logger.info("Visualize only respiratory drugs")
     plot_args = d2c.util.prepare_plot_args(adata.uns["drug2cell"], categories=["R"])

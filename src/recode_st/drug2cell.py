@@ -15,13 +15,13 @@ warnings.filterwarnings("ignore")
 logger = getLogger(__name__)
 
 
-def visualize_drug2cell(config, adata, CLUSTER_TYPE, cmap):
+def visualize_drug2cell(config, adata, CELL_TYPE_LEVEL_ALL, cmap):
     """Visualize drug2cell scores.
 
     Args:
         config (_type_): _description_
         adata (_type_): _description_
-        CLUSTER_TYPE (_type_): _description_
+        CELL_TYPE_LEVEL_ALL (_type_): _description_
         cmap (_type_): _description_
     Return:
         None
@@ -40,12 +40,12 @@ def visualize_drug2cell(config, adata, CLUSTER_TYPE, cmap):
         size=2,
         figsize=(6, 6),
         cmap=cmap,
-        save=f"_{config.module_name}_{CLUSTER_TYPE}_scatter.png",
+        save=f"_{config.module_name}_{CELL_TYPE_LEVEL_ALL}_scatter.png",
     )
 
     logger.info("Calculating differential expression...")
     sc.tl.rank_genes_groups(
-        adata.uns["drug2cell"], method="wilcoxon", groupby=CLUSTER_TYPE
+        adata.uns["drug2cell"], method="wilcoxon", groupby=CELL_TYPE_LEVEL_ALL
     )
     sc.pl.rank_genes_groups_dotplot(
         adata.uns["drug2cell"],
@@ -53,18 +53,18 @@ def visualize_drug2cell(config, adata, CLUSTER_TYPE, cmap):
         dendrogram=False,
         n_genes=3,
         cmap=cmap,
-        save=f"_{config.module_name}_{CLUSTER_TYPE}_dotplot.png",
+        save=f"_{config.module_name}_{CELL_TYPE_LEVEL_ALL}_dotplot.png",
     )
 
     logger.info("Visualize only respiratory drugs")
     plot_args = d2c.util.prepare_plot_args(adata.uns["drug2cell"], categories=["R"])
     sc.pl.dotplot(
         adata.uns["drug2cell"],
-        groupby=CLUSTER_TYPE,
+        groupby=CELL_TYPE_LEVEL_ALL,
         swap_axes=True,
         **plot_args,
         cmap=cmap,
-        save=f"_{config.module_name}_{CLUSTER_TYPE}_respiratory_drugs_by.png",
+        save=f"_{config.module_name}_{CELL_TYPE_LEVEL_ALL}_respiratory_drugs_by.png",
     )
 
 
@@ -99,9 +99,9 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
         None
     """
     # Variables
-    CLUSTER_TYPE = "new_clusters"
-    CELL_TYPE_LEVEL = "resolution"
-    CELL_TYPE = "macrophage"
+    CELL_TYPE_LEVEL_ALL = "cell_type"
+    CELL_TYPE_LEVEL = "transf_ann_level_2_label"
+    CELL_TYPE = "myeloid cell"
 
     # Name of the column to store label transfer results in adata.obs
     module_dir = io_config.output_dir / config.module_name
@@ -119,10 +119,8 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
 
     logger.info("Starting Drug2Cell module...")
 
-    logger.info("Loading scRNAseq data from HLCA ...")
-
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "3_integrate" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "drug2cell" / "adata.h5ad")
 
     logger.info("Calculating drug score every cell in adata using ChEMBL database")
     # Computes the mean of the expression of each gene group in each cell.
@@ -134,7 +132,7 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
     drugs_present.to_csv(module_dir / "drug2cell_drugs.csv")
 
     logger.info("Visualize drug2cell...")
-    visualize_drug2cell(config, adata, CLUSTER_TYPE, cmap=cmap)
+    visualize_drug2cell(config, adata, CELL_TYPE_LEVEL_ALL, cmap=cmap)
 
     logger.info(f"Examine drug score in {CELL_TYPE} in {CELL_TYPE_LEVEL}")
     celltype_level(config, adata, CELL_TYPE, CELL_TYPE_LEVEL, cmap=cmap)

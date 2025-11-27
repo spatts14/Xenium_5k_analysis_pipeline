@@ -71,8 +71,8 @@ class DimensionReductionModuleConfig(BaseModuleConfig):
     """Normalization approach to use."""
 
 
-class IntegrateModuleConfig(BaseModuleConfig):
-    """Configuration for the Integration module."""
+class IntegrateIngestModuleConfig(BaseModuleConfig):
+    """Configuration for the Integration Ingest module."""
 
 
 class AnnotateModuleConfig(BaseModuleConfig):
@@ -163,8 +163,8 @@ class ModulesConfig(BaseModel):
     dimension_reduction: DimensionReductionModuleConfig | None = None
     """Configuration for the Dimension Reduction module."""
 
-    integrate: IntegrateModuleConfig | None = None
-    """Configuration for the Integration module."""
+    integrate_ingest: IntegrateIngestModuleConfig | None = None
+    """Configuration for the Integration (ingest) module."""
 
     annotate: AnnotateModuleConfig | None = None
     """Configuration for the Annotate module."""

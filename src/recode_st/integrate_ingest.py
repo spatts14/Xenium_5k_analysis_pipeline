@@ -235,19 +235,20 @@ def process_reference_data(config, io_config, adata_ref):
         logger.info("Computing UMAP...")
         sc.tl.umap(adata_ref)
 
-        # Plot UMAP
-        sc.pl.umap(
-            adata_ref,
-            color=REF_CELL_LABEL_COL,
-            title="HLCA reference data UMAP",
-            save=f"_{config.module_name}_hlca_umap.png",
-        )
-
         # Save processed reference
         adata_ref.write_h5ad(HLCA_INT_SAVE)
         logger.info(
             f"Finished preprocessing. Processed HLCA reference saved to {HLCA_INT_SAVE}"
         )
+
+    logger.info("Visualizing reference data UMAP...")
+    # Plot UMAP
+    sc.pl.umap(
+        adata_ref,
+        color=REF_CELL_LABEL_COL,
+        title="HLCA reference data UMAP",
+        save=f"_{config.module_name}_hlca_umap.png",
+    )
     return adata_ref
 
 

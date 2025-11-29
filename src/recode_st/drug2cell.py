@@ -269,15 +269,31 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
     calc_DE(adata, config, cell_type_top=CELL_TYPE_TOP, cmap=cmap)
 
     logger.info("Visualize only respiratory drugs")
-    plot_args = d2c.util.prepare_plot_args(adata.uns["drug2cell"], categories=["R"])
-    sc.pl.dotplot(
-        adata.uns["drug2cell"],
-        groupby=CELL_TYPE_TOP,
-        swap_axes=True,
-        **plot_args,
-        cmap=cmap,
-        save=f"_{config.module_name}_{CELL_TYPE_TOP}_respiratory_drugs_by.png",
-    )
+    # Apply the same filtering as used in differential expression
+    group_counts = adata.obs[CELL_TYPE_TOP].value_counts()
+    min_cells_per_group = 10  # Same threshold as calc_DE
+    valid_groups = group_counts[group_counts >= min_cells_per_group].index.tolist()
+
+    if len(valid_groups) >= 2:
+        # Filter to only valid groups for respiratory drugs visualization
+        drug2cell_adata = adata.uns["drug2cell"].copy()
+        valid_mask = drug2cell_adata.obs[CELL_TYPE_TOP].isin(valid_groups)
+        drug2cell_filtered = drug2cell_adata[valid_mask, :].copy()
+
+        plot_args = d2c.util.prepare_plot_args(drug2cell_filtered, categories=["R"])
+        sc.pl.dotplot(
+            drug2cell_filtered,
+            groupby=CELL_TYPE_TOP,
+            swap_axes=True,
+            **plot_args,
+            cmap=cmap,
+            save=f"_{config.module_name}_{CELL_TYPE_TOP}_respiratory_drugs_by.png",
+        )
+    else:
+        logger.warning(
+            f"Not enough groups with >= {min_cells_per_group} cells "
+            "for respiratory drugs visualization. Skipping."
+        )
 
     # Only run cell type specific analysis if the column exists
     if CELL_TYPE_LEVEL in adata.obs.columns:

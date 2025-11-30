@@ -18,7 +18,7 @@ logger = getLogger(__name__)
 # Variables
 CELL_TYPE_TOP = "ingest_pred_cell_type"
 CELL_TYPE_LEVEL = "transf_ann_level_2_label"
-KEY_CELL_TYPE = "Myeloid"
+KEY_CELL_TYPE = "Lymphoid"
 
 
 def drug2cell_calculation(adata, module_dir):

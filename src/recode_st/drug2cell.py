@@ -116,7 +116,7 @@ def visualize_drug2cell(config, adata, cell_type_top: str = CELL_TYPE_TOP, cmap=
         sq.pl.spatial_scatter(
             subset.uns["drug2cell"],
             library_id="spatial",
-            size=1,
+            size=0.5,
             shape=None,
             color=drug_list,
             wspace=0.4,
@@ -181,6 +181,10 @@ def celltype_level(
     Returns:
         None
     """
+    # Fix parameter name mismatch: CLUSTER_TYPE should be CELL_TYPE_LEVEL_ALL
+    logger.info("Checking drugs in drug_list against calculated drugs...")
+    drug_list = config.drug_list
+
     logger.info(f"Subsetting on {cell_type} in {cell_type_level}")
     # Fix critical bug: was using assignment (=) instead of comparison (==)
     if cell_type_level not in adata.obs.columns:
@@ -210,8 +214,22 @@ def celltype_level(
         return
 
     logger.info(f"Visualizing on {cell_type} in {cell_type_level}")
-    # Fix parameter name mismatch: CLUSTER_TYPE should be CELL_TYPE_LEVEL_ALL
-    visualize_drug2cell(config, adata=subset, cell_type_top=cell_type_top, cmap=cmap)
+
+    logger.info("Visualize drug score in UMAP")
+    sc.pl.umap(
+        subset.uns["drug2cell"],
+        color=[drug_list, CELL_TYPE_TOP],
+        color_map=cmap,
+        save=f"_{config.module_name}_drug2cell_{cell_type}.png",
+    )
+
+    sc.pl.dotplot(
+        subset.uns["drug2cell"],
+        groupby=CELL_TYPE_TOP,
+        swap_axes=True,
+        cmap=cmap,
+        save=f"_{config.module_name}_{CELL_TYPE_TOP}_respirato.png",
+    )
 
 
 def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):

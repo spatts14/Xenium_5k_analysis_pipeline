@@ -226,10 +226,10 @@ def celltype_level(
 
     sc.pl.dotplot(
         subset.uns["drug2cell"],
+        var_names=drug_list,
         groupby=cell_type_top,
         swap_axes=True,
         cmap=cmap,
-        n_genes=2,
         save=f"_{config.module_name}_{cell_type_top}_{cell_type}.png",
     )
 

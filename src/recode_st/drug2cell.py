@@ -218,7 +218,7 @@ def celltype_level(
     logger.info("Visualize drug score in UMAP")
     sc.pl.umap(
         subset.uns["drug2cell"],
-        color=[drug_list, CELL_TYPE_TOP],
+        color=[*drug_list, CELL_TYPE_TOP],
         color_map=cmap,
         save=f"_{config.module_name}_drug2cell_{cell_type}.png",
     )
@@ -228,7 +228,8 @@ def celltype_level(
         groupby=CELL_TYPE_TOP,
         swap_axes=True,
         cmap=cmap,
-        save=f"_{config.module_name}_{CELL_TYPE_TOP}_respirato.png",
+        n_genes=2,
+        save=f"_{config.module_name}_{CELL_TYPE_TOP}.png",
     )
 
 

@@ -787,6 +787,7 @@ zarr==2.18.7
 git+https://github.com/deto/scTransformPy.git
 geosketch
 scvi-tools
+drug2cell
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip

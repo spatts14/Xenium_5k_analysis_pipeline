@@ -93,6 +93,13 @@ class SpatialStatisticsModuleConfig(BaseModuleConfig):
     """Configuration for the Spatial Statistics module."""
 
 
+class Drug2CellModuleConfig(BaseModuleConfig):
+    """Configuration for Drug2Cell."""
+
+    drug_list: list[str]
+    """List of drugs to visualize on UMAP and spatially in tissue"""
+
+
 class MuspanModuleConfig(BaseModuleConfig):
     """Configuration for the Muspan module."""
 
@@ -174,6 +181,9 @@ class ModulesConfig(BaseModel):
 
     spatial_statistics: SpatialStatisticsModuleConfig | None = None
     """Configuration for the Spatial Statistics module."""
+
+    drug2cell: Drug2CellModuleConfig | None = None
+    """Configuration for Drug2Cell module."""
 
     muspan: MuspanModuleConfig | None = None
     """Configuration for the Muspan module."""

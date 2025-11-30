@@ -116,6 +116,7 @@ def visualize_drug2cell(config, adata, cell_type_top: str = CELL_TYPE_TOP, cmap=
         sq.pl.spatial_scatter(
             subset.uns["drug2cell"],
             library_id="spatial",
+            size=1,
             shape=None,
             color=drug_list,
             wspace=0.4,

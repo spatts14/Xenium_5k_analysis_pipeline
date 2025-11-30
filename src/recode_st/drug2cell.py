@@ -208,7 +208,8 @@ def celltype_level(
 
     # Copy drug2cell scores to subset if they exist
     if "drug2cell" in adata.uns:
-        subset.uns["drug2cell"] = adata.uns["drug2cell"]
+        # Properly subset drug2cell scores to match only the myeloid cells
+        subset.uns["drug2cell"] = adata.uns["drug2cell"][subset.obs_names, :]
     else:
         logger.error("No drug2cell scores found in adata.uns. Cannot visualize subset.")
         return
@@ -218,18 +219,18 @@ def celltype_level(
     logger.info("Visualize drug score in UMAP")
     sc.pl.umap(
         subset.uns["drug2cell"],
-        color=[*drug_list, CELL_TYPE_TOP],
+        color=[*drug_list, cell_type_top],
         color_map=cmap,
         save=f"_{config.module_name}_drug2cell_{cell_type}.png",
     )
 
     sc.pl.dotplot(
         subset.uns["drug2cell"],
-        groupby=CELL_TYPE_TOP,
+        groupby=cell_type_top,
         swap_axes=True,
         cmap=cmap,
         n_genes=2,
-        save=f"_{config.module_name}_{CELL_TYPE_TOP}.png",
+        save=f"_{config.module_name}_{cell_type_top}_{cell_type}.png",
     )
 
 

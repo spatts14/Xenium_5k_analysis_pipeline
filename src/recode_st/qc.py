@@ -18,6 +18,56 @@ warnings.filterwarnings("ignore")
 logger = getLogger(__name__)
 
 
+def plot_metrics(module_dir, adata):
+    """Generates and saves histograms summarizing key cell metrics.
+
+    This function creates a 1x4 grid of histograms visualizing:
+        1. Total transcripts per cell
+        2. Unique transcripts per cell
+        3. Area of segmented cells
+        4. Nucleus-to-cell area ratio
+
+    Args:
+        module_dir (Path or str): Directory path where the output plot will be saved.
+        adata (anndata.AnnData): Annotated data matrix with cell metrics
+        stored in `adata.obs`.
+            Must contain the columns:
+            - 'total_counts'
+            - 'n_genes_by_counts'
+            - 'cell_area'
+            - 'nucleus_area'
+
+    Returns:
+        None
+    """
+    # Create 4 subplots
+    fig, axs = plt.subplots(1, 4, figsize=(15, 4))
+
+    axs[0].set_title("Total transcripts per cell")
+    sns.histplot(adata.obs["total_counts"], kde=False, ax=axs[0])
+
+    axs[1].set_title("Unique transcripts per cell")
+    sns.histplot(adata.obs["n_genes_by_counts"], kde=False, ax=axs[1])
+
+    axs[2].set_title("Area of segmented cells")
+    sns.histplot(adata.obs["cell_area"], kde=False, ax=axs[2])
+
+    axs[3].set_title("Nucleus ratio")
+    sns.histplot(
+        adata.obs["nucleus_area"] / adata.obs["cell_area"], kde=False, ax=axs[3]
+    )
+
+    fig.suptitle("QC meterics pre-normalization", fontsize=16)
+
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+
+    # Save figure
+    output_path = module_dir / "cell_summary_histograms.png"
+    plt.savefig(output_path, dpi=300)
+    plt.close()
+    logger.info(f"Saved plots to {output_path}")
+
+
 def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     """Run quality control on Xenium data."""
     # Set variables
@@ -198,6 +248,53 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
 
     logger.info(f"adata shape after area filtering: {adata.shape}")
 
+    # Number of cells and genes after all filtering
+    n_cells_final = adata.n_obs
+    n_genes_final = adata.n_vars
+    logger.info(f"Final number of cells: {n_cells_final}")
+    logger.info(f"Final number of genes: {n_genes_final}")
+
+    # Plot number of cells vs cell area histogram after filtering
+    sns.histplot(adata.obs["cell_area"], bins=50, kde=False)
+    plt.xlabel("Cell Area")
+    plt.ylabel("Number of Cells")
+    plt.title("Number of Cells vs Cell Area After Filtering")
+    plt.grid(False)
+    plt.savefig(module_dir / "qc_cells_vs_cell_area_post_filter.png", dpi=300)
+    plt.close()
+
+    # Plot number of transcripts per pixel after filtering
+    transcripts_per_pixel = (
+        (adata.obs["total_counts"] / adata.obs["cell_area"])
+        .replace([np.inf, -np.inf], np.nan)
+        .dropna()
+    )
+    sns.histplot(transcripts_per_pixel, bins=50, kde=False)
+    plt.xlabel("Transcripts per Pixel")
+    plt.ylabel("Number of Cells")
+    plt.title("Number of Cells vs Transcripts per Pixel After Filtering")
+    plt.grid(False)
+    plt.savefig(
+        module_dir / "qc_cells_vs_transcripts_per_pixel_post_filter.png", dpi=300
+    )
+    plt.close()
+
+    # Scatter plot of cell area vs total counts after filtering
+    plt.figure(figsize=(6, 5))
+    plt.scatter(
+        adata.obs["cell_area"],
+        adata.obs["total_counts"],
+        hue="ROI",
+        s=10,  # size of points
+        alpha=0.5,  # transparency
+    )
+    plt.xlabel("Cell Area")
+    plt.ylabel("Total transcripts per cell")
+    plt.title("QC: Cell Area vs Total Counts per Cell")
+    plt.grid(False)
+    plt.savefig(module_dir / "qc_cell_area_vs_total_counts_post_filter.png", dpi=300)
+    plt.close()
+
     # Normalize data
     logger.info(f"Normalize data using {norm_approach}...")
     adata.layers["counts"] = adata.X.copy()  # make copy of raw data
@@ -247,53 +344,3 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     adata.write_h5ad(module_dir / f"adata_{norm_approach}.h5ad")
     logger.info(f"Data saved to {module_dir / f'adata_{norm_approach}.h5ad'}")
     logger.info("Quality control completed successfully.")
-
-
-def plot_metrics(module_dir, adata):
-    """Generates and saves histograms summarizing key cell metrics.
-
-    This function creates a 1x4 grid of histograms visualizing:
-        1. Total transcripts per cell
-        2. Unique transcripts per cell
-        3. Area of segmented cells
-        4. Nucleus-to-cell area ratio
-
-    Args:
-        module_dir (Path or str): Directory path where the output plot will be saved.
-        adata (anndata.AnnData): Annotated data matrix with cell metrics
-        stored in `adata.obs`.
-            Must contain the columns:
-            - 'total_counts'
-            - 'n_genes_by_counts'
-            - 'cell_area'
-            - 'nucleus_area'
-
-    Returns:
-        None
-    """
-    # Create 4 subplots
-    fig, axs = plt.subplots(1, 4, figsize=(15, 4))
-
-    axs[0].set_title("Total transcripts per cell")
-    sns.histplot(adata.obs["total_counts"], kde=False, ax=axs[0])
-
-    axs[1].set_title("Unique transcripts per cell")
-    sns.histplot(adata.obs["n_genes_by_counts"], kde=False, ax=axs[1])
-
-    axs[2].set_title("Area of segmented cells")
-    sns.histplot(adata.obs["cell_area"], kde=False, ax=axs[2])
-
-    axs[3].set_title("Nucleus ratio")
-    sns.histplot(
-        adata.obs["nucleus_area"] / adata.obs["cell_area"], kde=False, ax=axs[3]
-    )
-
-    fig.suptitle("QC meterics pre-normalization", fontsize=16)
-
-    plt.tight_layout(rect=[0, 0, 1, 0.95])
-
-    # Save figure
-    output_path = module_dir / "cell_summary_histograms.png"
-    plt.savefig(output_path, dpi=300)
-    plt.close()
-    logger.info(f"Saved plots to {output_path}")

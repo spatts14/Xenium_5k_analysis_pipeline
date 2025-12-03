@@ -7,9 +7,8 @@ from pathlib import Path
 import anndata
 import numpy as np
 import pandas as pd
-
-# import torch
 import scanpy as sc
+import torch
 from scvi.model import SCVI
 
 from recode_st.config import Config, IntegrateSCVIModuleConfig, IOConfig
@@ -272,7 +271,7 @@ def scVI_integration(config, adata_combined, module_dir):
     logger.info("Integrating data using scVI...")
 
     # Training parameters
-    MAX_EPOCHS_SCVI = 10
+    MAX_EPOCHS_SCVI = 200
 
     # Setup scVI
     logger.info("Setting up scVI model...")
@@ -289,6 +288,8 @@ def scVI_integration(config, adata_combined, module_dir):
         max_epochs=MAX_EPOCHS_SCVI,
         batch_size=1024,  # Increase from 128
         plan_kwargs={"lr": 1e-3},  # Explicit learning rate
+        early_stopping=True,
+        early_stopping_patience=10,
     )
 
     logger.info("Obtain and visualize latent representation...")
@@ -306,6 +307,10 @@ def scVI_integration(config, adata_combined, module_dir):
 
     logger.info("Saving scANVI model...")
     scvi_model.save(module_dir / "_scvi_ref", overwrite=True)
+
+    logger.info("scVI model saved and available for downstream analysis")
+    epochs_completed = len(scvi_model.history["elbo_train"])
+    logger.info(f"Model training history: {epochs_completed} epochs completed")
 
     return adata_combined, scvi_model
 
@@ -346,6 +351,14 @@ def run_integration(
     configure_scanpy_figures(str(io_config.output_dir))
 
     logger.info("Starting integration of scRNAseq and spatial transcriptomics data...")
+
+    # Log GPU availability
+    if torch.cuda.is_available():
+        logger.info(f"✓ GPU available: {torch.cuda.get_device_name(0)}")
+        logger.info(f"✓ CUDA version: {torch.version.cuda}")
+        logger.info("✓ scVI will use GPU acceleration")
+    else:
+        logger.info("⚠ No GPU detected - scVI will use CPU (slower training)")
 
     logger.info("Loading scRNAseq data from HLCA ...")
     adata_ref = sc.read_h5ad(ref_path)

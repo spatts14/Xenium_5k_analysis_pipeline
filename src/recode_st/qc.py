@@ -68,6 +68,60 @@ def plot_metrics(module_dir, adata):
     logger.info(f"Saved plots to {output_path}")
 
 
+def normalize_data(adata, norm_approach):
+    """Normalize data using the specified normalization approach.
+
+    Args:
+        adata: AnnData object to normalize
+        norm_approach: Normalization method to use
+
+    Returns:
+        None (modifies adata in place)
+    """
+    logger.info(f"Normalize data using {norm_approach}...")
+    adata.layers["counts"] = adata.X.copy()  # make copy of raw data
+
+    if norm_approach == "scanpy_log":
+        # scRNAseq approach
+        sc.pp.normalize_total(adata, inplace=True)  # normalize data
+        sc.pp.log1p(adata)  # Log transform data
+        logger.info(adata.X.shape)
+        sc.pp.scale(adata, max_value=10)  # Scale data; how do I choose max_value?
+    elif norm_approach == "sctransform":
+        # scTransform approach
+        vst_out = scTransform.vst(
+            adata.X, gene_names=adata.var_names, cell_names=adata.obs_names
+        )
+        adata.X = vst_out["y"]  # Use Pearson residuals as normalized expression
+        # DO NOT add log transformation - already variance-stabilized
+        # DO NOT add scaling - already scaled
+    elif norm_approach == "cell_area":
+        # Check if cell area is available
+        if "cell_area" in adata.obs.columns:
+            cell_area_inv = 1 / adata.obs["cell_area"].values  # shape (n_cells,)
+
+            if sp.issparse(adata.X):
+                # Sparse-safe multiplication
+                scaling = sp.diags(cell_area_inv)
+                adata.X = scaling.dot(adata.X)
+            else:
+                # Dense case
+                adata.X = adata.X * cell_area_inv[:, None]
+
+            # Log transform and scale after area normalization
+            sc.pp.log1p(adata)  # Log transform
+            sc.pp.scale(adata, max_value=10)  # Scale data; how do I choose max_value?
+        else:
+            logger.warning(
+                "Cell area not found in adata.obs; skipping normalization by cell area"
+            )
+    elif norm_approach == "none":
+        # No normalization
+        logger.info("No normalization applied.")
+    else:
+        raise ValueError(f"Normalization approach {norm_approach} not recognized")
+
+
 def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     """Run quality control on Xenium data."""
     # Set variables
@@ -232,11 +286,12 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     # Scatter plot of number of genes vs total counts after filtering
     sns.set_theme(style="white")
     plt.figure(figsize=(6, 5))
-    plt.scatter(
-        adata.obs["n_genes_by_counts"],
-        adata.obs["total_counts"],
-        # hue="ROI",
-        s=10,  # size of points
+    sns.scatterplot(
+        data=adata.obs,
+        x="n_genes_by_counts",
+        y="total_counts",
+        hue="ROI",
+        s=1,  # size of points
         alpha=0.5,  # transparency
     )
     plt.xlabel("Number of genes detected per cell")
@@ -248,96 +303,11 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
 
     logger.info(f"adata shape after area filtering: {adata.shape}")
 
-    # Number of cells and genes after all filtering
-    n_cells_final = adata.n_obs
-    n_genes_final = adata.n_vars
-    logger.info(f"Final number of cells: {n_cells_final}")
-    logger.info(f"Final number of genes: {n_genes_final}")
-
-    # Plot number of cells vs cell area histogram after filtering
-    sns.histplot(adata.obs["cell_area"], bins=50, kde=False)
-    plt.xlabel("Cell Area")
-    plt.ylabel("Number of Cells")
-    plt.title("Number of Cells vs Cell Area After Filtering")
-    plt.grid(False)
-    plt.savefig(module_dir / "qc_cells_vs_cell_area_post_filter.png", dpi=300)
-    plt.close()
-
-    # Plot number of transcripts per pixel after filtering
-    transcripts_per_pixel = (
-        (adata.obs["total_counts"] / adata.obs["cell_area"])
-        .replace([np.inf, -np.inf], np.nan)
-        .dropna()
-    )
-    sns.histplot(transcripts_per_pixel, bins=50, kde=False)
-    plt.xlabel("Transcripts per Pixel")
-    plt.ylabel("Number of Cells")
-    plt.title("Number of Cells vs Transcripts per Pixel After Filtering")
-    plt.grid(False)
-    plt.savefig(
-        module_dir / "qc_cells_vs_transcripts_per_pixel_post_filter.png", dpi=300
-    )
-    plt.close()
-
-    # Scatter plot of cell area vs total counts after filtering
-    plt.figure(figsize=(6, 5))
-    plt.scatter(
-        adata.obs["cell_area"],
-        adata.obs["total_counts"],
-        hue="ROI",
-        s=10,  # size of points
-        alpha=0.5,  # transparency
-    )
-    plt.xlabel("Cell Area")
-    plt.ylabel("Total transcripts per cell")
-    plt.title("QC: Cell Area vs Total Counts per Cell")
-    plt.grid(False)
-    plt.savefig(module_dir / "qc_cell_area_vs_total_counts_post_filter.png", dpi=300)
-    plt.close()
+    logger.info(f"Final number of cells: {adata.n_obs}")
+    logger.info(f"Final number of genes: {adata.n_vars}")
 
     # Normalize data
-    logger.info(f"Normalize data using {norm_approach}...")
-    adata.layers["counts"] = adata.X.copy()  # make copy of raw data
-
-    if norm_approach == "scanpy_log":
-        # scRNAseq approach
-        sc.pp.normalize_total(adata, inplace=True)  # normalize data
-        sc.pp.log1p(adata)  # Log transform data
-        logger.info(adata.X.shape)
-        sc.pp.scale(adata, max_value=10)  # Scale data; how do I choose max_value?
-    elif norm_approach == "sctransform":
-        # scTransform approach
-        vst_out = scTransform.vst(
-            adata.X, gene_names=adata.var_names, cell_names=adata.obs_names
-        )
-        adata.X = vst_out["y"]  # Use Pearson residuals as normalized expression
-        # DO NOT add log transformation - already variance-stabilized
-        # DO NOT add scaling - already scaled
-    elif norm_approach == "cell_area":
-        # Check if cell area is available
-        if "cell_area" in adata.obs.columns:
-            cell_area_inv = 1 / adata.obs["cell_area"].values  # shape (n_cells,)
-
-            if sp.issparse(adata.X):
-                # Sparse-safe multiplication
-                scaling = sp.diags(cell_area_inv)
-                adata.X = scaling.dot(adata.X)
-            else:
-                # Dense case
-                adata.X = adata.X * cell_area_inv[:, None]
-
-            # Log transform and scale after area normalization
-            sc.pp.log1p(adata)  # Log transform
-            sc.pp.scale(adata, max_value=10)  # Scale data; how do I choose max_value?
-        else:
-            logger.warning(
-                "Cell area not found in adata.obs; skipping normalization by cell area"
-            )
-    elif norm_approach == "none":
-        # No normalization
-        logger.info("No normalization applied.")
-    else:
-        raise ValueError(f"Normalization approach {norm_approach} not recognized")
+    normalize_data(adata, norm_approach)
 
     # Save data
     logger.info("Saving filtered and normalized data...")

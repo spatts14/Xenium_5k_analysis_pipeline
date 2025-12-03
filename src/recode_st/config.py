@@ -75,6 +75,10 @@ class IntegrateIngestModuleConfig(BaseModuleConfig):
     """Configuration for the Integration Ingest module."""
 
 
+class IntegrateSCVIModuleConfig(BaseModuleConfig):
+    """Configuration for the Integration scVI module."""
+
+
 class AnnotateModuleConfig(BaseModuleConfig):
     """Configuration for the Annotate module."""
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -l walltime=8:0:0
 #PBS -lselect=1:ncpus=32:mem=512gb:ngpus=1:gpu_type=A100
-#PBS -q gpu
+#PBS -q v1_gpu72
 
 # Load production tools
 module load tools/prod

@@ -12,7 +12,7 @@ import pandas as pd
 import scanpy as sc
 from scvi.model import SCVI
 
-from recode_st.config import IntegrateSCVIModuleConfig, IOConfig
+from recode_st.config import Config, IntegrateSCVIModuleConfig, IOConfig
 from recode_st.helper_function import configure_scanpy_figures
 
 # Suppress specific warnings to reduce noise in logs
@@ -310,15 +310,18 @@ def scVI_integration(config, adata_combined, module_dir):
     return adata_combined, scvi_model
 
 
-def run_integration(config: IntegrateSCVIModuleConfig, io_config: IOConfig):
+def run_integration(
+    config: IntegrateSCVIModuleConfig, io_config: IOConfig, base_config: Config
+):
     """Integrate scRNAseq and STx data using scANVI and ingest.
 
-    adata_ref_subset and adata_ingest are used for ingest integration.
+    adata_ref_ingest and adata_ingest are used for ingest integration.
     adata_ref and data are used for scANVI integration.
 
     Args:
-        config (IntegrateModuleConfig): Integration module configuration object.
+        config (IntegrateSCVIModuleConfig): Integration module configuration object.
         io_config (IOConfig): IO configuration object.
+        base_config (Config): Base configuration object.
 
     Returns:
         None

@@ -298,7 +298,13 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     plt.ylabel("Total transcripts per cell")
     plt.title("QC: Genes vs Total Counts per Cell")
     plt.grid(False)
-    plt.savefig(module_dir / "qc_genes_vs_total_counts_post_filter.png", dpi=300)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
+    plt.tight_layout()
+    plt.savefig(
+        module_dir / "qc_genes_vs_total_counts_post_filter.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
     plt.close()
 
     logger.info(f"adata shape after area filtering: {adata.shape}")

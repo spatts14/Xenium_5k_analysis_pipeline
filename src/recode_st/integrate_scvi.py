@@ -353,6 +353,20 @@ def run_integration(
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
 
+    # Subsample reference data if it's too large to avoid memory issues
+    if adata_ref.n_obs > 300000:  # Only subsample very large references
+        logger.info(f"Subsampling reference from {adata_ref.n_obs:,} to ~200k cells...")
+        import numpy as np
+
+        rng = np.random.default_rng(base_config.seed)
+
+        # Simple random sampling - can be improved with stratified sampling later
+        target_cells = 200000
+        sample_size = min(target_cells, adata_ref.n_obs)
+        indices = rng.choice(adata_ref.n_obs, size=sample_size, replace=False)
+        adata_ref = adata_ref[indices].copy()
+        logger.info(f"Reference subsampled to {adata_ref.n_obs:,} cells")
+
     # Log available layers for debugging
     logger.info(f"Reference layers: {list(adata_ref.layers.keys())}")
     logger.info(f"Spatial layers: {list(adata.layers.keys())}")
@@ -376,12 +390,33 @@ def run_integration(
     )
 
     logger.info("Combine reference and query data ...")
+
+    # Memory optimization: Force garbage collection before large operations
+    import gc
+
+    gc.collect()
+
+    # Create combined dataset with memory efficiency
+    logger.info(
+        f"Creating combined dataset from {adata_ref_subset.n_obs:,} ref + "
+        f"{adata_ingest.n_obs:,} spatial cells"
+    )
     adata_combined = anndata.concat(
         [adata_ref_subset, adata_ingest],
         join="inner",  # only keeps genes present in both datasets
         label=BATCH_COL,
         keys=[REFERENCE_KEY, SPATIAL_KEY],
         index_unique="_",
+    )
+
+    # Clean up intermediate objects to free memory
+    del adata_ref_subset
+    del adata_ingest
+    gc.collect()
+
+    logger.info(
+        f"Combined dataset created: {adata_combined.n_obs:,} cells x "
+        f"{adata_combined.n_vars:,} genes"
     )
 
     # Verify counts layer was preserved during concat

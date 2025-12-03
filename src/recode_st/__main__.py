@@ -58,7 +58,7 @@ def main(config: Config):
         from recode_st.integrate_scvi import run_integration
 
         logger.info("Running Module - Integration: scVI")
-        run_integration(config.modules.integrate_scvi, config.io)
+        run_integration(config.modules.integrate_scvi, config.io, config)
 
     if config.modules.annotate:
         from recode_st.annotate import run_annotate

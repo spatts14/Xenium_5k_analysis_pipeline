@@ -852,8 +852,15 @@ def run_integration(
     # Extract scANVI predictions and copy to original adata
     logger.info("STEP 3: Extracting predicted labels from scANVI...")
     if adata_combined is not None and trained_scanvi_model is not None:
+        logger.info("Visualize data following label transfer...")
         adata = extract_predictions_and_visualize(
             adata_combined, trained_scanvi_model, adata, module_dir
         )
     else:
         logger.error("scANVI integration failed. Skipping scANVI predictions.")
+
+    logger.info("Saving integrated data...")
+    adata.write_h5ad(module_dir / "adata.h5ad")
+    logger.info(f"Integrated data saved to {module_dir}.")
+
+    logger.info("Integration complete.")

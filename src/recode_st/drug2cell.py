@@ -11,7 +11,8 @@ import squidpy as sq
 from recode_st.config import Drug2CellModuleConfig, IOConfig
 from recode_st.helper_function import configure_scanpy_figures
 
-warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 logger = getLogger(__name__)
 
@@ -253,9 +254,8 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
     # Set figure directory for this module (overrides global setting)
     sc.settings.figdir = module_dir
 
-    # Get shared colormap from global visualization settings
-    # This ensures consistency across all modules
-    viz_assets = configure_scanpy_figures(str(io_config.output_dir))
+    # Set figure settings to ensure consistency across all modules
+    configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)
 
     logger.info("Starting Drug2Cell module...")

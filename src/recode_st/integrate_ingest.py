@@ -1,19 +1,19 @@
 """Integrate scRNAseq and STx using ingest."""
 
-import warnings  # ? what is the best way to suppress warnings from package inputs?
+import warnings
 from logging import getLogger
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
-# import torch
 import scanpy as sc
+import seaborn as sns
 
 from recode_st.config import IntegrateIngestModuleConfig, IOConfig
 from recode_st.helper_function import configure_scanpy_figures
 
-warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 logger = getLogger(__name__)
 
@@ -542,10 +542,9 @@ def run_integration(config: IntegrateIngestModuleConfig, io_config: IOConfig):
     # Set figure directory for this module (overrides global setting)
     sc.settings.figdir = module_dir
 
-    # Get shared colormap from global visualization settings
-    # This ensures consistency across all modules
-    viz_assets = configure_scanpy_figures(str(io_config.output_dir))
-    cmap = viz_assets["cmap"]
+    # Set figure settings to ensure consistency across all modules
+    configure_scanpy_figures(str(io_config.output_dir))
+    cmap = sns.color_palette("Spectral", as_cmap=True)
 
     logger.info("Starting integration of scRNAseq and spatial transcriptomics data...")
 

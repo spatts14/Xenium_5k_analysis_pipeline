@@ -451,7 +451,7 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
         tuple: (adata_combined, scanvi_model) - Combined dataset and trained model
     """
     # Set constant variables
-    MAX_EPOCHS_SCANVI = 200
+    MAX_EPOCHS_SCANVI = 50
 
     # Format labels for scANVI
     # Create scANVI labels (reference has labels, spatial is 'Unknown')
@@ -640,7 +640,6 @@ def run_integration(
     )
     scVI_integration_check(adata, batch_key=BATCH_COL, cell_type=REF_CELL_LABEL_COL)
 
-    # 1. INTEGRATION USING INGEST
     logger.info(
         "Subsetting to only shared genes for scVI integration..."
     )  # TODO: FIND A DIFF WORD THAN SUBSETTING BC ITS CONFUSING WHEN USING IT SO OFTEN FOR DIFF REASONS
@@ -705,7 +704,15 @@ def run_integration(
     adata_combined.write_h5ad(combined_save_path)
     logger.info(f"Combined data saved to {combined_save_path}")
 
-    # INTEGRATION USING SCVI
-    adata_combined, scvi_model = scVI_integration(config, adata_combined, module_dir)
+    logger.info("Harmonize scRNAseq reference dataset with STx dataset scVI model...")
+    adata_combined, trained_scvi_model = scVI_integration(
+        config, adata_combined, module_dir
+    )
 
-    logger.info("Integration complete SO FAR.")
+    logger.info(f"scVI model training complete. adata combined: {adata_combined}")
+    logger.info(f"scVI model training complete. Model: {trained_scvi_model}")
+
+    logger.info("Step 2. Transfer labels using scANVI model...")
+    adata_combined, trained_scanvi_model = scANVI_label_transfer(
+        config, adata_combined, trained_scvi_model, module_dir
+    )

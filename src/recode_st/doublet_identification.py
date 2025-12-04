@@ -130,6 +130,9 @@ def process_roi_doublets(roi_name, roi_df, module_dir, cmap):
     doublets = roi_ob.detect_doublets(min_signal=3, integrity_sigma=2)
     logger.info(f"Detected {len(doublets)} doublets in {roi_name}")
 
+    logger.info("Saving doublets to parquet file...")
+    doublets.write_parquet(roi_output_dir / "data.parquet")
+
     logger.info("Visualizing doublets...")
     # Overview of tissue
     fig, ax = plt.subplots()

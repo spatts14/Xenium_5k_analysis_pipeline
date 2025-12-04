@@ -79,6 +79,11 @@ def process_roi_doublets(roi_name, roi_df, module_dir, cmap):
         module_dir (Path): Output directory for saving results
         cmap: Colormap for visualization
     """
+    logger.info(f"Processing doublets for ROI: {roi_name}")
+    logger.info(f"Creating new directory for {roi_name} results...")
+    roi_output_dir = module_dir / roi_name
+    roi_output_dir.mkdir(exist_ok=True)
+
     logger.info(f"Identifying doublets for {roi_name} using ovrly ...")
     n = 1_000  # Number of transcripts to show
     logger.info(f"Showing every {n}th transcript for {roi_name}...")
@@ -88,7 +93,7 @@ def process_roi_doublets(roi_name, roi_df, module_dir, cmap):
     ax.scatter(roi_df[::n, "x"], roi_df[::n, "y"], s=0.1)
     _ = ax.set(aspect="equal")
     plt.savefig(
-        module_dir / f"{roi_name}_transcripts_overview.png",
+        roi_output_dir / f"{roi_name}_transcripts_overview.png",
         dpi=300,
         bbox_inches="tight",
     )
@@ -99,7 +104,7 @@ def process_roi_doublets(roi_name, roi_df, module_dir, cmap):
     logger.info("Running the ovrlpy pipeline...")
     roi_ob = ovrlpy.Ovrlp(
         roi_df,
-        n_workers=8,  # I think this is the number of CPUs used?
+        n_workers=16,  # I think this is the number of CPUs used?
         random_state=42,  # TODO: Determine if I need this since seed
         # everything should deal with this
     )
@@ -108,14 +113,14 @@ def process_roi_doublets(roi_name, roi_df, module_dir, cmap):
     logger.info("Visualizing results ...")
     fig = ovrlpy.plot_pseudocells(roi_ob)
     plt.savefig(
-        module_dir / f"{roi_name}_pseudocells.png", dpi=300, bbox_inches="tight"
+        roi_output_dir / f"{roi_name}_pseudocells.png", dpi=300, bbox_inches="tight"
     )
     plt.close()
 
     # plot SVI per ROI
     fig = ovrlpy.plot_signal_integrity(roi_ob, signal_threshold=3)
     plt.savefig(
-        module_dir / f"{roi_name}_signal_integrity.png",
+        roi_output_dir / f"{roi_name}_signal_integrity.png",
         dpi=300,
         bbox_inches="tight",
     )
@@ -134,7 +139,7 @@ def process_roi_doublets(roi_name, roi_df, module_dir, cmap):
     _ = ax.set_aspect("equal")
     _ = fig.colorbar(_scatter, ax=ax)
     plt.savefig(
-        module_dir / f"{roi_name}_doublets_overview.png",
+        roi_output_dir / f"{roi_name}_doublets_overview.png",
         dpi=300,
         bbox_inches="tight",
     )
@@ -146,7 +151,7 @@ def process_roi_doublets(roi_name, roi_df, module_dir, cmap):
     x, y = doublets["x"][doublet_case], doublets["y"][doublet_case]
     _ = ovrlpy.plot_region_of_interest(roi_ob, x, y, window_size=60)
     plt.savefig(
-        module_dir / f"{roi_name}_doublets_{doublet_case}.png",
+        roi_output_dir / f"{roi_name}_doublets_{doublet_case}.png",
         dpi=300,
         bbox_inches="tight",
     )
@@ -154,7 +159,7 @@ def process_roi_doublets(roi_name, roi_df, module_dir, cmap):
 
     logger.info("Visualize cells in Z stacks using pickle...")
     # Make folder to save pickle files
-    pickle_dir = module_dir / "pickle_doublets"
+    pickle_dir = roi_output_dir / "pickle_doublets"
     pickle_dir.mkdir(exist_ok=True)
 
     # Name pickle file
@@ -180,7 +185,7 @@ def process_roi_doublets(roi_name, roi_df, module_dir, cmap):
     ratio = roi_ob.transcripts["x"].max() / roi_ob.transcripts["y"].max()
     ax.set_box_aspect([ratio, 1, 0.75])
     plt.savefig(
-        module_dir / f"{roi_name}_3d_transcripts.png",
+        roi_output_dir / f"{roi_name}_3d_transcripts.png",
         dpi=300,
         bbox_inches="tight",
     )
@@ -211,10 +216,11 @@ def run_doublet_id(io_config: IOConfig, config: DoubletIdentificationModuleConfi
     cmap = sns.color_palette("Spectral", as_cmap=True)
 
     logger.info("Loading transcripts form each ROI into a df...")
-    # Need to calculate doublets for each ROI independently
-    # Load "transcripts.parquet" for each ROI
-    # Make a dictionary of dfs where key=roi_name, value=df for each ROI
+    # Load "transcripts.parquet" for each ROI and make a dict of dfs
     df_all = load_transcripts(io_config)
 
+    logger.info("Identifying doublets from each ROI...")
     for roi_name, roi_df in df_all.items():
         process_roi_doublets(roi_name, roi_df, module_dir, cmap)
+
+    logger.info("Completed doublet identification for all ROIs.")

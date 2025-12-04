@@ -6,6 +6,7 @@ from logging import getLogger
 from pathlib import Path
 
 import anndata
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scanpy as sc
@@ -463,10 +464,9 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
     )
 
     # Set the label column (SCANVI_CELLTYPE_KEY) to "Unknown" for all cells initially.
-    # This ensures that STx cells are marked as unlabeled before we assign ref labels
+    # Ensures that STx cells are marked as unlabeled before we assign ref labels
     adata_combined.obs[SCANVI_CELLTYPE_KEY] = UNLABELED_CATEGORY
 
-    # Check columns in adata_combined
     logger.info(f"Columns in adata_combined: {list(adata_combined.obs.columns)}")
 
     # Ensure the batch column exists
@@ -508,7 +508,6 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
         f"Unique cell types: {adata_combined.obs[SCANVI_CELLTYPE_KEY].value_counts()}"
     )
 
-    # Initialize scANVI from trained scVI
     logger.info("Initializing scANVI model...")
     SCANVI.setup_anndata(
         adata_combined,
@@ -522,7 +521,6 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
         labels_key=SCANVI_CELLTYPE_KEY,
     )
 
-    # Train scANVI
     logger.info("Training scANVI model...")
     scanvi_model.train(
         max_epochs=MAX_EPOCHS_SCANVI,
@@ -532,7 +530,10 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
     )
     logger.info("scANVI training completed!")
 
-    logger.info("Get latent representation...")
+    logger.info("Saving scANVI model...")
+    scanvi_model.save(module_dir / "_scanvi_ref", overwrite=True)
+
+    logger.info("Getting latent representation...")
     adata_combined.obsm[SCANVI_LATENT_KEY] = scanvi_model.get_latent_representation()
 
     logger.info("Visualizing scANVI latent space...")
@@ -546,11 +547,141 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
         ncols=1,
         save=f"_{config.module_name}_scanvi_umap.png",
     )
-
-    logger.info("Saving scANVI model...")
-    scanvi_model.save(module_dir / "_scanvi_ref", overwrite=True)
-
     return adata_combined, scanvi_model
+
+
+def extract_predictions_and_visualize(adata_combined, scanvi_model, adata, module_dir):
+    """Extract predictions from scANVI model and copy them to original adata.
+
+    Args:
+    adata_combined : anndata.AnnData
+        Combined reference and spatial data
+    scanvi_model : scvi.model.SCANVI
+        Trained scANVI model
+    adata : anndata.AnnData
+        Original spatial dataset to which predictions will be copied
+    module_dir : Path
+        Output directory for saving results
+
+    Returns:
+    adata : anndata.AnnData
+        Original adata with scANVI predictions added
+    """
+    logger.info("Extracting scANVI predictions...")
+
+    # Get predictions (hard labels)
+    logger.info("Making predictions...")
+    adata_combined.obs[SCANVI_LABEL_COL] = scanvi_model.predict(adata_combined)
+
+    logger.info("Visualize predictions...")
+    df = (
+        adata_combined.obs.groupby([REF_CELL_LABEL_COL, SCANVI_LABEL_COL])
+        .size()
+        .unstack(fill_value=0)
+    )
+    norm_df = df / df.sum(axis=0)
+
+    plt.figure(figsize=(8, 8))
+    _ = plt.pcolor(norm_df)
+    _ = plt.xticks(np.arange(0.5, len(df.columns), 1), df.columns, rotation=90)
+    _ = plt.yticks(np.arange(0.5, len(df.index), 1), df.index)
+    plt.xlabel("Predicted")
+    plt.ylabel("Observed")
+    plt.savefig(
+        module_dir / "scanvi_confusion_matrix.png", dpi=300, bbox_inches="tight"
+    )
+
+    # Get prediction probabilities
+    prediction_probs = scanvi_model.predict(adata_combined, soft=True)
+    adata_combined.obsm["scanvi_probs"] = prediction_probs
+
+    # Calculate prediction uncertainty (entropy)
+    entropy = -np.sum(prediction_probs * np.log(prediction_probs + 1e-10), axis=1)
+    adata_combined.obs["prediction_entropy"] = entropy
+
+    # Calculate maximum probability (confidence)
+    max_prob = np.max(prediction_probs, axis=1)
+    adata_combined.obs["prediction_max_prob"] = max_prob
+
+    # Extract spatial predictions
+    spatial_mask = adata_combined.obs[BATCH_COL] == SPATIAL_KEY
+    adata_spatial_predicted = adata_combined[spatial_mask].copy()
+
+    logger.info(f"Spatial cells annotated: {adata_spatial_predicted.n_obs}")
+    logger.info("Predicted cell type distribution:")
+    logger.info(adata_spatial_predicted.obs[SCANVI_LABEL_COL].value_counts())
+
+    # Map predictions back to original adata using cell names
+    # Remove the suffix added by concat (index_unique="_")
+    spatial_indices = adata_spatial_predicted.obs_names.str.replace(
+        "_Spatial", "", regex=False
+    )
+
+    # Ensure indices match
+    matching_mask = spatial_indices.isin(adata.obs_names)
+    if not matching_mask.all():
+        logger.warning(
+            f"Some cell names don't match: {matching_mask.sum()}/{len(matching_mask)}"
+        )
+
+    # Create mapping
+    cell_prediction_map = dict(
+        zip(spatial_indices, adata_spatial_predicted.obs[SCANVI_LABEL_COL])
+    )
+    probability_map = dict(
+        zip(spatial_indices, adata_spatial_predicted.obsm["scanvi_probs"])
+    )
+    entropy_map = dict(
+        zip(spatial_indices, adata_spatial_predicted.obs["prediction_entropy"])
+    )
+    max_prob_map = dict(
+        zip(spatial_indices, adata_spatial_predicted.obs["prediction_max_prob"])
+    )
+
+    # Copy predictions to original adata
+    adata.obs[SCANVI_LABEL_COL] = adata.obs_names.map(cell_prediction_map)
+    adata.obs["scANVI_prediction_probs"] = adata.obs_names.map(probability_map)
+    adata.obs["scANVI_prediction_entropy"] = adata.obs_names.map(entropy_map)
+    adata.obs["scANVI_prediction_confidence"] = adata.obs_names.map(max_prob_map)
+
+    logger.info("scANVI predictions copied to original adata")
+
+    # Create visualizations
+    logger.info("Creating scANVI visualizations...")
+
+    # UMAP for overview
+    sc.pp.neighbors(adata_combined, use_rep=SCANVI_LATENT_KEY, n_neighbors=15)
+    sc.tl.umap(adata_combined)
+
+    # Plot results
+    _, axes = plt.subplots(2, 2, figsize=(16, 12))
+
+    # Plot 1: UMAP by dataset
+    sc.pl.umap(adata_combined, color=BATCH_COL, ax=axes[0, 0], show=False)
+    axes[0, 0].set_title(BATCH_COL)
+
+    # Plot 2: UMAP by cell type (reference) and predictions
+    sc.pl.umap(adata_combined, color=SCANVI_LABEL_COL, ax=axes[0, 1], show=False)
+    axes[0, 1].set_title("scANVI Predictions")
+
+    # Plot 3: Prediction uncertainty
+    sc.pl.umap(adata_combined, color="prediction_entropy", ax=axes[1, 0], show=False)
+    axes[1, 0].set_title("Prediction Uncertainty (Entropy)")
+
+    # Plot 4: Prediction confidence
+    sc.pl.umap(adata_combined, color="prediction_max_prob", ax=axes[1, 1], show=False)
+    axes[1, 1].set_title("Prediction Confidence (Max Probability)")
+
+    plt.tight_layout()
+
+    # Save plot
+    plot_path = module_dir / "scanvi_integration_results.png"
+    plt.savefig(plot_path, dpi=300, bbox_inches="tight")
+    plt.close()
+
+    logger.info(f"scANVI results plot saved: {plot_path}")
+
+    return adata
 
 
 def run_integration(
@@ -649,7 +780,7 @@ def run_integration(
 
     logger.info("Combine reference and query data ...")
 
-    gc.collect()  # Memory optimization: Force garbage collection before large operations
+    gc.collect()  # Force garbage collection before large operations
 
     # Create combined dataset with memory efficiency
     logger.info(
@@ -704,7 +835,9 @@ def run_integration(
     adata_combined.write_h5ad(combined_save_path)
     logger.info(f"Combined data saved to {combined_save_path}")
 
-    logger.info("Harmonize scRNAseq reference dataset with STx dataset scVI model...")
+    logger.info(
+        "STEP 1: Harmonize scRNAseq reference dataset with STx dataset scVI model..."
+    )
     adata_combined, trained_scvi_model = scVI_integration(
         config, adata_combined, module_dir
     )
@@ -712,7 +845,17 @@ def run_integration(
     logger.info(f"scVI model training complete. adata combined: {adata_combined}")
     logger.info(f"scVI model training complete. Model: {trained_scvi_model}")
 
-    logger.info("Step 2. Transfer labels using scANVI model...")
+    logger.info("STEP 2. Transfer labels using scANVI model...")
     adata_combined, trained_scanvi_model = scANVI_label_transfer(
         config, adata_combined, trained_scvi_model, module_dir
     )
+
+    # Extract scANVI predictions and copy to original adata
+    logger.info("STEP 3: Extracting predicted labels from scANVI...")
+    if adata_combined is not None and trained_scanvi_model is not None:
+        adata = extract_predictions_and_visualize(
+            adata_combined, trained_scanvi_model, adata, module_dir
+        )
+    else:
+        logger.error("scANVI integration failed. Skipping scANVI predictions.")
+        logger.warning("Continuing with ingest integration only...")

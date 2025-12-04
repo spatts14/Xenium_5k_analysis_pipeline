@@ -42,6 +42,12 @@ def main(config: Config):
         logger.info("Running Module 1 - Quality Control")
         run_qc(config.modules.quality_control, config.io)
 
+    if config.modules.doublet_identification:
+        from recode_st.qc import run_doublet_id
+
+        logger.info("Running Module - Doublet identification")
+        run_doublet_id(config.modules.doublet_identification, config.io)
+
     if config.modules.dimension_reduction:
         from recode_st.dimension_reduction import run_dimension_reduction
 

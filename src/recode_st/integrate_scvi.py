@@ -748,9 +748,15 @@ def run_integration(
             sampling_strategy="proportional",
             rare_cell_boost=2.0,
         )
+    else:
+        logger.info(
+            f"Reference dataset is small enough, using full dataset: {adata_ref.n_obs}"
+        )
+        adata_ref_subset = adata_ref
 
     # Clean up intermediate objects to free memory
     del adata_ref
+    gc.collect()
 
     # Log available layers for debugging
     logger.info(f"Reference layers: {list(adata_ref_subset.layers.keys())}")
@@ -770,9 +776,7 @@ def run_integration(
     )
     scVI_integration_check(adata, batch_key=BATCH_COL, cell_type=REF_CELL_LABEL_COL)
 
-    logger.info(
-        "Subsetting to only shared genes for scVI integration..."
-    )  # TODO: FIND A DIFF WORD THAN SUBSETTING BC ITS CONFUSING WHEN USING IT SO OFTEN FOR DIFF REASONS
+    logger.info("Preparing shared gene sets for scVI integration...")
     adata_ref_subset, adata_ingest = prepare_integrated_datasets(
         gene_id_dict_path, adata_ref_subset, adata
     )
@@ -801,20 +805,9 @@ def run_integration(
 
     # Verify counts layer was preserved during concat
     if "counts" not in adata_combined.layers:
-        logger.error("Counts layer lost during concat! Manually preserving...")
-        # Manually recreate counts layer from original data
-        ref_mask = adata_combined.obs[BATCH_COL] == REFERENCE_KEY
-        stx_mask = adata_combined.obs[BATCH_COL] == SPATIAL_KEY
-
-        # Initialize counts layer
-        adata_combined.layers["counts"] = adata_combined.X.copy()  # temporary
-
-        # Fill with actual counts
-        adata_combined.layers["counts"][ref_mask, :] = adata_ref_subset.layers["counts"]
-        adata_combined.layers["counts"][stx_mask, :] = adata.layers["counts"]
-        logger.info("Counts layer manually restored!")
+        raise ValueError("Counts layer lost during concat operation!")
     else:
-        logger.info("✓ Counts layer preserved during concat")
+        logger.info("Counts layer preserved during concat")
 
     logger.info(f"Combined data layers: {list(adata_combined.layers.keys())}")
 

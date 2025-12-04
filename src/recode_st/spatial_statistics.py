@@ -8,7 +8,8 @@ import squidpy as sq
 
 from recode_st.config import IOConfig, SpatialStatisticsModuleConfig
 
-warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 logger = getLogger(__name__)
 

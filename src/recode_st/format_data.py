@@ -9,7 +9,8 @@ from spatialdata_io import xenium
 
 from recode_st.config import IOConfig
 
-warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 logger = getLogger(__name__)
 

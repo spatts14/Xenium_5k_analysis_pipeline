@@ -8,7 +8,8 @@ import scanpy as sc
 
 from recode_st.config import IOConfig, MuspanModuleConfig
 
-warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 logger = getLogger(__name__)
 

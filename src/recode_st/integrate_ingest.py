@@ -1,6 +1,6 @@
 """Integrate scRNAseq and STx using ingest."""
 
-import warnings  # ? what is the best way to suppress warnings from package inputs?
+import warnings
 from logging import getLogger
 from pathlib import Path
 
@@ -13,7 +13,8 @@ import scanpy as sc
 from recode_st.config import IntegrateIngestModuleConfig, IOConfig
 from recode_st.helper_function import configure_scanpy_figures
 
-warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 logger = getLogger(__name__)
 

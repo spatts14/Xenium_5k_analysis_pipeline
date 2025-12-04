@@ -11,7 +11,8 @@ import squidpy as sq
 from recode_st.config import Drug2CellModuleConfig, IOConfig
 from recode_st.helper_function import configure_scanpy_figures
 
-warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 logger = getLogger(__name__)
 

@@ -40,7 +40,7 @@ def load_transcripts(io_config: IOConfig):
     if not xenium_path.exists():
         raise FileNotFoundError(f"Xenium root directory not found: {xenium_path}")
 
-    all_dfs = []
+    all_dfs = {}
     # Loop over date/run folders directly inside Xenium root
     for date_dir in xenium_path.iterdir():
         if not date_dir.is_dir():
@@ -56,16 +56,135 @@ def load_transcripts(io_config: IOConfig):
                 logger.info(f"Processing ROI: {roi_name}")
 
                 try:
+                    logger.info(f"Loading Xenium transcript data for {roi_name}...")
                     df = ovrlpy.io.read_Xenium(roi_folder / "transcripts.parquet")
-                    df["roi_name"] = roi_name  # Add ROI identifier
-                    all_dfs.append(df)
-                    logger.info(f"Loaded Xenium transcript data for {roi_name}")
+                    all_dfs[roi_name] = df
+                    logger.info(
+                        f"Loaded Xenium transcript data for {roi_name} saved to dict."
+                    )
                 except Exception as err:
                     logger.error(f"Failed loading Xenium data for {roi_name}: {err}")
                     continue
 
-    logger.info(f"Loaded transcripts for {len(all_dfs)} ROIs.")
+    logger.info(f"Loaded transcripts for {len(all_dfs)} ROIs: {list(all_dfs.keys())}")
     return all_dfs
+
+
+def process_roi_doublets(roi_name, roi_df, module_dir, cmap):
+    """Process doublet analysis for a single ROI.
+
+    Args:
+        roi_name (str): Name of the ROI
+        roi_df (polars.DataFrame): Transcript data for the ROI
+        module_dir (Path): Output directory for saving results
+        cmap: Colormap for visualization
+    """
+    logger.info(f"Identifying doublets for {roi_name} using ovrly ...")
+    n = 1_000  # Number of transcripts to show
+    logger.info(f"Showing every {n}th transcript for {roi_name}...")
+
+    # Plot transcripts
+    fig, ax = plt.subplots()
+    ax.scatter(roi_df[::n, "x"], roi_df[::n, "y"], s=0.1)
+    _ = ax.set(aspect="equal")
+    plt.savefig(
+        module_dir / f"{roi_name}_transcripts_overview.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    # TODO: Subset on HVG? Cell type specific genes? NEED TO THINK
+
+    logger.info("Running the ovrlpy pipeline...")
+    roi_ob = ovrlpy.Ovrlp(
+        roi_df,
+        n_workers=8,  # I think this is the number of CPUs used?
+        random_state=42,  # TODO: Determine if I need this since seed
+        # everything should deal with this
+    )
+    roi_ob.analyse()
+
+    logger.info("Visualizing results ...")
+    fig = ovrlpy.plot_pseudocells(roi_ob)
+    plt.savefig(
+        module_dir / f"{roi_name}_pseudocells.png", dpi=300, bbox_inches="tight"
+    )
+    plt.close()
+
+    # plot SVI per ROI
+    fig = ovrlpy.plot_signal_integrity(roi_ob, signal_threshold=3)
+    plt.savefig(
+        module_dir / f"{roi_name}_signal_integrity.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    logger.info("Detecting doublets...")
+    doublets = roi_ob.detect_doublets(min_signal=3, integrity_sigma=2)
+    logger.info(f"Detected {len(doublets)} doublets in {roi_name}")
+
+    logger.info("Visualizing doublets...")
+    # Overview of tissue
+    fig, ax = plt.subplots()
+    _scatter = ax.scatter(
+        doublets["x"], doublets["y"], c=doublets["integrity"], s=0.2, cmap=cmap
+    )
+    _ = ax.set_aspect("equal")
+    _ = fig.colorbar(_scatter, ax=ax)
+    plt.savefig(
+        module_dir / f"{roi_name}_doublets_overview.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    # Visualize specific doublet case
+    # select random doublet index
+    doublet_case = np.random.randint(0, len(doublets))
+    x, y = doublets["x"][doublet_case], doublets["y"][doublet_case]
+    _ = ovrlpy.plot_region_of_interest(roi_ob, x, y, window_size=60)
+    plt.savefig(
+        module_dir / f"{roi_name}_doublets_{doublet_case}.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    logger.info("Visualize cells in Z stacks using pickle...")
+    # Make folder to save pickle files
+    pickle_dir = module_dir / "pickle_doublets"
+    pickle_dir.mkdir(exist_ok=True)
+
+    # Name pickle file
+    pickle_file = pickle_dir / f"{roi_name}.pickle"
+
+    # Save the analyzed roi_ob for future use
+    logger.info(f"Saving analysis to {pickle_file}...")
+    with open(pickle_file, "wb") as f:
+        pickle.dump(roi_ob, f)
+
+    logger.info("Plotting cells in Z stacks...")
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection="3d")
+    plt.title(f"3D visualization of {roi_name}")
+    for i in range(-2, 3):
+        subset = roi_ob.transcripts.filter(
+            (pl.col("z") - pl.col("z_center")).is_between(i, i + 1)
+        )
+        # downsample the number of transcripts
+        subset = subset[::100]
+        ax.scatter(subset["x"], subset["y"], i, s=1, alpha=0.1)
+
+    ratio = roi_ob.transcripts["x"].max() / roi_ob.transcripts["y"].max()
+    ax.set_box_aspect([ratio, 1, 0.75])
+    plt.savefig(
+        module_dir / f"{roi_name}_3d_transcripts.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.close()
 
 
 def run_doublet_id(io_config: IOConfig, config: DoubletIdentificationModuleConfig):
@@ -94,114 +213,8 @@ def run_doublet_id(io_config: IOConfig, config: DoubletIdentificationModuleConfi
     logger.info("Loading transcripts form each ROI into a df...")
     # Need to calculate doublets for each ROI independently
     # Load "transcripts.parquet" for each ROI
-    # Make a list of dfs and each df in the list is an df for each ROI
+    # Make a dictionary of dfs where key=roi_name, value=df for each ROI
     df_all = load_transcripts(io_config)
 
-    for i, roi_df in enumerate(df_all):
-        roi_name = roi_df["roi_name"][0]  # Get ROI name from first row
-        logger.info(f"Identifying doublets for {roi_name} using ovrly ...")
-        n = 1_000  # Number of transcripts to show
-        logger.info(f"Showing every {n}th transcript for {roi_df}...")
-
-        # Plot transcripts
-        fig, ax = plt.subplots()
-        ax.scatter(roi_df[::n, "x"], roi_df[::n, "y"], s=0.1)
-        _ = ax.set(aspect="equal")
-        plt.savefig(
-            module_dir / f"{roi_name}_transcripts_overview.png",
-            dpi=300,
-            bbox_inches="tight",
-        )
-        plt.close()
-
-        # TODO: Subset on HVG? Cell type specific genes? NEED TO THINK
-
-        logger.info("Running the ovrlpy pipeline...")
-        roi_ob = ovrlpy.Ovrlp(
-            roi_df,
-            n_workers=8,  # I think this is the number of CPUs used?
-            random_state=42,  # TODO: Determine if I need this since seed
-            # everything should deal with this
-        )
-        roi_ob.analyse()
-
-        logger.info("Visualizing results ...")
-        fig = ovrlpy.plot_pseudocells(roi_ob)
-        plt.savefig(
-            module_dir / f"{roi_name}_pseudocells.png", dpi=300, bbox_inches="tight"
-        )
-        plt.close()
-
-        # plot SVI per ROI
-        fig = ovrlpy.plot_signal_integrity(roi_ob, signal_threshold=3)
-        plt.savefig(
-            module_dir / f"{roi_name}_signal_integrity.png",
-            dpi=300,
-            bbox_inches="tight",
-        )
-        plt.close()
-
-        logger.info("Detecting doublets...")
-        doublets = roi_ob.detect_doublets(min_signal=3, integrity_sigma=2)
-        logger.info(f"Detected {len(doublets)} doublets in {roi_name}")
-
-        logger.info("Visualizing doublets...")
-        # Overview of tissue
-        fig, ax = plt.subplots()
-        _scatter = ax.scatter(
-            doublets["x"], doublets["y"], c=doublets["integrity"], s=0.2, cmap=cmap
-        )
-        _ = ax.set_aspect("equal")
-        _ = fig.colorbar(_scatter, ax=ax)
-        plt.savefig(
-            module_dir / f"{roi_name}_doublets_overview.png",
-            dpi=300,
-            bbox_inches="tight",
-        )
-        plt.close()
-
-        # Visualize specific doublet case
-        # select random doublet index
-        doublet_case = np.random.randint(0, len(doublets))
-        x, y = doublets["x"][doublet_case], doublets["y"][doublet_case]
-        _ = ovrlpy.plot_region_of_interest(roi_ob, x, y, window_size=60)
-        plt.savefig(
-            module_dir / f"{roi_name}_doublets_{doublet_case}.png",
-            dpi=300,
-            bbox_inches="tight",
-        )
-        plt.close()
-
-        logger.info("Visualize cells in Z stacks using pickle...")
-        # Make folder to save pickle files
-        pickle_dir = module_dir / "pickle_doublets"
-        pickle_dir.mkdir(exist_ok=True)
-
-        # Name pickle file
-        pickle_file = pickle_dir / f"{roi_name}.pickle"
-
-        # Save the analyzed roi_ob for future use
-        logger.info(f"Saving analysis to {pickle_file}...")
-        with open(pickle_file, "wb") as f:
-            pickle.dump(roi_ob, f)
-
-        logger.info("Plotting cells in Z stacks...")
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection="3d")
-        plt.title(f"3D visualization of {roi_name}")
-        for i in range(-2, 3):
-            subset = roi_ob.transcripts.filter(
-                (pl.col("z") - pl.col("z_center")).is_between(i, i + 1)
-            )
-            # downsample the number of transcripts
-            subset = subset[::100]
-            ax.scatter(subset["x"], subset["y"], i, s=1, alpha=0.1)
-
-        ratio = roi_ob.transcripts["x"].max() / roi_ob.transcripts["y"].max()
-        ax.set_box_aspect([ratio, 1, 0.75])
-        plt.savefig(
-            module_dir / f"{roi_name}_3d_transcripts.png",
-            dpi=300,
-            bbox_inches="tight",
-        )
-        plt.close()
+    for roi_name, roi_df in df_all.items():
+        process_roi_doublets(roi_name, roi_df, module_dir, cmap)

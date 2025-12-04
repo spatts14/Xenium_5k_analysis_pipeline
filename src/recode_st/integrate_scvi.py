@@ -609,7 +609,7 @@ def run_integration(
     )
     if adata_ref.n_obs > 300000:  # Only subsample very large references
         logger.info(f"Subsampling reference from {adata_ref.n_obs} to ~200k cells...")
-        adata_ref = subset_reference(
+        adata_ref_subset = subset_reference(
             base_config=base_config,
             adata_ref=adata_ref,
             target_cells=200000,
@@ -619,12 +619,15 @@ def run_integration(
             rare_cell_boost=2.0,
         )
 
+    # Clean up intermediate objects to free memory
+    del adata_ref
+
     # Log available layers for debugging
-    logger.info(f"Reference layers: {list(adata_ref.layers.keys())}")
+    logger.info(f"Reference layers: {list(adata_ref_subset.layers.keys())}")
     logger.info(f"Spatial layers: {list(adata.layers.keys())}")
 
     # Log counts layer shapes (already verified to exist)
-    logger.info(f"Reference counts shape: {adata_ref.layers['counts'].shape}")
+    logger.info(f"Reference counts shape: {adata_ref_subset.layers['counts'].shape}")
     logger.info(f"Spatial counts shape: {adata.layers['counts'].shape}")
 
     # Ensure REF_CELL_LABEL_COL column exists in spatial data
@@ -632,7 +635,9 @@ def run_integration(
         adata.obs[REF_CELL_LABEL_COL] = "STx_UNKNOWN"  # placeholder for spatial cells
 
     logger.info("Verifying datasets for scVI integration...")
-    scVI_integration_check(adata_ref, batch_key=BATCH_COL, cell_type=REF_CELL_LABEL_COL)
+    scVI_integration_check(
+        adata_ref_subset, batch_key=BATCH_COL, cell_type=REF_CELL_LABEL_COL
+    )
     scVI_integration_check(adata, batch_key=BATCH_COL, cell_type=REF_CELL_LABEL_COL)
 
     # 1. INTEGRATION USING INGEST
@@ -640,7 +645,7 @@ def run_integration(
         "Subsetting to only shared genes for scVI integration..."
     )  # TODO: FIND A DIFF WORD THAN SUBSETTING BC ITS CONFUSING WHEN USING IT SO OFTEN FOR DIFF REASONS
     adata_ref_subset, adata_ingest = prepare_integrated_datasets(
-        gene_id_dict_path, adata_ref, adata
+        gene_id_dict_path, adata_ref_subset, adata
     )
 
     logger.info("Combine reference and query data ...")
@@ -660,11 +665,6 @@ def run_integration(
         index_unique="_",
     )
 
-    # Clean up intermediate objects to free memory
-    del adata_ref_subset
-    del adata_ingest
-    gc.collect()
-
     logger.info(
         f"Combined dataset created: {adata_combined.n_obs:,} cells x "
         f"{adata_combined.n_vars:,} genes"
@@ -681,13 +681,18 @@ def run_integration(
         adata_combined.layers["counts"] = adata_combined.X.copy()  # temporary
 
         # Fill with actual counts
-        adata_combined.layers["counts"][ref_mask, :] = adata_ref.layers["counts"]
+        adata_combined.layers["counts"][ref_mask, :] = adata_ref_subset.layers["counts"]
         adata_combined.layers["counts"][stx_mask, :] = adata.layers["counts"]
         logger.info("Counts layer manually restored!")
     else:
         logger.info("✓ Counts layer preserved during concat")
 
     logger.info(f"Combined data layers: {list(adata_combined.layers.keys())}")
+
+    # Clean up intermediate objects to free memory
+    del adata_ref_subset
+    del adata_ingest
+    gc.collect()
 
     # Check dimensions
     logger.info(

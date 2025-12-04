@@ -715,8 +715,7 @@ def run_integration(
     # Set figure directory for this module (overrides global setting)
     sc.settings.figdir = module_dir
 
-    # Get shared colormap from global visualization settings
-    # This ensures consistency across all modules
+    # Set figure settings
     configure_scanpy_figures(str(io_config.output_dir))
 
     # Log GPU availability
@@ -858,4 +857,3 @@ def run_integration(
         )
     else:
         logger.error("scANVI integration failed. Skipping scANVI predictions.")
-        logger.warning("Continuing with ingest integration only...")

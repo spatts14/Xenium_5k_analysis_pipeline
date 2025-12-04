@@ -1,5 +1,6 @@
 """Integrate scRNAseq and STx."""
 
+import gc
 import warnings
 from logging import getLogger
 from pathlib import Path
@@ -9,7 +10,7 @@ import numpy as np
 import pandas as pd
 import scanpy as sc
 import torch
-from scvi.model import SCVI
+from scvi.model import SCANVI, SCVI
 
 from recode_st.config import Config, IntegrateSCVIModuleConfig, IOConfig
 from recode_st.helper_function import configure_scanpy_figures
@@ -212,6 +213,122 @@ def verify_counts_layer(adata, data_type="data"):
         )
 
 
+def subset_reference(
+    base_config,
+    adata_ref: anndata.AnnData,
+    target_cells: int = 200000,
+    stratify_col: str = REF_CELL_LABEL_COL,
+    min_per_type: int = 100,
+    sampling_strategy="proportional",
+    rare_cell_boost: float = 2.0,
+):
+    """Subsample reference data while preserving cell type diversity.
+
+    Args:
+        base_config (SimpleNamespace or dict): Configuration object used to set seed.
+        adata_ref (anndata.AnnData): Reference AnnData object.
+        target_cells (int): Target number of cells after subsampling.
+        stratify_col (str): Column in adata_ref.obs to stratify sampling by.
+        min_per_type (int): Minimum cells to sample per cell type.
+        sampling_strategy (str): One of:
+            - "proportional": Sample proportionally to original frequencies
+            - "balanced": Give equal weight to all cell types
+            - "sqrt": Compromise between proportional and balanced (sqrt of proportions)
+        rare_cell_boost (float): Multiplier for min_per_type for rare cell types.
+
+    Returns:
+        anndata.AnnData: Subsampled reference AnnData object.
+    """
+    rng = np.random.default_rng(base_config.seed)
+    cell_type_counts = adata_ref.obs[stratify_col].value_counts()
+    n_types = len(cell_type_counts)
+    total_cells = len(adata_ref)
+
+    # Calculate sampling targets based on strategy
+    if sampling_strategy == "proportional":
+        # Keep original proportions
+        sampling_fracs = cell_type_counts / total_cells
+        base_targets = (sampling_fracs * target_cells).round().astype(int)
+
+    elif sampling_strategy == "balanced":
+        # Equal representation for all cell types
+        base_targets = pd.Series(target_cells // n_types, index=cell_type_counts.index)
+
+    elif sampling_strategy == "sqrt":
+        # Square root transformation - compromise between proportional and balanced
+        sqrt_counts = np.sqrt(cell_type_counts)
+        sampling_weights = sqrt_counts / sqrt_counts.sum()
+        base_targets = (sampling_weights * target_cells).round().astype(int)
+
+    else:
+        raise ValueError(f"Unknown sampling_strategy: {sampling_strategy}")
+
+    # Apply minimum per type, with boost for very rare cell types
+    rare_threshold = total_cells * 0.001  # <0.1% of total
+    final_targets = {}
+
+    for ct, count in cell_type_counts.items():
+        base_target = base_targets[ct]
+
+        # Determine minimum based on rarity
+        if count < rare_threshold:
+            effective_min = int(min_per_type * rare_cell_boost)
+        else:
+            effective_min = min_per_type
+
+        # Don't sample more than available, but ensure minimum
+        final_targets[ct] = min(count, max(base_target, effective_min))
+
+    # Adjust if we're over target_cells due to minimums
+    total_target = sum(final_targets.values())
+    if total_target > target_cells:
+        # Scale down proportionally, but preserve minimums
+        excess = total_target - target_cells
+        adjustable_cts = {
+            ct: target for ct, target in final_targets.items() if target > min_per_type
+        }
+
+        if adjustable_cts:
+            # Remove excess proportionally from adjustable cell types
+            total_adjustable = sum(adjustable_cts.values())
+            for ct in adjustable_cts:
+                reduction = int(excess * (adjustable_cts[ct] / total_adjustable))
+                final_targets[ct] = max(min_per_type, final_targets[ct] - reduction)
+
+    # Perform sampling
+    sampled_indices = []
+    for ct, n_sample in final_targets.items():
+        idx = adata_ref.obs.loc[adata_ref.obs[stratify_col] == ct].index
+        sampled = rng.choice(idx, size=n_sample, replace=False)
+        sampled_indices.extend(sampled)
+
+    # Shuffle to avoid any ordering bias
+    rng.shuffle(sampled_indices)
+
+    adata_subsampled = adata_ref[sampled_indices].copy()
+
+    # Report sampling statistics
+    print(f"Subsampled from {total_cells:,} to {len(adata_subsampled):,} cells")
+    print(f"Cell types: {n_types}")
+    print(f"Sampling strategy: {sampling_strategy}")
+    print("\nCell type distribution:")
+
+    orig_pcts = (cell_type_counts / total_cells * 100).round(2)
+    new_counts = adata_subsampled.obs[stratify_col].value_counts()
+    new_pcts = (new_counts / len(adata_subsampled) * 100).round(2)
+
+    for ct in cell_type_counts.index[:10]:  # Show top 10
+        print(
+            f"  {ct}: {cell_type_counts[ct]:,} ({orig_pcts[ct]:.2f}%) → "
+            f"{new_counts.get(ct, 0):,} ({new_pcts.get(ct, 0):.2f}%)"
+        )
+
+    if n_types > 10:
+        print(f"  ... and {n_types - 10} more cell types")
+
+    return adata_subsampled
+
+
 def scVI_integration_check(adata, batch_key=BATCH_COL, cell_type=REF_CELL_LABEL_COL):
     """Check dataset readiness for scVI/scANVI integration.
 
@@ -315,6 +432,127 @@ def scVI_integration(config, adata_combined, module_dir):
     return adata_combined, scvi_model
 
 
+def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
+    """Integrates STx data with a reference scRNA-seq dataset using scVI.
+
+    This function performs label transfer from a reference single-cell dataset
+    (e.g., HLCA) to a STx dataset (e.g., Xenium).
+    scANVI uses a semi-supervised approach to transfer cell-type labels.
+
+    Args:
+        adata_combined (anndata.AnnData): Reference scRNA-seq AnnData object containing
+            precomputed embeddings (PCA or UMAP) and cell-type annotations.
+            Should have matching genes with adata_ingest.
+        scvi_model (scvi.model.SCVI): Trained scVI model on combined data.
+        config (SimpleNamespace or dict): Configuration object containing
+        module_dir (Path): Output directory for saving results
+
+    Returns:
+        tuple: (adata_combined, scanvi_model) - Combined dataset and trained model
+    """
+    # Set constant variables
+    MAX_EPOCHS_SCANVI = 200
+
+    # Format labels for scANVI
+    # Create scANVI labels (reference has labels, spatial is 'Unknown')
+    SCANVI_CELLTYPE_KEY = (
+        "training_celltype_scanvi"  # new column that scANVI will use training labels.
+    )
+    UNLABELED_CATEGORY = (
+        "Unknown"  # placeholder for cells that do not have known labels aka STx cells
+    )
+
+    # Set the label column (SCANVI_CELLTYPE_KEY) to "Unknown" for all cells initially.
+    # This ensures that STx cells are marked as unlabeled before we assign ref labels
+    adata_combined.obs[SCANVI_CELLTYPE_KEY] = UNLABELED_CATEGORY
+
+    # Check columns in adata_combined
+    logger.info(f"Columns in adata_combined: {list(adata_combined.obs.columns)}")
+
+    # Ensure the batch column exists
+    if BATCH_COL not in adata_combined.obs.columns:
+        logger.error(f"Batch column '{BATCH_COL}' not found")
+        return None, None
+
+    # Assign real labels to reference cells
+    ref_mask = adata_combined.obs[BATCH_COL] == REFERENCE_KEY
+
+    # Ensure reference label column exists
+    if REF_CELL_LABEL_COL not in adata_combined.obs.columns:
+        logger.error(f"Cell type column '{REF_CELL_LABEL_COL}' not found")
+        return None, None
+
+    # Assign reference labels safely
+    adata_combined.obs.loc[ref_mask, SCANVI_CELLTYPE_KEY] = adata_combined.obs.loc[
+        ref_mask, REF_CELL_LABEL_COL
+    ].astype(str)
+
+    # Convert the column to categorical (recommended for scANVI)
+    adata_combined.obs[SCANVI_CELLTYPE_KEY] = adata_combined.obs[
+        SCANVI_CELLTYPE_KEY
+    ].astype("category")
+
+    logger.info(
+        f"Reference cells with labels: {ref_mask.sum()}"
+    )  # number of reference cells with labels.
+    logger.info(
+        f"Percent ref cells labeled: {100 * ref_mask.sum() / adata_combined.n_obs:.2f}%"
+    )
+    logger.info(
+        f"Spatial cells (unlabeled): {(~ref_mask).sum()}"
+    )  # number of spatial (unlabeled) cells.
+    logger.info(
+        f"Percent Spatial cells: {100 * (~ref_mask).sum() / adata_combined.n_obs:.2f}%"
+    )
+    logger.info(
+        f"Unique cell types: {adata_combined.obs[SCANVI_CELLTYPE_KEY].value_counts()}"
+    )
+
+    # Initialize scANVI from trained scVI
+    logger.info("Initializing scANVI model...")
+    SCANVI.setup_anndata(
+        adata_combined,
+        labels_key=SCANVI_CELLTYPE_KEY,
+        unlabeled_category=UNLABELED_CATEGORY,
+        batch_key=BATCH_COL,
+    )
+    scanvi_model = SCANVI.from_scvi_model(
+        scvi_model,
+        unlabeled_category=UNLABELED_CATEGORY,
+        labels_key=SCANVI_CELLTYPE_KEY,
+    )
+
+    # Train scANVI
+    logger.info("Training scANVI model...")
+    scanvi_model.train(
+        max_epochs=MAX_EPOCHS_SCANVI,
+        batch_size=512,  # Increase from 128
+        early_stopping=True,
+        early_stopping_patience=15,
+    )
+    logger.info("scANVI training completed!")
+
+    logger.info("Get latent representation...")
+    adata_combined.obsm[SCANVI_LATENT_KEY] = scanvi_model.get_latent_representation()
+
+    logger.info("Visualizing scANVI latent space...")
+    sc.pp.pca(adata_combined)
+    sc.pp.neighbors(adata_combined, use_rep=SCANVI_LATENT_KEY)
+    sc.tl.umap(adata_combined)
+    sc.pl.umap(
+        adata_combined,
+        color=[BATCH_COL, REF_CELL_LABEL_COL],
+        frameon=False,
+        ncols=1,
+        save=f"_{config.module_name}_scanvi_umap.png",
+    )
+
+    logger.info("Saving scANVI model...")
+    scanvi_model.save(module_dir / "_scanvi_ref", overwrite=True)
+
+    return adata_combined, scanvi_model
+
+
 def run_integration(
     config: IntegrateSCVIModuleConfig, io_config: IOConfig, base_config: Config
 ):
@@ -350,15 +588,15 @@ def run_integration(
     # This ensures consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
 
-    logger.info("Starting integration of scRNAseq and spatial transcriptomics data...")
-
     # Log GPU availability
     if torch.cuda.is_available():
         logger.info(f"✓ GPU available: {torch.cuda.get_device_name(0)}")
         logger.info(f"✓ CUDA version: {torch.version.cuda}")
         logger.info("✓ scVI will use GPU acceleration")
     else:
-        logger.info("⚠ No GPU detected - scVI will use CPU (slower training)")
+        logger.info("No GPU detected - scVI will use CPU (slower training)")
+
+    logger.info("Starting integration of scRNAseq and spatial transcriptomics data...")
 
     logger.info("Loading scRNAseq data from HLCA ...")
     adata_ref = sc.read_h5ad(ref_path)
@@ -366,19 +604,20 @@ def run_integration(
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
 
-    # Subsample reference data if it's too large to avoid memory issues
+    logger.info(
+        "Checking if need to subsample reference dataset for faster integration..."
+    )
     if adata_ref.n_obs > 300000:  # Only subsample very large references
-        logger.info(f"Subsampling reference from {adata_ref.n_obs:,} to ~200k cells...")
-        import numpy as np
-
-        rng = np.random.default_rng(base_config.seed)
-
-        # Simple random sampling - can be improved with stratified sampling later
-        target_cells = 200000
-        sample_size = min(target_cells, adata_ref.n_obs)
-        indices = rng.choice(adata_ref.n_obs, size=sample_size, replace=False)
-        adata_ref = adata_ref[indices].copy()
-        logger.info(f"Reference subsampled to {adata_ref.n_obs:,} cells")
+        logger.info(f"Subsampling reference from {adata_ref.n_obs} to ~200k cells...")
+        adata_ref = subset_reference(
+            base_config=base_config,
+            adata_ref=adata_ref,
+            target_cells=200000,
+            stratify_col=REF_CELL_LABEL_COL,
+            min_per_type=100,
+            sampling_strategy="proportional",
+            rare_cell_boost=2.0,
+        )
 
     # Log available layers for debugging
     logger.info(f"Reference layers: {list(adata_ref.layers.keys())}")
@@ -397,17 +636,16 @@ def run_integration(
     scVI_integration_check(adata, batch_key=BATCH_COL, cell_type=REF_CELL_LABEL_COL)
 
     # 1. INTEGRATION USING INGEST
-    logger.info("Subsetting to only shared genes for scVI integration...")
+    logger.info(
+        "Subsetting to only shared genes for scVI integration..."
+    )  # TODO: FIND A DIFF WORD THAN SUBSETTING BC ITS CONFUSING WHEN USING IT SO OFTEN FOR DIFF REASONS
     adata_ref_subset, adata_ingest = prepare_integrated_datasets(
         gene_id_dict_path, adata_ref, adata
     )
 
     logger.info("Combine reference and query data ...")
 
-    # Memory optimization: Force garbage collection before large operations
-    import gc
-
-    gc.collect()
+    gc.collect()  # Memory optimization: Force garbage collection before large operations
 
     # Create combined dataset with memory efficiency
     logger.info(

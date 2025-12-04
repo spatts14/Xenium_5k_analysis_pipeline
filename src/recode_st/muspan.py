@@ -5,8 +5,10 @@ from logging import getLogger
 
 import matplotlib.pyplot as plt
 import scanpy as sc
+import seaborn as sns
 
 from recode_st.config import IOConfig, MuspanModuleConfig
+from recode_st.helper_function import configure_scanpy_figures
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -36,6 +38,10 @@ def run_muspan(config: MuspanModuleConfig, io_config: IOConfig):
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
+
+    # Set figure settings to ensure consistency across all modules
+    configure_scanpy_figures(str(io_config.output_dir))
+    cmap = sns.color_palette("Spectral", as_cmap=True)
 
     # Import data
     logger.info("Loading Xenium data...")

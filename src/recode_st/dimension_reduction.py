@@ -321,10 +321,9 @@ def run_dimension_reduction(
     # Define variables
     CLUSTER_NAME = "leiden"
 
-    # Get shared colormap from global visualization settings
-    # This ensures consistency across all modules
-    viz_assets = configure_scanpy_figures(str(io_config.output_dir))
-    cmap = viz_assets["cmap"]
+    # Set figure settings to ensure consistency across all modules
+    configure_scanpy_figures(str(io_config.output_dir))
+    cmap = sns.color_palette("Spectral", as_cmap=True)
 
     # Load data based on subsampling strategy
     subsample_path = module_dir / f"adata_subsample_{config.norm_approach}.h5ad"

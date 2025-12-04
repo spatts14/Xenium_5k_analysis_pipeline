@@ -6,6 +6,7 @@ from logging import getLogger
 # import torch
 import pandas as pd
 import scanpy as sc
+import seaborn as sns
 
 from recode_st.config import AnnotateModuleConfig, IOConfig
 from recode_st.helper_function import configure_scanpy_figures
@@ -33,9 +34,9 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     # Set figure directory for this module (overrides global setting)
     sc.settings.figdir = module_dir
 
-    # Ensure global visualization settings are applied
-    # This ensures consistency across all modules
+    # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
+    cmap = sns.color_palette("Spectral", as_cmap=True)
 
     # Import data
     logger.info("Loading Xenium data...")
@@ -60,6 +61,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
         groupby=cluster_name,
         standard_scale="var",
         n_genes=5,
+        cmap=cmap,
         show=False,
         save=f"{config.module_name}_{cluster_name}.png",
     )
@@ -72,6 +74,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
         n_genes=10,
         ncols=3,
         legend_fontsize=10,
+        cmap=cmap,
         show=False,
         save=f"_{config.module_name}_{cluster_name}.png",
     )

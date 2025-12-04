@@ -254,9 +254,8 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
     # Set figure directory for this module (overrides global setting)
     sc.settings.figdir = module_dir
 
-    # Get shared colormap from global visualization settings
-    # This ensures consistency across all modules
-    viz_assets = configure_scanpy_figures(str(io_config.output_dir))
+    # Set figure settings to ensure consistency across all modules
+    configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)
 
     logger.info("Starting Drug2Cell module...")

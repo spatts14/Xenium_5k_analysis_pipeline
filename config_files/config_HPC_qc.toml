@@ -27,3 +27,4 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 # norm_approach = "cell_area"       # Normalization approach to use; options: scanpy_log, sctransform, cell_area, none
 
 [modules.doublet_identification]
+module_name = "doublet_identification" # Name of the module - will be used in the output directory name

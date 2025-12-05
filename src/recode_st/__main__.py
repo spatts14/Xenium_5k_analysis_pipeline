@@ -43,10 +43,10 @@ def main(config: Config):
         run_qc(config.modules.quality_control, config.io)
 
     if config.modules.doublet_identification:
-        from recode_st.qc import run_doublet_id
+        from recode_st.doublet_identification import run_doublet_id
 
         logger.info("Running Module - Doublet identification")
-        run_doublet_id(config.modules.doublet_identification, config.io)
+        run_doublet_id(config.io, config.modules.doublet_identification)
 
     if config.modules.dimension_reduction:
         from recode_st.dimension_reduction import run_dimension_reduction

@@ -79,6 +79,10 @@ class IntegrateIngestModuleConfig(BaseModuleConfig):
     """Configuration for the Integration Ingest module."""
 
 
+class IntegrateSCVIModuleConfig(BaseModuleConfig):
+    """Configuration for the Integration scVI module."""
+
+
 class AnnotateModuleConfig(BaseModuleConfig):
     """Configuration for the Annotate module."""
 
@@ -179,6 +183,9 @@ class ModulesConfig(BaseModel):
 
     integrate_ingest: IntegrateIngestModuleConfig | None = None
     """Configuration for the Integration (ingest) module."""
+
+    integrate_scvi: IntegrateSCVIModuleConfig | None = None
+    """Configuration for the Integration (scVI) module."""
 
     annotate: AnnotateModuleConfig | None = None
     """Configuration for the Annotate module."""

@@ -18,5 +18,5 @@ ref_path = "/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/pro
 gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/data/gene_id_dict.csv"
 
 
-[modules.integrate_ingest]
-module_name = "3_integrate_ingest"
+[modules.integrate_scvi]
+module_name = "integrate_scvi"

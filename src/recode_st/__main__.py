@@ -57,49 +57,55 @@ def main(config: Config):
     if config.modules.integrate_ingest:
         from recode_st.integrate_ingest import run_integration
 
-        logger.info("Running Module 3a - Integration: Ingest")
+        logger.info("Running Module - Integration: Ingest")
         run_integration(config.modules.integrate_ingest, config.io)
+
+    if config.modules.integrate_scvi:
+        from recode_st.integrate_scvi import run_integration
+
+        logger.info("Running Module - Integration: scVI")
+        run_integration(config.modules.integrate_scvi, config.io, config)
 
     if config.modules.annotate:
         from recode_st.annotate import run_annotate
 
-        logger.info("Running Module 3b - Annotate")
+        logger.info("Running Module - Annotate")
         run_annotate(config.modules.annotate, config.io)
 
     if config.modules.view_images:
         from recode_st.view_images import run_view_images
 
-        logger.info("Running Module 4 - View Images")
+        logger.info("Running Module - View Images")
         run_view_images(config.modules.view_images, config.io)
 
     if config.modules.spatial_statistics:
         from recode_st.spatial_statistics import run_spatial_statistics
 
-        logger.info("Running Module 5 - Spatial Statistics")
+        logger.info("Running Module - Spatial Statistics")
         run_spatial_statistics(config.modules.spatial_statistics, config.io)
 
     if config.modules.drug2cell:
         from recode_st.drug2cell import run_drug2cell
 
-        logger.info("Running Module ? - Drug2Cell")
+        logger.info("Running Module - Drug2Cell")
         run_drug2cell(config.modules.drug2cell, config.io)
 
     if config.modules.muspan:
         from recode_st.muspan import run_muspan
 
-        logger.info("Running Module 6 - MuSpAn")
+        logger.info("Running Module - MuSpAn")
         run_muspan(config.modules.muspan, config.io)
 
     if config.modules.muspan_spatial_graph:
         from recode_st.ms_spatial_graph import run_muspan_graph
 
-        logger.info("Running Module 7 - MuSpAn Spatial Graph")
+        logger.info("Running Module - MuSpAn Spatial Graph")
         run_muspan_graph(config.modules.muspan_spatial_graph, config.io)
 
     if config.modules.muspan_spatial_stat:
         from recode_st.ms_spatial_stat import run_muspan_stats
 
-        logger.info("Running Module 8 - MuSpAn Spatial Stats")
+        logger.info("Running Module - MuSpAn Spatial Stats")
         run_muspan_stats(config.modules.muspan_spatial_stat, config.io)
 
 

@@ -50,6 +50,10 @@ class QualityControlModuleConfig(BaseModuleConfig):
     'cell_area' for normalization by cell area."""
 
 
+class DoubletIdentificationModuleConfig(BaseModuleConfig):
+    """Configuration for the Doublet Identification module."""
+
+
 class DimensionReductionModuleConfig(BaseModuleConfig):
     """Configuration for the Quality Control module."""
 
@@ -166,6 +170,9 @@ class ModulesConfig(BaseModel):
 
     quality_control: QualityControlModuleConfig | None = None
     """Configuration for the Quality Control module."""
+
+    doublet_identification: DoubletIdentificationModuleConfig | None = None
+    """Configuration for doublet detection with ovrlypy module."""
 
     dimension_reduction: DimensionReductionModuleConfig | None = None
     """Configuration for the Dimension Reduction module."""

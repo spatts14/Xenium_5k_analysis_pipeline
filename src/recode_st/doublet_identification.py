@@ -1,7 +1,10 @@
 """Identify doublets and spatial overlap with ovrly."""
 
+import multiprocessing as mp
 import pickle
 import warnings
+from concurrent.futures import ProcessPoolExecutor
+from functools import partial
 from logging import getLogger
 from pathlib import Path
 
@@ -112,9 +115,7 @@ def process_roi_doublets(roi_name, roi_df, module_dir, cmap):
     logger.info("Running the ovrlpy pipeline...")
     roi_ob = ovrlpy.Ovrlp(
         roi_df,
-        n_workers=16,  # I think this is the number of CPUs used?
-        random_state=42,  # TODO: Determine if I need this since seed
-        # everything should deal with this
+        n_workers=16,
     )
     roi_ob.analyse()
 
@@ -231,7 +232,29 @@ def run_doublet_id(io_config: IOConfig, config: DoubletIdentificationModuleConfi
     df_all = load_transcripts(io_config)
 
     logger.info("Identifying doublets from each ROI...")
-    for roi_name, roi_df in df_all.items():
-        process_roi_doublets(roi_name, roi_df, module_dir, cmap)
+
+    # Process ROIs in parallel for speed
+    # Use 75% of available CPUs
+    n_workers = max(1, int(mp.cpu_count() * 0.75))
+    logger.info(
+        f"Processing {len(df_all)} ROIs in parallel using {n_workers} workers..."
+    )
+    process_func = partial(process_roi_doublets, module_dir=module_dir, cmap=cmap)
+
+    # Process in parallel
+    with ProcessPoolExecutor(max_workers=n_workers) as executor:
+        roi_items = list(df_all.items())
+        futures = [
+            executor.submit(process_func, roi_name, roi_df)
+            for roi_name, roi_df in roi_items
+        ]
+
+        # Monitor progress
+        for i, future in enumerate(futures):
+            try:
+                future.result()
+                logger.info(f"Completed {i + 1}/{len(futures)} ROIs")
+            except Exception as e:
+                logger.error(f"Failed processing ROI {roi_items[i][0]}: {e}")
 
     logger.info("Completed doublet identification for all ROIs.")

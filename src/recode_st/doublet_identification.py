@@ -85,8 +85,16 @@ def process_roi_doublets(roi_name, roi_df, module_dir, cmap):
     roi_output_dir.mkdir(exist_ok=True)
 
     logger.info(f"Identifying doublets for {roi_name} using ovrly ...")
-    n = 1_000  # Number of transcripts to show
-    logger.info(f"Showing every {n}th transcript for {roi_name}...")
+    n = 100
+    total_transcripts = roi_df.shape[0]
+    transcripts_shown = total_transcripts // n
+    percent_shown = (transcripts_shown / total_transcripts) * 100
+    logger.info(f"Showing every {n}th transcript for {roi_name}: ")
+    logger.info(
+        f"Total transcripts: {total_transcripts}, "
+        f"Shown: {transcripts_shown} "
+        f"({percent_shown:.2f}%)"
+    )
 
     # Plot transcripts
     fig, ax = plt.subplots()

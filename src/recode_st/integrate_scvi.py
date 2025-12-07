@@ -239,10 +239,10 @@ def subset_reference(
     Returns:
         anndata.AnnData: Subsampled reference AnnData object.
     """
-    rng = np.random.default_rng(base_config.seed)
+    rng = np.random.default_rng(base_config.seed)  # set just in case
     cell_type_counts = adata_ref.obs[stratify_col].value_counts()
-    n_types = len(cell_type_counts)
-    total_cells = len(adata_ref)
+    n_types = len(cell_type_counts)  # number of unique cell types
+    total_cells = len(adata_ref)  # total number of cells in reference
 
     # Calculate sampling targets based on strategy
     if sampling_strategy == "proportional":
@@ -736,15 +736,15 @@ def run_integration(
     logger.info(
         "Checking if need to subsample reference dataset for faster integration..."
     )
-    if adata_ref.n_obs > 300000:  # Only subsample very large references
+    if adata_ref.n_obs > 500000:  # Only subsample very large references
         logger.info(f"Subsampling reference from {adata_ref.n_obs} to ~200k cells...")
         adata_ref_subset = subset_reference(
             base_config=base_config,
             adata_ref=adata_ref,
-            target_cells=200000,
+            target_cells=500000,
             stratify_col=REF_CELL_LABEL_COL,
             min_per_type=100,
-            sampling_strategy="proportional",
+            sampling_strategy="sqrt",
             rare_cell_boost=2.0,
         )
     else:

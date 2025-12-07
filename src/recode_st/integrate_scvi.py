@@ -14,7 +14,6 @@ import torch
 from scvi.model import SCANVI, SCVI
 
 from recode_st.config import Config, IntegrateSCVIModuleConfig, IOConfig
-from recode_st.helper_function import configure_scanpy_figures
 
 # Suppress specific warnings to reduce noise in logs
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -716,7 +715,7 @@ def run_integration(
     sc.settings.figdir = module_dir
 
     # Set figure settings
-    configure_scanpy_figures(str(io_config.output_dir))
+    # configure_scanpy_figures(str(io_config.output_dir)) - not suitable fig settings
 
     # Log GPU availability
     if torch.cuda.is_available():

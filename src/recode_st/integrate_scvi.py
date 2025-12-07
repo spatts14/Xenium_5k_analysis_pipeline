@@ -400,7 +400,7 @@ def scVI_integration(config, adata_combined, module_dir):
     )
 
     logger.info("Initializing scVI model...")
-    scvi_model = SCVI(adata_combined, n_layers=1, n_latent=20, n_hidden=128)
+    scvi_model = SCVI(adata_combined, n_layers=3, n_latent=50, n_hidden=128)
     logger.info("Training SCVI model...")
     scvi_model.train(
         max_epochs=MAX_EPOCHS_SCVI,
@@ -452,7 +452,7 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
         tuple: (adata_combined, scanvi_model) - Combined dataset and trained model
     """
     # Set constant variables
-    MAX_EPOCHS_SCANVI = 50
+    MAX_EPOCHS_SCANVI = 200
 
     # Format labels for scANVI
     # Create scANVI labels (reference has labels, spatial is 'Unknown')
@@ -524,7 +524,7 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
     logger.info("Training scANVI model...")
     scanvi_model.train(
         max_epochs=MAX_EPOCHS_SCANVI,
-        batch_size=512,  # Increase from 128
+        batch_size=1024,
         early_stopping=True,
         early_stopping_patience=15,
     )

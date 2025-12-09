@@ -390,6 +390,23 @@ def scVI_integration(config, adata_combined, module_dir):
     # Training parameters
     MAX_EPOCHS_SCVI = 200
 
+    # Check for extreme values that might cause numerical instability
+    logger.info("Checking data quality before scVI training...")
+    counts_data = adata_combined.layers["counts"]
+    if hasattr(counts_data, "data"):  # sparse matrix
+        max_val = counts_data.data.max()
+        min_val = counts_data.data.min()
+    else:  # dense matrix
+        max_val = counts_data.max()
+        min_val = counts_data.min()
+
+    logger.info(f"Counts data range: {min_val} to {max_val}")
+    if max_val > 1e6:
+        logger.warning(
+            f"Very high count values detected (max: {max_val}). "
+            "This may cause instability."
+        )
+
     # Setup scVI
     logger.info("Setting up scVI model...")
     SCVI.setup_anndata(
@@ -403,10 +420,13 @@ def scVI_integration(config, adata_combined, module_dir):
     logger.info("Training SCVI model...")
     scvi_model.train(
         max_epochs=MAX_EPOCHS_SCVI,
-        batch_size=1024,  # Increase from 128
-        plan_kwargs={"lr": 1e-3},  # Explicit learning rate
+        batch_size=1024,  # Keep larger batch size for scVI
+        plan_kwargs={
+            "lr": 1e-3,  # Explicit learning rate
+            "weight_decay": 1e-6,  # Add regularization
+        },
         early_stopping=True,
-        early_stopping_patience=10,
+        early_stopping_patience=15,
     )
 
     logger.info("Obtain and visualize latent representation...")
@@ -519,15 +539,72 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
         unlabeled_category=UNLABELED_CATEGORY,
         labels_key=SCANVI_CELLTYPE_KEY,
     )
+    logger.info("✓ scANVI model initialized successfully")
+
+    # Validate data before training to prevent NaN issues
+    logger.info("Validating data quality before scANVI training...")
+    if hasattr(adata_combined.X, "data"):  # For sparse matrices
+        data_to_check = adata_combined.X.data
+    else:
+        data_to_check = adata_combined.X
+
+    import numpy as np
+
+    has_nan = np.isnan(data_to_check.astype(float)).any()
+    has_inf = np.isinf(data_to_check.astype(float)).any()
+
+    if has_nan or has_inf:
+        logger.warning(f"Found invalid values in data - NaN: {has_nan}, Inf: {has_inf}")
+        logger.warning("This may cause training instabilities")
+    else:
+        logger.info("✓ Data validation passed - no NaN or Inf values detected")
+
+    # Check label distribution
+    label_counts = adata_combined.obs[SCANVI_CELLTYPE_KEY].value_counts()
+    logger.info("Label distribution for scANVI training:")
+    for label, count in label_counts.head(10).items():
+        logger.info(f"  {label}: {count:,} cells")
+
+    if len(label_counts) > 50:
+        logger.warning(
+            f"Large number of cell types ({len(label_counts)}). This may slow training."
+        )
 
     logger.info("Training scANVI model...")
-    scanvi_model.train(
-        max_epochs=MAX_EPOCHS_SCANVI,
-        batch_size=1024,
-        early_stopping=True,
-        early_stopping_patience=15,
-    )
-    logger.info("scANVI training completed!")
+    # Use more conservative training parameters to avoid NaN values
+    try:
+        scanvi_model.train(
+            max_epochs=MAX_EPOCHS_SCANVI,
+            batch_size=512,  # Reduce batch size to improve stability
+            plan_kwargs={
+                "lr": 5e-4,  # Lower learning rate for stability
+                "weight_decay": 1e-6,  # Add regularization
+            },
+            early_stopping=True,
+            early_stopping_patience=20,  # Increase patience for lower lr
+            check_val_every_n_epoch=5,  # Check validation less frequently
+        )
+        logger.info("scANVI training completed!")
+    except Exception as e:
+        logger.error(f"scANVI training failed with error: {e}")
+        logger.info("Attempting recovery with even more conservative parameters...")
+        try:
+            # Try with very conservative parameters
+            scanvi_model.train(
+                max_epochs=100,  # Fewer epochs
+                batch_size=256,  # Even smaller batch size
+                plan_kwargs={
+                    "lr": 1e-4,  # Even lower learning rate
+                    "weight_decay": 1e-5,  # More regularization
+                },
+                early_stopping=True,
+                early_stopping_patience=15,
+            )
+            logger.info("✓ scANVI recovery training completed!")
+        except Exception as recovery_e:
+            logger.error(f"Recovery training also failed: {recovery_e}")
+            logger.error("scANVI training cannot proceed. Returning None models.")
+            return None, None
 
     logger.info("Saving scANVI model...")
     scanvi_model.save(module_dir / "_scanvi_ref", overwrite=True)
@@ -722,6 +799,10 @@ def run_integration(
         logger.info(f"✓ GPU available: {torch.cuda.get_device_name(0)}")
         logger.info(f"✓ CUDA version: {torch.version.cuda}")
         logger.info("✓ scVI will use GPU acceleration")
+
+        # Set matmul precision for A100 GPUs to improve stability
+        torch.set_float32_matmul_precision("medium")
+        logger.info("✓ Set PyTorch matmul precision to 'medium' for A100 stability")
     else:
         logger.info("No GPU detected - scVI will use CPU (slower training)")
 

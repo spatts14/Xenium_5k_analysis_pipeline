@@ -33,7 +33,7 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "view_images" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
 
     # Calculate spatial statistics
     logger.info("Building spatial neighborhood graph...")
@@ -47,6 +47,7 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
         adata,
         cluster_key=cluster,
         legend_loc="right margin",
+        figsize=(20, 10),
         save=module_dir / "centrality_scores.png",
     )
     logger.info(

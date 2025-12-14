@@ -19,9 +19,12 @@ logger = getLogger(__name__)
 
 # Define global variables - SHOULD THESE BE HERE OR INSIDE THE RUN FUNCTION?
 INGEST_LABEL_COL = "ingest_pred_cell_type"
-REF_CELL_LABEL_COL = "cell_type"  # Column in reference data with cell type labels
+REF_CELL_LABEL_COL = (
+    "transf_ann_level_3_label"  # Column in reference data with cell type labels
+)
 BATCH_COL = "dataset_origin"
 ANNOTATION_COLS = [  # Define the annotation columns to transfer
+    "cell_type",
     "transf_ann_level_1_label",
     "transf_ann_level_2_label",
     "transf_ann_level_3_label",

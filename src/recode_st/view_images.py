@@ -33,35 +33,41 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "annotate" / "adata.h5ad")
 
-    # View plots
-    logger.info("Visualize clusters on tissue...")
-    sq.pl.spatial_scatter(
-        adata,
-        library_id="spatial",
-        shape=None,
-        outline=False,
-        color=["leiden", "total_counts"],
-        cmap=cmap,
-        wspace=0.4,
-        size=1,
-        save=module_dir / "leiden_clusters.png",
-        dpi=300,
-    )
-    logger.info(f"Saved leiden clusters plot to {module_dir / 'leiden_clusters.png'}")
-
     # View specific gene expression
     logger.info("Plotting genes of interest on tissue...")
-    sq.pl.spatial_scatter(
-        adata,
-        library_id="spatial",
-        color=config.gene_list,
-        cmap=cmap,
-        shape=None,
-        size=2,
-        img=False,
-        save=module_dir / "gene_expression.png",
-    )
-    logger.info(f"Saved gene expression plot to {module_dir / 'gene_expression.png'}")
+    ROI_list = adata.obs["ROI"].unique().tolist()
+    for roi in ROI_list:
+        logger.info(f"Plotting genes for ROI: {roi}")
+        adata_roi = adata[adata.obs["ROI"] == roi]
+        sq.pl.spatial_scatter(
+            adata_roi,
+            library_id="spatial",
+            color=config.gene_list,
+            cmap=cmap,
+            shape=None,
+            vmax=5,
+            size=2,
+            img=False,
+            save=module_dir / f"gene_expression_{roi}.png",
+        )
+        logger.info(f"Saved gene expression plot for ROI {roi} saved to {module_dir}")
+
+        logger.info("Visualize clusters on tissue...")
+        sq.pl.spatial_scatter(
+            adata,
+            library_id="spatial",
+            shape=None,
+            outline=False,
+            color=["leiden", "total_counts"],
+            cmap=cmap,
+            wspace=0.4,
+            size=1,
+            save=module_dir / "leiden_clusters.png",
+            dpi=300,
+        )
+        logger.info(
+            f"Saved leiden clusters plot to {module_dir / 'leiden_clusters.png'}"
+        )
 
     # Save anndata object
     adata.write_h5ad(module_dir / "adata.h5ad")

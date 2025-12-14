@@ -47,7 +47,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     module_dir.mkdir(exist_ok=True)
 
     # Set figure directory for this module (overrides global setting)
-    sc.settings.figdir = module_dir
+    # sc.settings.figdir = module_dir
 
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
@@ -177,7 +177,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     sc.pl.umap(
         adata,
         color=[cluster_name, new_clusters],
-        legend_loc="best",
+        legend_loc="on data",
         title=new_clusters,
         palette=palette,
         show=False,

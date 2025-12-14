@@ -17,29 +17,5 @@ logging_path = "logs"                                                           
 ref_path = "/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/processed_hlca_full_ref.h5ad"                                             # Path to the reference scRNAseq data
 gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/data/gene_id_dict.csv"
 
-[modules.quality_control]
-module_name = "1_quality_control" # Name of the module - will be used in the output directory name
-min_counts = 10                   # Minimum number of counts required for a cell to pass filtering
-min_cells = 5                     # Minimum number of cells expressed required for a gene to pass filtering
-min_cell_area = 25                # Minimum cell area to filter cells required for a cell to pass filtering
-max_cell_area = 1000              # Maximum cell area to filter cells required for a cell to pass filtering
-norm_approach = "cell_area"       # Normalization approach to use; options: scanpy_log, sctransform, cell_area, none
-
-[modules.dimension_reduction]
-module_name = "2_dimension_reduction" # Name of the module - will be used in the output directory name
-norm_approach = "cell_area" # Normalization approach to use
-n_pca = 40 # number of principal components to use for neighborhood graph
-n_neighbors = 40 # number of neighbors for the neighborhood graph
-resolution = 1 # resolution for leiden clustering
-cluster_name = "leiden" # name of the cluster column in adata.obs
-obs_vis_list = ["ROI", "condition", "batch"]
-marker_genes = [
-    "PTPRC",
-    "CD3E",
-    "CD68",
-    "EPCAM",
-    "KRT5",
-    "PDGFRA",
-    "ACTA2",
-    "VWF",
-] # Cell type marker plots
+[modules.integrate_ingest]
+module_name = "integrate_ingest" # Name of the module - will be used in the output directory name

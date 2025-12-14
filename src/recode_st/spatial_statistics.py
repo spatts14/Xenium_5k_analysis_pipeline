@@ -27,7 +27,7 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)
-    palette = sns.color_palette("Spectral", as_cmap=False)
+    # palette = sns.color_palette("Spectral", as_cmap=False)
 
     # Import data
     logger.info("Loading Xenium data...")
@@ -66,7 +66,6 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
     sq.pl.co_occurrence(
         adata_subsample,
         cluster_key="leiden",
-        palette=palette,
         clusters="12",
         figsize=(10, 10),
         save=module_dir / "co_occurrence.png",

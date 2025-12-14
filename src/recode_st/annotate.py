@@ -177,11 +177,15 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     sc.pl.umap(
         adata,
         color=[cluster_name, new_clusters],
-        legend_loc="on data",
+        legend_loc="right margin",
+        legend_fontsize=12,
+        frameon=False,
+        ncols=2,  # Side by side
+        wspace=0.4,  # Space between plots
         title=new_clusters,
         palette=palette,
         show=False,
-        save=f"_{config.module_name}_{new_clusters}.png",
+        save=f"_{config.module_name}_{new_clusters}_combined_annotation.png",
     )
     logger.info(f"UMAP plot with new cluster names saved to {sc.settings.figdir}")
 

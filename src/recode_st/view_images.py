@@ -74,7 +74,4 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             f"Saved leiden clusters plot to {module_dir / 'leiden_clusters.png'}"
         )
 
-    # Save anndata object
-    adata.write_h5ad(module_dir / "adata.h5ad")
-    logger.info(f"Data saved to {module_dir / 'adata.h5ad'}")
     logger.info("Imaging module completed successfully.")

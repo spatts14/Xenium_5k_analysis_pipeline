@@ -8,7 +8,6 @@ import seaborn as sns
 import squidpy as sq
 
 from recode_st.config import IOConfig, SpatialStatisticsModuleConfig
-from recode_st.helper_function import configure_scanpy_figures
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -28,7 +27,7 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
     cluster = config.clusters_label
 
     # Set figure settings to ensure consistency across all modules
-    configure_scanpy_figures(str(io_config.output_dir))
+    # configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)
     # palette = sns.color_palette("Spectral", as_cmap=False)
 
@@ -47,7 +46,7 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
     sq.pl.centrality_scores(
         adata,
         cluster_key=cluster,
-        figsize=(16, 5),
+        legend_loc="right margin",
         save=module_dir / "centrality_scores.png",
     )
     logger.info(
@@ -69,7 +68,7 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
     sq.pl.co_occurrence(
         adata_subsample,
         cluster_key=cluster,
-        clusters="12",
+        legend_loc="right margin",
         figsize=(10, 10),
         save=module_dir / "co_occurrence.png",
     )

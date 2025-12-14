@@ -143,9 +143,34 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
         logger.info(f"Exported cluster {cluster_number} data to {csv_filename}")
 
     # Rename the clusters based on the markers
+    cluster_to_cell_type = config.cluster_to_cell_type
+    logger.info(f"Cluster to cell type mapping: {cluster_to_cell_type}")
+    logger.info(f"Type of data in mapping: {type(cluster_to_cell_type)}")
+
     logger.info("Renaming clusters based on markers...")
+    cluster_to_cell_type_dict = {
+        "0": "Basal epithelial cells",
+        "1": "Unknown - MUC5B low",
+        "2": "Fibroblasts",
+        "3": "Endothelial cells",
+        "4": "Ciliated epithelial cells",
+        "5": "Basal epithelial cells",
+        "6": "Goblet cell MUC5AChi MUC5Blo",
+        "7": "Ciliated epithelial cells",
+        "8": "Fibroblasts SPARChi",
+        "9": "Smooth muscle cells",
+        "10": "Secretory epithelial / Club cells",
+        "11": "T cells",
+        "12": "Macrophages",
+        "13": "FNhi",
+        "14": "Goblet cell MUC5AClo MUC5Bhi",
+        "15": "Plasma cells / B cells",
+        "16": "Mast cells",
+        "17": "Lymphatic endothelial cells",
+    }
+
     # Get unique clusters
-    adata.obs[new_clusters] = config.cluster_to_cell_type
+    adata.obs[new_clusters] = adata.obs[cluster_name].map(cluster_to_cell_type_dict)
 
     # Save anndata object
     adata.write_h5ad(module_dir / "adata.h5ad")

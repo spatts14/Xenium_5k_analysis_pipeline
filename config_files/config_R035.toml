@@ -19,3 +19,8 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 
 [modules.integrate_ingest]
 module_name = "integrate_ingest" # Name of the module - will be used in the output directory name
+
+[modules.annotate]
+module_name = "annotate"
+cluster_name = "leiden"
+new_clusters = "manual_annotation"

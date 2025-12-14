@@ -375,16 +375,17 @@ def run_dimension_reduction(
     # Plot PCA with observation fields if available
     if config.obs_vis_list:
         logger.info("Plotting PCA with observation fields...")
-        sc.pl.pca(
-            adata,
-            color=config.obs_vis_list,
-            palette=palette,
-            dimensions=[(0, 1)],
-            ncols=3,
-            size=2,
-            show=False,
-            save=f"_{config.module_name}_obs_fields.png",
-        )
+        for _obs_field in config.obs_vis_list:
+            sc.pl.pca(
+                adata,
+                color=_obs_field,
+                palette=palette,
+                dimensions=[(0, 1)],
+                ncols=3,
+                size=2,
+                show=False,
+                save=f"_{config.module_name}_{_obs_field}.png",
+            )
     else:
         logger.info(
             "Skipping PCA observation fields plot (obs_vis_list not configured)"

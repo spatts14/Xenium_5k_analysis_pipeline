@@ -348,7 +348,7 @@ def run_dimension_reduction(
     )
 
     # Plot PCA variance
-    logger.ingo("Computing and plotting PCA variance ratio...")
+    logger.info("Computing and plotting PCA variance ratio...")
     sc.pp.pca(adata, n_comps=80, svd_solver="arpack")
 
     logger.info("Plotting PCA variance...")

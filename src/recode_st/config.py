@@ -69,6 +69,10 @@ class DimensionReductionModuleConfig(BaseModuleConfig):
         "cell_area"
     )
     """Normalization approach to use."""
+    obs_vis_list: list[str]
+    """List of observation fields to visualize on UMAP."""
+    marker_genes: list[str]
+    """List of marker genes to visualize on UMAP."""
 
 
 class IntegrateModuleConfig(BaseModuleConfig):

@@ -25,6 +25,9 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
+    # Set figure directory for this module (overrides global setting)
+    sc.settings.figdir = module_dir
+
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)

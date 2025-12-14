@@ -47,7 +47,7 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
         adata,
         cluster_key=cluster,
         legend_loc="right margin",
-        figsize=(20, 10),
+        figsize=(40, 10),
         save=module_dir / "centrality_scores.png",
     )
     logger.info(

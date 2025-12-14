@@ -211,31 +211,39 @@ def plot_dimensionality_reduction(
     figdir: Path,
     cmap: Any = sns.color_palette("crest", as_cmap=True),
     cluster_name: str = "leiden",
+    config: DimensionReductionModuleConfig = None,
 ) -> None:
     """Create and save dimensionality reduction plots.
 
     Args:
         adata: AnnData with computed UMAP and clusters
-        cluster_name: Name of cluster annotation
         norm_approach: Normalization approach label
         module_name: Name of module for file naming
         n_neighbors: Number of neighbors used
-        cmap: Colormap for plots
         figdir: Directory to save figures
+        cmap: Colormap for plots
+        cluster_name: Name of cluster annotation
+        config: Configuration object containing visualization settings
     """
     logger.info("Plotting UMAPs...")
 
     # QC and metadata plots
+    logger.info("Plotting UMAPs with QC meterics...")
     sc.pl.umap(
         adata,
-        color=[
-            "total_counts",
-            "n_genes_by_counts",
-            "ROI",
-            "condition",
-            "batch",
-            cluster_name,
-        ],
+        color=["total_counts", "n_genes_by_counts", cluster_name],
+        ncols=3,
+        cmap=cmap,
+        wspace=0.4,
+        show=False,
+        save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}.png",
+        frameon=False,
+    )
+
+    logger.info("Plotting UMAPs with observation fields...")
+    sc.pl.umap(
+        adata,
+        color=config.obs_vis_list,
         ncols=3,
         cmap=cmap,
         wspace=0.4,
@@ -245,21 +253,9 @@ def plot_dimensionality_reduction(
     )
 
     logger.info("Plotting UMAPs with marker genes...")
-
-    # Cell type marker plots
-    marker_genes = [
-        "PTPRC",
-        "CD3E",
-        "CD68",
-        "EPCAM",
-        "KRT5",
-        "PDGFRA",
-        "ACTA2",
-        "VWF",
-    ]
     sc.pl.umap(
         adata,
-        color=marker_genes,
+        color=config.marker_genes,
         cmap=cmap,
         ncols=4,
         wspace=0.4,

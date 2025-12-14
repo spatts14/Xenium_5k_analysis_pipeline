@@ -52,6 +52,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)
+    palette = sns.color_palette("Spectral", as_cmap=False)
 
     # Import data
     logger.info("Loading Xenium data...")
@@ -171,6 +172,18 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
 
     # Get unique clusters
     adata.obs[new_clusters] = adata.obs[cluster_name].map(cluster_to_cell_type_dict)
+
+    logger.info("Plotting UMAP with new cluster names...")
+    sc.pl.umap(
+        adata,
+        color=new_clusters,
+        legend_loc="best",
+        title=new_clusters,
+        palette=palette,
+        show=False,
+        save=f"_{config.module_name}_{new_clusters}.png",
+    )
+    logger.info(f"UMAP plot with new cluster names saved to {sc.settings.figdir}")
 
     # Save anndata object
     adata.write_h5ad(module_dir / "adata.h5ad")

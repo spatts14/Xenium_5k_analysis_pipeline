@@ -95,7 +95,7 @@ def plot_metrics(module_dir, adata):
         adata.obs["nucleus_area"] / adata.obs["cell_area"], kde=False, ax=axs[3]
     )
 
-    fig.suptitle("QC meterics pre-normalization", fontsize=16)
+    fig.suptitle("QC metrics pre-normalization", fontsize=16)
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
 

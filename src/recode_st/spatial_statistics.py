@@ -24,6 +24,9 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
+    # Load variables
+    cluster = config.clusters_label
+
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)
@@ -40,10 +43,10 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
     )  # compute connectivity
 
     logger.info("Computing and plotting centrality scores...")
-    sq.gr.centrality_scores(adata, cluster_key="leiden")
+    sq.gr.centrality_scores(adata, cluster_key=cluster)
     sq.pl.centrality_scores(
         adata,
-        cluster_key="leiden",
+        cluster_key=cluster,
         figsize=(16, 5),
         save=module_dir / "centrality_scores.png",
     )
@@ -61,11 +64,11 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
     # Visualize co-occurrence
     sq.gr.co_occurrence(
         adata_subsample,
-        cluster_key="leiden",
+        cluster_key=cluster,
     )
     sq.pl.co_occurrence(
         adata_subsample,
-        cluster_key="leiden",
+        cluster_key=cluster,
         clusters="12",
         figsize=(10, 10),
         save=module_dir / "co_occurrence.png",
@@ -74,12 +77,12 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
 
     # Neighborhood enrichment analysis
     logger.info("Performing neighborhood enrichment analysis...")
-    sq.gr.nhood_enrichment(adata, cluster_key="leiden")
+    sq.gr.nhood_enrichment(adata, cluster_key=cluster)
 
     # Plot neighborhood enrichment
     sq.pl.nhood_enrichment(
         adata,
-        cluster_key="leiden",
+        cluster_key=cluster,
         cmap=cmap,
         figsize=(8, 8),
         title="Neighborhood enrichment adata",

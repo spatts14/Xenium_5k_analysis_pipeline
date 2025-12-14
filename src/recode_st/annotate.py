@@ -41,7 +41,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     # Set variables
     module_dir = io_config.output_dir / config.module_name
     cluster_name = config.cluster_name
-    new_clusters = config.new_clusters
+    new_clusters = config.clusters_label
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)

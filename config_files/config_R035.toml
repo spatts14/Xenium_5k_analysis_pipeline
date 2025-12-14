@@ -38,3 +38,4 @@ gene_list = [ # List of genes to visualize on tissue
 
 [modules.spatial_statistics]
 module_name = "scverse_spatial_stats"
+new_clusters = "manual_annotation"

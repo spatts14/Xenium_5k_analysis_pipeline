@@ -93,7 +93,7 @@ class AnnotateModuleConfig(BaseModuleConfig):
     cluster_name: str
     """Name of the cluster column in adata.obs to use for annotation."""
 
-    new_clusters: str
+    clusters_label: str
     """Name of the new cluster column in adata.obs."""
 
     cluster_to_cell_type: dict[str, str]
@@ -109,6 +109,9 @@ class ViewImagesModuleConfig(BaseModuleConfig):
 
 class SpatialStatisticsModuleConfig(BaseModuleConfig):
     """Configuration for the Spatial Statistics module."""
+
+    clusters_label: str
+    """Name of the new cluster column in adata.obs."""
 
 
 class Drug2CellModuleConfig(BaseModuleConfig):

@@ -180,7 +180,7 @@ def compute_dimensionality_reduction(
     adata: sc.AnnData,
     n_pca: int = 30,  # number of PCA components to use to compute neighbors
     n_neighbors: int = 10,  # number of neighbors for graph
-    min_dist: float = 0.5,  # minimum distance for UMAP
+    min_dist: float = 8,  # minimum distance for UMAP
     resolution: float = 1,  # resolution for Leiden clustering
     cluster_name: str = "leiden",  # name for cluster annotation
 ) -> sc.AnnData:
@@ -197,7 +197,9 @@ def compute_dimensionality_reduction(
     Returns:
         Nothing. Saves figures and AnnData with computed dimensionality reduction.
     """
-    logger.info(f"Computing neighbors (k={n_neighbors})...")
+    logger.info(
+        f"Computing neighbors and UMAP with n_pca={n_pca}, n_neighbors={n_neighbors}..."
+    )
     sc.pp.neighbors(adata, n_neighbors=n_neighbors, n_pcs=n_pca)
 
     logger.info("Computing UMAP...")
@@ -336,6 +338,7 @@ def run_dimension_reduction(
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)
+    palette = sns.color_palette("hls", 16)
 
     adata = load_data(
         io_config=io_config,
@@ -345,11 +348,37 @@ def run_dimension_reduction(
     )
 
     # Plot PCA variance
+    logger.ingo("Computing and plotting PCA variance ratio...")
+    sc.pp.pca(adata, n_comps=80, svd_solver="arpack")
+
     logger.info("Plotting PCA variance...")
     sc.pl.pca_variance_ratio(
         adata,
         log=True,
         n_pcs=80,
+        show=False,
+        save=f"_{config.module_name}.png",
+    )
+
+    logger.info("Plotting PCA scatter plots...")
+    sc.pl.pca(
+        adata,
+        color=["total_counts", "n_genes_by_counts"],
+        cmap=cmap,
+        dimensions=[(0, 1), (2, 3)],
+        ncols=2,
+        size=2,
+        show=False,
+        save=f"_{config.module_name}.png",
+    )
+
+    sc.pl.pca(
+        adata,
+        color=config.obs_vis_list,
+        palette=palette,
+        dimensions=[(0, 1), (2, 3)],
+        ncols=2,
+        size=2,
         show=False,
         save=f"_{config.module_name}.png",
     )

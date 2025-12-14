@@ -48,7 +48,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             vmax=2,
             size=0.5,
             img=False,
-            save=module_dir / f"gene_expression_{roi}.png",
+            save=f"gene_expression_{roi}.png",
         )
         logger.info(f"Saved gene expression plot for ROI {roi} saved to {module_dir}")
 
@@ -58,12 +58,16 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             library_id="spatial",
             shape=None,
             outline=False,
-            color=["leiden", "total_counts"],
+            color=[
+                "total_counts",
+                "leiden",
+                "manual_annotation",
+            ],  # TODO: Remove hard coding
             cmap=cmap,
             vmax=2,
             wspace=0.4,
             size=0.5,
-            save=module_dir / "leiden_clusters.png",
+            save=f"clusters_{roi}.png.png",
             dpi=300,
         )
         logger.info(

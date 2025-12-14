@@ -40,8 +40,9 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
     logger.info("Plotting genes of interest on tissue...")
     ROI_list = adata.obs["ROI"].unique().tolist()
     for roi in ROI_list:
-        logger.info(f"Plotting genes for ROI: {roi}")
         adata_roi = adata[adata.obs["ROI"] == roi]
+
+        # Gene expression plots
         sq.pl.spatial_scatter(
             adata_roi,
             library_id="spatial",
@@ -53,28 +54,22 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             img=False,
             save=f"gene_expression_{roi}.png",
         )
-        logger.info(f"Saved gene expression plot for ROI {roi} saved to {module_dir}")
+        logger.info(f"Saved gene expression plot for ROI {roi} to {module_dir}")
 
-        logger.info("Visualize clusters on tissue...")
+        # Cluster plots
         sq.pl.spatial_scatter(
             adata,
             library_id="spatial",
             shape=None,
             outline=False,
-            color=[
-                "total_counts",
-                "leiden",
-                "manual_annotation",
-            ],  # TODO: Remove hard coding
+            color=["total_counts", "leiden", "manual_annotation"],
             cmap=cmap,
             vmax=2,
             wspace=0.4,
             size=0.5,
-            save=f"clusters_{roi}.png.png",
+            save=f"clusters_{roi}.png",
             dpi=300,
         )
-        logger.info(
-            f"Saved leiden clusters plot to {module_dir / 'leiden_clusters.png'}"
-        )
+        logger.info(f"Saved cluster plot for ROI {roi} to {module_dir}")
 
     logger.info("Imaging module completed successfully.")

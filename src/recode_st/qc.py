@@ -24,8 +24,8 @@ def load_data(config: QualityControlModuleConfig, io_config: IOConfig):
     """Load Xenium data.
 
     Args:
-        config (QualityControlModuleConfig): configuration for the QC module
-        io_config (IOConfig): input/output configuration
+        io_config: IO configuration
+        config: Quality control module configuration
 
     Raises:
         err: If the data file is not found or is not a valid AnnData file
@@ -175,11 +175,13 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
 
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
-    cmap = sns.color_palette("Spectral", as_cmap=True)
+    # cmap = sns.color_palette("Spectral", as_cmap=True)
 
     logger.info("Loading data...")
     # adata = load_data(config, io_config)
-    adata = sc.read_h5ad(io_config.adata_dir / "_COPD_R035.h5ad")
+    adata = sc.read_h5ad(
+        io_config.adata_dir / "_COPD_R035.h5ad"
+    )  # TODO remove after testing
 
     logger.info("Calculating QC metrics...")
     # Calculate quality control metrics
@@ -309,9 +311,9 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         x="n_genes_by_counts",
         y="total_counts",
         hue="ROI",
-        cmap=cmap,
-        s=1,  # size of points
+        s=5,  # size of points
         alpha=0.5,  # transparency
+        palette="Spectral",
     )
     plt.xlabel("Number of genes detected per cell")
     plt.ylabel("Total transcripts per cell")

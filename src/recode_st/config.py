@@ -96,6 +96,9 @@ class AnnotateModuleConfig(BaseModuleConfig):
     new_clusters: str
     """Name of the new cluster column in adata.obs."""
 
+    cluster_to_cell_type: dict[str, str]
+    """Mapping from cluster labels to cell type annotations."""
+
 
 class ViewImagesModuleConfig(BaseModuleConfig):
     """Configuration for the View Images module."""

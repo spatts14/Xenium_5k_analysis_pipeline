@@ -145,15 +145,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     # Rename the clusters based on the markers
     logger.info("Renaming clusters based on markers...")
     # Get unique clusters
-    unique_clusters = (
-        adata.obs[cluster_name].astype(str).unique()
-    )  # Get unique cluster names
-    cluster_names = {
-        cluster: f"Cluster_{cluster}" for cluster in unique_clusters
-    }  # Create a mapping of cluster names
-    adata.obs[new_clusters] = (
-        adata.obs[cluster_name].astype(str).map(cluster_names)
-    )  # Map the cluster names to the cell_type column
+    adata.obs[new_clusters] = config.cluster_to_cell_type
 
     # Save anndata object
     adata.write_h5ad(module_dir / "adata.h5ad")

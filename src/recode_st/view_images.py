@@ -45,8 +45,8 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             color=config.gene_list,
             cmap=cmap,
             shape=None,
-            vmax=5,
-            size=2,
+            vmax=2,
+            size=0.5,
             img=False,
             save=module_dir / f"gene_expression_{roi}.png",
         )
@@ -60,8 +60,9 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             outline=False,
             color=["leiden", "total_counts"],
             cmap=cmap,
+            vmax=2,
             wspace=0.4,
-            size=1,
+            size=0.5,
             save=module_dir / "leiden_clusters.png",
             dpi=300,
         )

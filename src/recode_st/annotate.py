@@ -176,7 +176,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     logger.info("Plotting UMAP with new cluster names...")
     sc.pl.umap(
         adata,
-        color=new_clusters,
+        color=[cluster_name, new_clusters],
         legend_loc="best",
         title=new_clusters,
         palette=palette,

@@ -89,24 +89,17 @@ def create_subsample(
 
 def load_data(
     io_config: IOConfig,
+    config: DimensionReductionModuleConfig,
     norm_approach: str,
-    subsample_strategy: SubsampleStrategy,
-    subsample_path: Path,
-    n_total: int = 10_000,
-    min_cells_per_roi: int = 50,
-    n_pca: int = 50,
+    subsample_strategy: SubsampleStrategy = "none",  # make default "none"
 ) -> sc.AnnData:
-    """Load data based on subsampling strategy.
+    """Load data - if subsample, load sub-sampled data.
 
     Args:
         io_config: IO configuration
+        config: Dimension reduction module configuration
         norm_approach: Normalization approach label
         subsample_strategy: One of "none", "compute", or "load"
-        subsample_path: Path to save/load subsampled data
-        n_total: Total cells for subsampling
-        min_cells_per_roi: Minimum cells per ROI
-        n_pca: Number of PCA components
-
     Returns:
         AnnData object ready for analysis
 
@@ -114,9 +107,20 @@ def load_data(
         FileNotFoundError: If load strategy is used but file doesn't exist
         ValueError: If invalid strategy is provided
     """
+    # Validate subsample_strategy
+    valid_strategies = {"none", "compute", "load"}
+    if subsample_strategy not in valid_strategies:
+        raise ValueError(
+            f"Invalid subsample_strategy '{subsample_strategy}'. "
+            f"Must be one of {valid_strategies}"
+        )
+
+    # Define file paths
     data_path = (
-        io_config.output_dir / "1_quality_control" / f"adata_{norm_approach}.h5ad"
+        Path(io_config.output_dir) / "1_quality_control" / f"adata_{norm_approach}.h5ad"
     )
+    module_dir = Path(io_config.output_dir) / config.module_name
+    subsample_path = module_dir / f"adata_subsample_{config.norm_approach}.h5ad"
 
     if subsample_strategy == "none":
         logger.info("Loading full dataset (no subsampling)...")
@@ -125,7 +129,7 @@ def load_data(
         # Compute PCA if needed
         if "X_pca" not in adata.obsm:
             logger.info("Computing PCA...")
-            sc.pp.pca(adata, n_comps=n_pca)
+            sc.pp.pca(adata, n_comps=config.n_pca)
 
         logger.info(f"Loaded {len(adata)} cells")
         return adata
@@ -138,9 +142,11 @@ def load_data(
 
         # Create subsample
         adata_sub = create_subsample(
-            adata, n_total=n_total, min_cells_per_roi=min_cells_per_roi, n_pca=n_pca
+            adata,
+            n_total=config.subsample_n_total,
+            min_cells_per_roi=config.subsample_min_cells_per_roi,
+            n_pca=config.n_pca,
         )
-
         # Save subsample
         logger.info(f"Saving subsample to {subsample_path}")
         adata_sub.write_h5ad(subsample_path)
@@ -310,6 +316,8 @@ def run_dimension_reduction(
     # Setup
     module_dir = io_config.output_dir / config.module_name
     module_dir.mkdir(exist_ok=True, parents=True)
+    spatial_plots_dir = module_dir / "spatial_plots"
+    spatial_plots_dir.mkdir(exist_ok=True, parents=True)
 
     # Set figure directory for this module (overrides global setting)
     sc.settings.figdir = module_dir
@@ -321,17 +329,11 @@ def run_dimension_reduction(
     configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)
 
-    # Load data based on subsampling strategy
-    subsample_path = module_dir / f"adata_subsample_{config.norm_approach}.h5ad"
-
     adata = load_data(
         io_config=io_config,
+        config=config,
         norm_approach=config.norm_approach,
         subsample_strategy=config.subsample_strategy,
-        subsample_path=subsample_path,
-        n_total=config.subsample_n_total,
-        min_cells_per_roi=config.subsample_min_cells_per_roi,
-        n_pca=config.n_pca,
     )
 
     # Plot PCA variance
@@ -373,9 +375,6 @@ def run_dimension_reduction(
     )
 
     logger.info("Plotting spatial distribution of clusters...")
-    # Plot spatial distribution of clusters
-    spatial_plots_dir = module_dir / "spatial_plots"
-    spatial_plots_dir.mkdir(exist_ok=True, parents=True)
     plot_spatial_distribution(
         adata=adata,
         cluster_name=CLUSTER_NAME,

@@ -6,10 +6,13 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 
 from recode_st.config import IOConfig, MuspanSpatialStatModuleConfig
+from recode_st.helper_function import configure_scanpy_figures
 
-warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 logger = getLogger(__name__)
 
@@ -139,6 +142,10 @@ def run_muspan_stats(config: MuspanSpatialStatModuleConfig, io_config: IOConfig)
 
     module_dir = io_config.output_dir / config.module_name
     module_dir.mkdir(exist_ok=True)
+
+    # Set figure settings to ensure consistency across all modules
+    configure_scanpy_figures(str(io_config.output_dir))
+    cmap = sns.color_palette("Spectral", as_cmap=True)
 
     # Load MuSpAn object
     logger.info("Loading MuSpAn object...")

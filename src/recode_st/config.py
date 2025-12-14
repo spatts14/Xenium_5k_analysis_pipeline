@@ -50,6 +50,10 @@ class QualityControlModuleConfig(BaseModuleConfig):
     'cell_area' for normalization by cell area."""
 
 
+class DoubletIdentificationModuleConfig(BaseModuleConfig):
+    """Configuration for the Doublet Identification module."""
+
+
 class DimensionReductionModuleConfig(BaseModuleConfig):
     """Configuration for the Quality Control module."""
 
@@ -77,6 +81,10 @@ class DimensionReductionModuleConfig(BaseModuleConfig):
 
 class IntegrateIngestModuleConfig(BaseModuleConfig):
     """Configuration for the Integration Ingest module."""
+
+
+class IntegrateSCVIModuleConfig(BaseModuleConfig):
+    """Configuration for the Integration scVI module."""
 
 
 class AnnotateModuleConfig(BaseModuleConfig):
@@ -171,11 +179,17 @@ class ModulesConfig(BaseModel):
     quality_control: QualityControlModuleConfig | None = None
     """Configuration for the Quality Control module."""
 
+    doublet_identification: DoubletIdentificationModuleConfig | None = None
+    """Configuration for doublet detection with ovrlypy module."""
+
     dimension_reduction: DimensionReductionModuleConfig | None = None
     """Configuration for the Dimension Reduction module."""
 
     integrate_ingest: IntegrateIngestModuleConfig | None = None
     """Configuration for the Integration (ingest) module."""
+
+    integrate_scvi: IntegrateSCVIModuleConfig | None = None
+    """Configuration for the Integration (scVI) module."""
 
     annotate: AnnotateModuleConfig | None = None
     """Configuration for the Annotate module."""

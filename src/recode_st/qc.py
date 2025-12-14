@@ -12,10 +12,116 @@ import seaborn as sns
 from zarr.errors import PathNotFoundError
 
 from recode_st.config import IOConfig, QualityControlModuleConfig
+from recode_st.helper_function import configure_scanpy_figures
 
-warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 logger = getLogger(__name__)
+
+
+def plot_metrics(module_dir, adata):
+    """Generates and saves histograms summarizing key cell metrics.
+
+    This function creates a 1x4 grid of histograms visualizing:
+        1. Total transcripts per cell
+        2. Unique transcripts per cell
+        3. Area of segmented cells
+        4. Nucleus-to-cell area ratio
+
+    Args:
+        module_dir (Path or str): Directory path where the output plot will be saved.
+        adata (anndata.AnnData): Annotated data matrix with cell metrics
+        stored in `adata.obs`.
+            Must contain the columns:
+            - 'total_counts'
+            - 'n_genes_by_counts'
+            - 'cell_area'
+            - 'nucleus_area'
+
+    Returns:
+        None
+    """
+    # Create 4 subplots
+    fig, axs = plt.subplots(1, 4, figsize=(15, 4))
+
+    axs[0].set_title("Total transcripts per cell")
+    sns.histplot(adata.obs["total_counts"], kde=False, ax=axs[0])
+
+    axs[1].set_title("Unique transcripts per cell")
+    sns.histplot(adata.obs["n_genes_by_counts"], kde=False, ax=axs[1])
+
+    axs[2].set_title("Area of segmented cells")
+    sns.histplot(adata.obs["cell_area"], kde=False, ax=axs[2])
+
+    axs[3].set_title("Nucleus ratio")
+    sns.histplot(
+        adata.obs["nucleus_area"] / adata.obs["cell_area"], kde=False, ax=axs[3]
+    )
+
+    fig.suptitle("QC meterics pre-normalization", fontsize=16)
+
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+
+    # Save figure
+    output_path = module_dir / "cell_summary_histograms.png"
+    plt.savefig(output_path, dpi=300)
+    plt.close()
+    logger.info(f"Saved plots to {output_path}")
+
+
+def normalize_data(adata, norm_approach):
+    """Normalize data using the specified normalization approach.
+
+    Args:
+        adata: AnnData object to normalize
+        norm_approach: Normalization method to use
+
+    Returns:
+        None (modifies adata in place)
+    """
+    logger.info(f"Normalize data using {norm_approach}...")
+    adata.layers["counts"] = adata.X.copy()  # make copy of raw data
+
+    if norm_approach == "scanpy_log":
+        # scRNAseq approach
+        sc.pp.normalize_total(adata, inplace=True)  # normalize data
+        sc.pp.log1p(adata)  # Log transform data
+        logger.info(adata.X.shape)
+        sc.pp.scale(adata, max_value=10)  # Scale data; how do I choose max_value?
+    elif norm_approach == "sctransform":
+        # scTransform approach
+        vst_out = scTransform.vst(
+            adata.X, gene_names=adata.var_names, cell_names=adata.obs_names
+        )
+        adata.X = vst_out["y"]  # Use Pearson residuals as normalized expression
+        # DO NOT add log transformation - already variance-stabilized
+        # DO NOT add scaling - already scaled
+    elif norm_approach == "cell_area":
+        # Check if cell area is available
+        if "cell_area" in adata.obs.columns:
+            cell_area_inv = 1 / adata.obs["cell_area"].values  # shape (n_cells,)
+
+            if sp.issparse(adata.X):
+                # Sparse-safe multiplication
+                scaling = sp.diags(cell_area_inv)
+                adata.X = scaling.dot(adata.X)
+            else:
+                # Dense case
+                adata.X = adata.X * cell_area_inv[:, None]
+
+            # Log transform and scale after area normalization
+            sc.pp.log1p(adata)  # Log transform
+            sc.pp.scale(adata, max_value=10)  # Scale data; how do I choose max_value?
+        else:
+            logger.warning(
+                "Cell area not found in adata.obs; skipping normalization by cell area"
+            )
+    elif norm_approach == "none":
+        # No normalization
+        logger.info("No normalization applied.")
+    else:
+        raise ValueError(f"Normalization approach {norm_approach} not recognized")
 
 
 def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
@@ -31,6 +137,10 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
+
+    # Set figure settings to ensure consistency across all modules
+    configure_scanpy_figures(str(io_config.output_dir))
+    cmap = sns.color_palette("Spectral", as_cmap=True)
 
     # If using subsampled data, load that
     if subsample_data is True:
@@ -182,118 +292,37 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     # Scatter plot of number of genes vs total counts after filtering
     sns.set_theme(style="white")
     plt.figure(figsize=(6, 5))
-    plt.scatter(
-        adata.obs["n_genes_by_counts"],
-        adata.obs["total_counts"],
-        # hue="ROI",
-        s=10,  # size of points
+    sns.scatterplot(
+        data=adata.obs,
+        x="n_genes_by_counts",
+        y="total_counts",
+        hue="ROI",
+        s=1,  # size of points
         alpha=0.5,  # transparency
     )
     plt.xlabel("Number of genes detected per cell")
     plt.ylabel("Total transcripts per cell")
     plt.title("QC: Genes vs Total Counts per Cell")
     plt.grid(False)
-    plt.savefig(module_dir / "qc_genes_vs_total_counts_post_filter.png", dpi=300)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
+    plt.tight_layout()
+    plt.savefig(
+        module_dir / "qc_genes_vs_total_counts_post_filter.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
     plt.close()
 
     logger.info(f"adata shape after area filtering: {adata.shape}")
 
+    logger.info(f"Final number of cells: {adata.n_obs}")
+    logger.info(f"Final number of genes: {adata.n_vars}")
+
     # Normalize data
-    logger.info(f"Normalize data using {norm_approach}...")
-    adata.layers["counts"] = adata.X.copy()  # make copy of raw data
-
-    if norm_approach == "scanpy_log":
-        # scRNAseq approach
-        sc.pp.normalize_total(adata, inplace=True)  # normalize data
-        sc.pp.log1p(adata)  # Log transform data
-        logger.info(adata.X.shape)
-        sc.pp.scale(adata, max_value=10)  # Scale data; how do I choose max_value?
-    elif norm_approach == "sctransform":
-        # scTransform approach
-        vst_out = scTransform.vst(
-            adata.X, gene_names=adata.var_names, cell_names=adata.obs_names
-        )
-        adata.X = vst_out["y"]  # Use Pearson residuals as normalized expression
-        # DO NOT add log transformation - already variance-stabilized
-        # DO NOT add scaling - already scaled
-    elif norm_approach == "cell_area":
-        # Check if cell area is available
-        if "cell_area" in adata.obs.columns:
-            cell_area_inv = 1 / adata.obs["cell_area"].values  # shape (n_cells,)
-
-            if sp.issparse(adata.X):
-                # Sparse-safe multiplication
-                scaling = sp.diags(cell_area_inv)
-                adata.X = scaling.dot(adata.X)
-            else:
-                # Dense case
-                adata.X = adata.X * cell_area_inv[:, None]
-
-            # Log transform and scale after area normalization
-            sc.pp.log1p(adata)  # Log transform
-            sc.pp.scale(adata, max_value=10)  # Scale data; how do I choose max_value?
-        else:
-            logger.warning(
-                "Cell area not found in adata.obs; skipping normalization by cell area"
-            )
-    elif norm_approach == "none":
-        # No normalization
-        logger.info("No normalization applied.")
-    else:
-        raise ValueError(f"Normalization approach {norm_approach} not recognized")
+    normalize_data(adata, norm_approach)
 
     # Save data
     logger.info("Saving filtered and normalized data...")
     adata.write_h5ad(module_dir / f"adata_{norm_approach}.h5ad")
     logger.info(f"Data saved to {module_dir / f'adata_{norm_approach}.h5ad'}")
     logger.info("Quality control completed successfully.")
-
-
-def plot_metrics(module_dir, adata):
-    """Generates and saves histograms summarizing key cell metrics.
-
-    This function creates a 1x4 grid of histograms visualizing:
-        1. Total transcripts per cell
-        2. Unique transcripts per cell
-        3. Area of segmented cells
-        4. Nucleus-to-cell area ratio
-
-    Args:
-        module_dir (Path or str): Directory path where the output plot will be saved.
-        adata (anndata.AnnData): Annotated data matrix with cell metrics
-        stored in `adata.obs`.
-            Must contain the columns:
-            - 'total_counts'
-            - 'n_genes_by_counts'
-            - 'cell_area'
-            - 'nucleus_area'
-
-    Returns:
-        None
-    """
-    # Create 4 subplots
-    fig, axs = plt.subplots(1, 4, figsize=(15, 4))
-
-    axs[0].set_title("Total transcripts per cell")
-    sns.histplot(adata.obs["total_counts"], kde=False, ax=axs[0])
-
-    axs[1].set_title("Unique transcripts per cell")
-    sns.histplot(adata.obs["n_genes_by_counts"], kde=False, ax=axs[1])
-
-    axs[2].set_title("Area of segmented cells")
-    sns.histplot(adata.obs["cell_area"], kde=False, ax=axs[2])
-
-    axs[3].set_title("Nucleus ratio")
-    sns.histplot(
-        adata.obs["nucleus_area"] / adata.obs["cell_area"], kde=False, ax=axs[3]
-    )
-
-    fig.suptitle("QC meterics pre-normalization", fontsize=16)
-
-    plt.tight_layout(rect=[0, 0, 1, 0.95])
-
-    # Save figure
-    output_path = module_dir / "cell_summary_histograms.png"
-    plt.savefig(output_path, dpi=300)
-    plt.close()
-    logger.info(f"Saved plots to {output_path}")

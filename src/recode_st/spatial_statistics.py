@@ -27,10 +27,11 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)
+    palette = sns.color_palette("Spectral", as_cmap=False)
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "4_view_images" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "view_images" / "adata.h5ad")
 
     # Calculate spatial statistics
     logger.info("Building spatial neighborhood graph...")
@@ -65,6 +66,7 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
     sq.pl.co_occurrence(
         adata_subsample,
         cluster_key="leiden",
+        palette=palette,
         clusters="12",
         figsize=(10, 10),
         save=module_dir / "co_occurrence.png",
@@ -79,6 +81,7 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
     sq.pl.nhood_enrichment(
         adata,
         cluster_key="leiden",
+        cmap=cmap,
         figsize=(8, 8),
         title="Neighborhood enrichment adata",
         save=module_dir / "nhood_enrichment.png",

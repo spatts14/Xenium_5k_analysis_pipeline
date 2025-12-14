@@ -31,7 +31,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "3_annotate" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "annotate" / "adata.h5ad")
 
     # View plots
     logger.info("Visualize clusters on tissue...")
@@ -41,6 +41,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
         shape=None,
         outline=False,
         color=["leiden", "total_counts"],
+        cmap=cmap,
         wspace=0.4,
         size=1,
         save=module_dir / "leiden_clusters.png",
@@ -54,6 +55,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
         adata,
         library_id="spatial",
         color=config.gene_list,
+        cmap=cmap,
         shape=None,
         size=2,
         img=False,

@@ -20,6 +20,42 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 logger = getLogger(__name__)
 
 
+def load_data(config: QualityControlModuleConfig, io_config: IOConfig):
+    """Load Xenium data.
+
+    Args:
+        config (QualityControlModuleConfig): configuration for the QC module
+        io_config (IOConfig): input/output configuration
+
+    Raises:
+        err: If the data file is not found or is not a valid AnnData file
+    """
+    # Set variables
+    subsample_data = config.subsample_data
+
+    # If using subsampled data, load that
+    if subsample_data is True:
+        logger.info("Loading subsampled Xenium data...")
+        subsample_path = io_config.output_dir / "0.5_subsample_data" / "adata.h5ad"
+        adata = sc.read_h5ad(subsample_path)
+        logger.info(f"Dataset contains {len(adata)} cells.")
+
+    else:
+        try:
+            logger.info("Loading Xenium data...")
+            combined_path = io_config.adata_dir / "all_samples.h5ad"
+
+            # Import data
+            adata = sc.read_h5ad(combined_path)
+            logger.info(f"Dataset contains {len(adata)} cells.")
+
+        except PathNotFoundError as err:
+            logger.error(
+                f"File not found (or not a valid AnnData file): {combined_path}"
+            )
+            raise err
+
+
 def plot_metrics(module_dir, adata):
     """Generates and saves histograms summarizing key cell metrics.
 
@@ -127,7 +163,6 @@ def normalize_data(adata, norm_approach):
 def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     """Run quality control on Xenium data."""
     # Set variables
-    subsample_data = config.subsample_data
     module_dir = io_config.output_dir / config.module_name
     min_cells = config.min_cells
     min_counts = config.min_counts
@@ -142,32 +177,11 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)
 
-    # If using subsampled data, load that
-    if subsample_data is True:
-        logger.info("Loading subsampled Xenium data...")
-        subsample_path = io_config.output_dir / "0.5_subsample_data" / "adata.h5ad"
-        adata = sc.read_h5ad(subsample_path)
-        logger.info(f"Dataset contains {len(adata)} cells.")
+    logger.info("Loading data...")
+    # adata = load_data(config, io_config)
+    adata = sc.read_h5ad(io_config.adata_dir / "_COPD_R035.h5ad")
 
-    else:
-        try:
-            logger.info("Loading Xenium data...")
-            combined_path = io_config.adata_dir / "all_samples.h5ad"
-
-            # Import data
-            adata = sc.read_h5ad(combined_path)
-            logger.info(f"Dataset contains {len(adata)} cells.")
-
-        except PathNotFoundError as err:
-            logger.error(
-                f"File not found (or not a valid AnnData file): {combined_path}"
-            )
-            raise err
-
-    logger.info("Xenium data loaded.")
-
-    # $ Calculate and plot metrics
-
+    logger.info("Calculating QC metrics...")
     # Calculate quality control metrics
     sc.pp.calculate_qc_metrics(adata, percent_top=(10, 20, 50, 150), inplace=True)
 
@@ -241,8 +255,6 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     # Plot the summary metrics
     plot_metrics(module_dir, adata)
 
-    # $ QC data #
-
     # Filter cells and genes
     logger.info("Filtering cells and genes...")
     # Number of cells and genes before filtering
@@ -297,6 +309,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         x="n_genes_by_counts",
         y="total_counts",
         hue="ROI",
+        cmap=cmap,
         s=1,  # size of points
         alpha=0.5,  # transparency
     )

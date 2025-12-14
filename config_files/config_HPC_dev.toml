@@ -48,7 +48,6 @@ marker_genes = [
 ] # Cell type marker plots
 cluster_name = "leiden" # name of the cluster column in adata.obs
 
-
 [modules.integrate]
 module_name = "3_integrate"
 

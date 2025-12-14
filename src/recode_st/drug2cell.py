@@ -126,17 +126,27 @@ def visualize_drug2cell(config, adata, cell_type_top: str = CELL_TYPE_TOP, cmap=
         )
 
 
-def calc_DE(adata, config, cell_type_top: str = CELL_TYPE_TOP, cmap=None):
-    """Calculate differential expression for drug2cell scores."""
+def filter_low_count_groups(
+    adata, cell_type_top: str = CELL_TYPE_TOP, min_cells_per_group: int = 10
+):
+    """Filter adata to only include groups with sufficient cell counts.
+
+    Args:
+        adata (anndata.AnnData): Annotated data object
+        cell_type_top (str, optional):Defaults to CELL_TYPE_TOP.
+        min_cells_per_group (int, optional): Minimum number of cells per group.
+
+    Returns:
+        adata_filtered (): filtered adata object
+    """
     # Check if we have enough cells per group for differential expression
     group_counts = adata.obs[cell_type_top].value_counts()
-    min_cells_per_group = 10  # Need at least 10 cells per group
     valid_groups = group_counts[group_counts >= min_cells_per_group].index.tolist()
 
     if len(valid_groups) < 2:
         logger.warning(
             f"Not enough groups with >= {min_cells_per_group} cells "
-            f"for differential expression. Skipping rank_genes_groups analysis."
+            f"Skipping filtering adata object."
         )
     else:
         # Filter to only valid groups
@@ -144,21 +154,35 @@ def calc_DE(adata, config, cell_type_top: str = CELL_TYPE_TOP, cmap=None):
         adata_filtered = adata.uns["drug2cell"][valid_mask, :]
 
         logger.info(
-            f"Running differential expression on {len(valid_groups)} groups "
+            f"Filtered for {len(valid_groups)} groups "
             f"with >= {min_cells_per_group} cells each"
         )
+        return adata_filtered
 
-        sc.tl.rank_genes_groups(
-            adata_filtered, method="wilcoxon", groupby=CELL_TYPE_TOP
-        )
-        sc.pl.rank_genes_groups_dotplot(
-            adata_filtered,
-            swap_axes=True,
-            dendrogram=False,
-            n_genes=3,
-            cmap=cmap,
-            save=f"_{config.module_name}_{CELL_TYPE_TOP}_dotplot.png",
-        )
+
+def calc_DE(adata, config, cell_type_top: str = CELL_TYPE_TOP, cmap=None):
+    """Calculate differential expression for drug2cell scores.
+
+    Args:
+        adata (anndata.AnnData): Annotated data object
+        config (Drug2CellModuleConfig): Configuration object
+        cell_type_top (str): Column name for cell type annotations
+        cmap: Color map for visualization
+    Returns:
+        None
+    """
+    logger.info("Calculating differential expression for drug2cell scores...")
+    sc.tl.rank_genes_groups(adata, method="wilcoxon", groupby=CELL_TYPE_TOP)
+
+    logger.info("Visualizing differential expression results...")
+    sc.pl.rank_genes_groups_dotplot(
+        adata,
+        swap_axes=True,
+        dendrogram=False,
+        n_genes=3,
+        cmap=cmap,
+        save=f"_{config.module_name}_{CELL_TYPE_TOP}_dotplot.png",
+    )
 
 
 def celltype_level(
@@ -225,12 +249,12 @@ def celltype_level(
         save=f"_{config.module_name}_drug2cell_{cell_type}.png",
     )
 
+    logger.info("Visualize drug score with dotplot")
     sc.pl.dotplot(
         subset.uns["drug2cell"],
-        groupby=cell_type_top,
         swap_axes=True,
         cmap=cmap,
-        n_genes=2,
+        n_genes=5,
         save=f"_{config.module_name}_{cell_type_top}_{cell_type}.png",
     )
 
@@ -274,6 +298,12 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
     adata = drug2cell_calculation(adata, module_dir)
     if adata is None:
         logger.error("Failed to calculate drug2cell scores. Aborting module.")
+        return
+
+    logger.info("Filtering low count groups for differential expression...")
+    adata = filter_low_count_groups(adata, cell_type_top=CELL_TYPE_TOP)
+    if adata is None:
+        logger.error("Failed to filter low count groups. Aborting module.")
         return
 
     logger.info("Visualize drug2cell...")

@@ -365,23 +365,30 @@ def run_dimension_reduction(
         adata,
         color=["total_counts", "n_genes_by_counts"],
         cmap=cmap,
-        dimensions=[(0, 1), (2, 3)],
+        dimensions=[(0, 1)],
         ncols=2,
         size=2,
         show=False,
         save=f"_{config.module_name}.png",
     )
 
-    sc.pl.pca(
-        adata,
-        color=config.obs_vis_list,
-        palette=palette,
-        dimensions=[(0, 1), (2, 3)],
-        ncols=2,
-        size=2,
-        show=False,
-        save=f"_{config.module_name}.png",
-    )
+    # Plot PCA with observation fields if available
+    if config.obs_vis_list:
+        logger.info("Plotting PCA with observation fields...")
+        sc.pl.pca(
+            adata,
+            color=config.obs_vis_list,
+            palette=palette,
+            dimensions=[(0, 1)],
+            ncols=3,
+            size=2,
+            show=False,
+            save=f"_{config.module_name}_obs_fields.png",
+        )
+    else:
+        logger.info(
+            "Skipping PCA observation fields plot (obs_vis_list not configured)"
+        )
 
     # Compute dimensionality reduction
     logger.info("Computing dimension reduction...")

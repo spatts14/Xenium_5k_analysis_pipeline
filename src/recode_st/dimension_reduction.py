@@ -180,7 +180,7 @@ def compute_dimensionality_reduction(
     adata: sc.AnnData,
     n_pca: int = 30,  # number of PCA components to use to compute neighbors
     n_neighbors: int = 10,  # number of neighbors for graph
-    min_dist: float = 8,  # minimum distance for UMAP
+    min_dist: float = 0.5,  # minimum distance for UMAP
     resolution: float = 1,  # resolution for Leiden clustering
     cluster_name: str = "leiden",  # name for cluster annotation
 ) -> sc.AnnData:

@@ -122,9 +122,15 @@ def normalize_data(adata, norm_approach):
     if norm_approach == "scanpy_log":
         # scRNAseq approach
         sc.pp.normalize_total(adata, inplace=True)  # normalize data
-        sc.pp.log1p(adata)  # Log transform data
-        logger.info(adata.X.shape)
-        sc.pp.scale(adata, max_value=10)  # Scale data; how do I choose max_value?
+        logger.info("Log transforming...")
+        sc.pp.log1p(adata)  # Log transform
+        # Identify highly variable genes
+        logger.info("Identifying highly variable genes...")
+        sc.pp.highly_variable_genes(
+            adata, flavor="seurat", n_top_genes=2000, inplace=False
+        )
+        logger.info("Scaling data...")
+        sc.pp.scale(adata, max_value=10)  # TODO: Scale data; how do I choose max_value?
     elif norm_approach == "sctransform":
         # scTransform approach
         vst_out = scTransform.vst(
@@ -135,6 +141,7 @@ def normalize_data(adata, norm_approach):
         # DO NOT add scaling - already scaled
     elif norm_approach == "cell_area":
         # Check if cell area is available
+        logger.info("Normalizing by cell area...")
         if "cell_area" in adata.obs.columns:
             cell_area_inv = 1 / adata.obs["cell_area"].values  # shape (n_cells,)
 
@@ -145,10 +152,17 @@ def normalize_data(adata, norm_approach):
             else:
                 # Dense case
                 adata.X = adata.X * cell_area_inv[:, None]
-
-            # Log transform and scale after area normalization
+            logger.info("Log transforming...")
             sc.pp.log1p(adata)  # Log transform
-            sc.pp.scale(adata, max_value=10)  # Scale data; how do I choose max_value?
+            # Identify highly variable genes
+            logger.info("Identifying highly variable genes...")
+            sc.pp.highly_variable_genes(
+                adata, flavor="seurat", n_top_genes=2000, inplace=False
+            )
+            logger.info("Scaling data...")
+            sc.pp.scale(
+                adata, max_value=10
+            )  # TODO: Scale data; how do I choose max_value?
         else:
             logger.warning(
                 "Cell area not found in adata.obs; skipping normalization by cell area"
@@ -156,6 +170,15 @@ def normalize_data(adata, norm_approach):
     elif norm_approach == "none":
         # No normalization
         logger.info("No normalization applied.")
+        logger.info("Log transforming...")
+        sc.pp.log1p(adata)  # Log transform
+        # Identify highly variable genes
+        logger.info("Identifying highly variable genes...")
+        sc.pp.highly_variable_genes(
+            adata, flavor="seurat", n_top_genes=2000, inplace=False
+        )
+        logger.info("Scaling data...")
+        sc.pp.scale(adata, max_value=10)  # TODO: Scale data; how do I choose max_value?
     else:
         raise ValueError(f"Normalization approach {norm_approach} not recognized")
 
@@ -334,12 +357,8 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info(f"Final number of genes: {adata.n_vars}")
 
     # Normalize data
-    logger.info(f"Normalizing data by {norm_approach}...")
+    logger.info("Starting data normalization...")
     normalize_data(adata, norm_approach)
-
-    # Identify highly variable genes
-    logger.info("Identifying highly variable genes...")
-    sc.pp.highly_variable_genes(adata, flavor="seurat", n_top_genes=2000)
 
     # Save data
     logger.info("Saving filtered and normalized data...")

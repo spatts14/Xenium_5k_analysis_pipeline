@@ -19,7 +19,6 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 
 [modules.quality_control]
 module_name = "1_quality_control" # Name of the module - will be used in the output directory name
-subsample_data = false            # Whether to subsample the data for development purposes
 min_counts = 10                   # Minimum number of counts required for a cell to pass filtering
 min_cells = 5                     # Minimum number of cells expressed required for a gene to pass filtering
 min_cell_area = 25                # Minimum cell area to filter cells required for a cell to pass filtering
@@ -29,9 +28,6 @@ norm_approach = "cell_area"       # Normalization approach to use; options: scan
 [modules.dimension_reduction]
 module_name = "2_dimension_reduction" # Name of the module - will be used in the output directory name
 norm_approach = "cell_area" # Normalization approach to use
-subsample_data = false # Whether to subsample the data for development purposes
-subsample_min_cells_per_roi = 100 # Minimum number of cells to include from each ROI in the subsampled dataset
-subsample_n_total = 5000 # Total number of cells to include in the subsampled dataset
 n_comps = 30 # number of principal components to compute
 n_neighbors = 30 # number of neighbors for the neighborhood graph
 resolution = 1 # resolution for leiden clustering

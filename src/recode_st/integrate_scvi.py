@@ -14,7 +14,6 @@ import torch
 from scvi.model import SCANVI, SCVI
 
 from recode_st.config import Config, IntegrateSCVIModuleConfig, IOConfig
-from recode_st.helper_function import configure_scanpy_figures
 
 # Suppress specific warnings to reduce noise in logs
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -240,10 +239,10 @@ def subset_reference(
     Returns:
         anndata.AnnData: Subsampled reference AnnData object.
     """
-    rng = np.random.default_rng(base_config.seed)
+    rng = np.random.default_rng(base_config.seed)  # set just in case
     cell_type_counts = adata_ref.obs[stratify_col].value_counts()
-    n_types = len(cell_type_counts)
-    total_cells = len(adata_ref)
+    n_types = len(cell_type_counts)  # number of unique cell types
+    total_cells = len(adata_ref)  # total number of cells in reference
 
     # Calculate sampling targets based on strategy
     if sampling_strategy == "proportional":
@@ -400,7 +399,7 @@ def scVI_integration(config, adata_combined, module_dir):
     )
 
     logger.info("Initializing scVI model...")
-    scvi_model = SCVI(adata_combined, n_layers=1, n_latent=20, n_hidden=128)
+    scvi_model = SCVI(adata_combined, n_layers=3, n_latent=50, n_hidden=128)
     logger.info("Training SCVI model...")
     scvi_model.train(
         max_epochs=MAX_EPOCHS_SCVI,
@@ -452,7 +451,7 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
         tuple: (adata_combined, scanvi_model) - Combined dataset and trained model
     """
     # Set constant variables
-    MAX_EPOCHS_SCANVI = 50
+    MAX_EPOCHS_SCANVI = 200
 
     # Format labels for scANVI
     # Create scANVI labels (reference has labels, spatial is 'Unknown')
@@ -524,7 +523,7 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
     logger.info("Training scANVI model...")
     scanvi_model.train(
         max_epochs=MAX_EPOCHS_SCANVI,
-        batch_size=512,  # Increase from 128
+        batch_size=1024,
         early_stopping=True,
         early_stopping_patience=15,
     )
@@ -716,7 +715,7 @@ def run_integration(
     sc.settings.figdir = module_dir
 
     # Set figure settings
-    configure_scanpy_figures(str(io_config.output_dir))
+    # configure_scanpy_figures(str(io_config.output_dir)) - not suitable fig settings
 
     # Log GPU availability
     if torch.cuda.is_available():
@@ -737,15 +736,15 @@ def run_integration(
     logger.info(
         "Checking if need to subsample reference dataset for faster integration..."
     )
-    if adata_ref.n_obs > 300000:  # Only subsample very large references
+    if adata_ref.n_obs > 500000:  # Only subsample very large references
         logger.info(f"Subsampling reference from {adata_ref.n_obs} to ~200k cells...")
         adata_ref_subset = subset_reference(
             base_config=base_config,
             adata_ref=adata_ref,
-            target_cells=200000,
+            target_cells=500000,
             stratify_col=REF_CELL_LABEL_COL,
             min_per_type=100,
-            sampling_strategy="proportional",
+            sampling_strategy="sqrt",
             rare_cell_boost=2.0,
         )
     else:

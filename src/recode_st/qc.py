@@ -127,7 +127,7 @@ def normalize_data(adata, norm_approach):
         # Identify highly variable genes
         logger.info("Identifying highly variable genes...")
         sc.pp.highly_variable_genes(
-            adata, flavor="seurat", n_top_genes=2000, inplace=False
+            adata, flavor="seurat", n_top_genes=2000, inplace=True
         )
         logger.info("Scaling data...")
         sc.pp.scale(adata, max_value=10)  # TODO: Scale data; how do I choose max_value?
@@ -157,7 +157,7 @@ def normalize_data(adata, norm_approach):
             # Identify highly variable genes
             logger.info("Identifying highly variable genes...")
             sc.pp.highly_variable_genes(
-                adata, flavor="seurat", n_top_genes=2000, inplace=False
+                adata, flavor="seurat", n_top_genes=2000, inplace=True
             )
             logger.info("Scaling data...")
             sc.pp.scale(
@@ -175,7 +175,7 @@ def normalize_data(adata, norm_approach):
         # Identify highly variable genes
         logger.info("Identifying highly variable genes...")
         sc.pp.highly_variable_genes(
-            adata, flavor="seurat", n_top_genes=2000, inplace=False
+            adata, flavor="seurat", n_top_genes=2000, inplace=True
         )
         logger.info("Scaling data...")
         sc.pp.scale(adata, max_value=10)  # TODO: Scale data; how do I choose max_value?

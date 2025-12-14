@@ -90,6 +90,9 @@ class IntegrateSCVIModuleConfig(BaseModuleConfig):
 class AnnotateModuleConfig(BaseModuleConfig):
     """Configuration for the Annotate module."""
 
+    cluster_name: str
+    """Name of the cluster column in adata.obs to use for annotation."""
+
     new_clusters: str
     """Name of the new cluster column in adata.obs."""
 

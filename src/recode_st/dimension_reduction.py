@@ -203,7 +203,7 @@ def compute_dimensionality_reduction(
     sc.pp.neighbors(adata, n_neighbors=n_neighbors, n_pcs=n_pca)
 
     logger.info("Computing UMAP...")
-    sc.tl.umap(adata, min_dist=min_dist)
+    sc.tl.umap(adata, min_dist=min_dist, spread=2.0)
 
     logger.info(f"Clustering with resolution={resolution}...")
     sc.tl.leiden(adata, resolution=resolution, key_added=cluster_name)
@@ -399,7 +399,7 @@ def run_dimension_reduction(
         n_neighbors=config.n_neighbors,
         resolution=config.resolution,
         cluster_name=CLUSTER_NAME,
-        min_dist=5,
+        min_dist=0.1,
     )
 
     # Save final results

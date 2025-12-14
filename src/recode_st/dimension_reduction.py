@@ -246,29 +246,37 @@ def plot_dimensionality_reduction(
         frameon=False,
     )
 
-    logger.info("Plotting UMAPs with observation fields...")
-    sc.pl.umap(
-        adata,
-        color=config.obs_vis_list,
-        ncols=3,
-        cmap=cmap,
-        wspace=0.4,
-        show=False,
-        save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}.png",
-        frameon=False,
-    )
+    # Plot observation fields if available
+    if config and config.obs_vis_list:
+        logger.info("Plotting UMAPs with observation fields...")
+        sc.pl.umap(
+            adata,
+            color=config.obs_vis_list,
+            ncols=3,
+            cmap=cmap,
+            wspace=0.4,
+            show=False,
+            save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}_obs_fields.png",
+            frameon=False,
+        )
+    else:
+        logger.info("Skipping observation fields plot (obs_vis_list not configured)")
 
-    logger.info("Plotting UMAPs with marker genes...")
-    sc.pl.umap(
-        adata,
-        color=config.marker_genes,
-        cmap=cmap,
-        ncols=4,
-        wspace=0.4,
-        show=False,
-        save=f"_{module_name}_cell_markers_{norm_approach}_neighbors_{n_neighbors}.png",
-        frameon=False,
-    )
+    # Plot marker genes if available
+    if config and config.marker_genes:
+        logger.info("Plotting UMAPs with marker genes...")
+        sc.pl.umap(
+            adata,
+            color=config.marker_genes,
+            cmap=cmap,
+            ncols=4,
+            wspace=0.4,
+            show=False,
+            save=f"_{module_name}_cell_markers_{norm_approach}_neighbors_{n_neighbors}.png",
+            frameon=False,
+        )
+    else:
+        logger.info("Skipping marker genes plot (marker_genes not configured)")
 
     logger.info(f"UMAP plots saved to {figdir}")
 
@@ -372,6 +380,7 @@ def run_dimension_reduction(
         n_neighbors=config.n_neighbors,
         cmap=cmap,
         figdir=module_dir,
+        config=config,
     )
 
     logger.info("Plotting spatial distribution of clusters...")

@@ -58,7 +58,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
 
         # Cluster plots
         sq.pl.spatial_scatter(
-            adata,
+            adata_roi,
             library_id="spatial",
             shape=None,
             outline=False,

@@ -334,7 +334,12 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info(f"Final number of genes: {adata.n_vars}")
 
     # Normalize data
+    logger.info(f"Normalizing data by {norm_approach}...")
     normalize_data(adata, norm_approach)
+
+    # Identify highly variable genes
+    logger.info("Identifying highly variable genes...")
+    sc.pp.highly_variable_genes(adata, flavor="seurat", n_top_genes=2000)
 
     # Save data
     logger.info("Saving filtered and normalized data...")

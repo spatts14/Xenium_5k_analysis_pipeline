@@ -399,6 +399,7 @@ def run_dimension_reduction(
         n_neighbors=config.n_neighbors,
         resolution=config.resolution,
         cluster_name=CLUSTER_NAME,
+        min_dist=5,
     )
 
     # Save final results

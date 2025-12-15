@@ -17,25 +17,6 @@ logging_path = "logs"                                                           
 ref_path = "/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/processed_hlca_full_ref.h5ad"                                             # Path to the reference scRNAseq data
 gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/data/gene_id_dict.csv"
 
-[modules.view_images]
-module_name = "view_images"
-gene_list = [ # List of genes to visualize on tissue
-    "KRT5",
-    "KRT17",
-    "MUC5AC",
-    "MUC5B",
-    "PTPRC",
-    "CD3D",
-    "CD8A",
-    "CD4",
-    "CD68",
-    "MRC1",
-    "ACTA2",
-    "SPARC",
-    "COL1A1",
-    "PI16",
-]
-
 [modules.spatial_statistics]
 module_name = "scverse_spatial_stats"
 clusters_label = "manual_annotation"

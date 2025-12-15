@@ -46,7 +46,8 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
     sq.pl.centrality_scores(
         adata,
         cluster_key=cluster,
-        figsize=(40, 10),
+        figsize=(30, 10),
+        size=10,
         save=module_dir / "centrality_scores.png",
     )
     logger.info(
@@ -68,7 +69,6 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
     sq.pl.co_occurrence(
         adata_subsample,
         cluster_key=cluster,
-        legend_loc="right margin",
         figsize=(20, 10),
         save=module_dir / "co_occurrence.png",
     )

@@ -66,13 +66,14 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
         adata_subsample,
         cluster_key=cluster,
     )
-    sq.pl.co_occurrence(
-        adata_subsample,
-        cluster_key=cluster,
-        figsize=(20, 10),
-        save=module_dir / "co_occurrence.png",
-    )
-    logger.info(f"Co-occurrence plot saved to {module_dir / 'co_occurrence.png'}")
+    for cell_type in cluster:
+        sq.pl.co_occurrence(
+            adata_subsample,
+            cluster_key=cell_type,
+            figsize=(20, 10),
+            save=module_dir / f"co_occurrence_{cell_type}.png",
+        )
+        logger.info(f"Co-occurrence plot saved to co_occurrence_{cell_type}.png")
 
     # Neighborhood enrichment analysis
     logger.info("Performing neighborhood enrichment analysis...")

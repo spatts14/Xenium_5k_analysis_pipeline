@@ -46,7 +46,6 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
     sq.pl.centrality_scores(
         adata,
         cluster_key=cluster,
-        legend_loc="right margin",
         figsize=(40, 10),
         save=module_dir / "centrality_scores.png",
     )
@@ -70,7 +69,7 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
         adata_subsample,
         cluster_key=cluster,
         legend_loc="right margin",
-        figsize=(10, 10),
+        figsize=(20, 10),
         save=module_dir / "co_occurrence.png",
     )
     logger.info(f"Co-occurrence plot saved to {module_dir / 'co_occurrence.png'}")
@@ -84,7 +83,7 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
         adata,
         cluster_key=cluster,
         cmap=cmap,
-        figsize=(8, 8),
+        figsize=(12, 8),
         title="Neighborhood enrichment adata",
         save=module_dir / "nhood_enrichment.png",
     )

@@ -65,6 +65,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             color=["total_counts", "leiden", "manual_annotation"],
             cmap=cmap,
             wspace=0.4,
+            vmax=400,
             size=0.5,
             save=f"clusters_{roi}.png",
             dpi=300,

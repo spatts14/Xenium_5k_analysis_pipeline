@@ -33,7 +33,7 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "annotate" / "adata.h5ad")
 
     # Calculate spatial statistics
     logger.info("Building spatial neighborhood graph...")

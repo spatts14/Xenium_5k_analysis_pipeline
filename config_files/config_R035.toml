@@ -17,5 +17,6 @@ logging_path = "logs"                                                           
 ref_path = "/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/processed_hlca_full_ref.h5ad"                                             # Path to the reference scRNAseq data
 gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/data/gene_id_dict.csv"
 
-[modules.integrate_ingest]
-module_name = "integrate_ingest"
+[modules.drug2cell]
+module_name = "drug2cell"
+drug_list = ["CHEMBL1256391|PIRFENIDONE", "CHEMBL3039504|NINTEDANIB ESYLATE"]

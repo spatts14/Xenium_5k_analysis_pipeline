@@ -17,9 +17,9 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 logger = getLogger(__name__)
 
 # Variables
-CELL_TYPE_TOP = "ingest_pred_cell_type"
+CELL_TYPE_TOP = "manual_annotation"
 CELL_TYPE_LEVEL = "transf_ann_level_2_label"
-KEY_CELL_TYPE = "Lymphoid"
+KEY_CELL_TYPE = "T cells"
 
 
 def drug2cell_calculation(adata, module_dir):
@@ -285,11 +285,10 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
     logger.info("Starting Drug2Cell module...")
 
     logger.info("Loading Xenium data...")
-    # Fix path - should load from integrate_ingest module output
     input_file = io_config.output_dir / "annotate" / "adata.h5ad"
     if not input_file.exists():
         logger.error(f"Input file not found: {input_file}")
-        logger.error("Please run the integrate_ingest module first.")
+        logger.error("Please ensure correct file path.")
         return
 
     adata = sc.read_h5ad(input_file)

@@ -286,7 +286,7 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
 
     logger.info("Loading Xenium data...")
     # Fix path - should load from integrate_ingest module output
-    input_file = io_config.output_dir / "3_integrate_ingest" / "adata.h5ad"
+    input_file = io_config.output_dir / "annotate" / "adata.h5ad"
     if not input_file.exists():
         logger.error(f"Input file not found: {input_file}")
         logger.error("Please run the integrate_ingest module first.")

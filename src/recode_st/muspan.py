@@ -45,7 +45,7 @@ def run_muspan(config: MuspanModuleConfig, io_config: IOConfig):
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "5_spatial_stats" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "spatial_stats" / "adata.h5ad")
 
     # Create muspan object
     logger.info("Creating MuSpAn domain object...")

@@ -238,8 +238,8 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
         return
 
     logger.info("Filtering low count groups for differential expression...")
-    adata = filter_low_count_groups(adata, annotation=ANNOTATION)
-    if adata is None:
+    filtered_drug2cell = filter_low_count_groups(adata, annotation=ANNOTATION)
+    if filtered_drug2cell is None:
         logger.error("Failed to filter low count groups. Aborting module.")
         return
 

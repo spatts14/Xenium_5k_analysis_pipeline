@@ -238,8 +238,8 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
         return
 
     logger.info("Filtering low count groups for differential expression...")
-    adata = filter_low_count_groups(adata, cell_type_top=CELL_TYPE_TOP)
-    if adata is None:
+    filtered_drug2cell = filter_low_count_groups(adata, cell_type_top=CELL_TYPE_TOP)
+    if filtered_drug2cell is None:
         logger.error("Failed to filter low count groups. Aborting module.")
         return
 
@@ -262,6 +262,15 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
         )
 
     logger.info("Visualize only respiratory drugs")
+
+    # Check if drug2cell results are available
+    if "drug2cell" not in adata.uns:
+        logger.warning(
+            "Skipping respiratory drugs visualization - no drug2cell results available"
+        )
+        logger.info("Drug2Cell module finished.")
+        return
+
     # Apply the same filtering as used in differential expression
     group_counts = adata.obs[CELL_TYPE_TOP].value_counts()
     min_cells_per_group = 10  # Same threshold as calc_DE

@@ -28,7 +28,7 @@ def drug2cell_calculation(adata, module_dir):
         module_dir (Path): Directory to save module outputs
 
     Returns:
-        anndata.AnnData or None: adata with drug2cell scores added, or None if failed
+        AnnData or None: adata with drug2cell scores added, or None if failed
     """
     # Computes the mean of the expression of each gene group in each cell.
     # By default, the function will load a set of ChEMBL drugs and their targets
@@ -73,6 +73,39 @@ def drug2cell_calculation(adata, module_dir):
     return adata
 
 
+def filter_low_count_groups(
+    adata, annotation: str = ANNOTATION, min_cells_per_group: int = 10
+):
+    """Filter adata to only include groups with sufficient cell counts.
+
+    Args:
+        adata (anndata.AnnData): Annotated data object
+        annotation (str, optional):Defaults to ANNOTATION.
+        min_cells_per_group (int, optional): Minimum number of cells per group.
+
+    Returns:
+        adata_filtered (): filtered adata object
+    """
+    # Check if we have enough cells per group for differential expression
+    group_counts = adata.obs[annotation].value_counts()
+    valid_groups = group_counts[group_counts >= min_cells_per_group].index.tolist()
+
+    if len(valid_groups) < 2:
+        logger.warning(
+            f"Not enough groups with >= {min_cells_per_group} cells "
+            f"Skipping filtering adata object."
+        )
+    else:
+        valid_mask = adata.obs[annotation].isin(valid_groups)
+        adata_filtered = adata.uns["drug2cell"][valid_mask, :]
+
+        logger.info(
+            f"Filtered for {len(valid_groups)} groups "
+            f"with >= {min_cells_per_group} cells each"
+        )
+        return adata_filtered
+
+
 def visualize_drug2cell(config, adata, annotation: str = ANNOTATION, cmap=None):
     """Visualize drug2cell scores.
 
@@ -96,8 +129,10 @@ def visualize_drug2cell(config, adata, annotation: str = ANNOTATION, cmap=None):
         logger.info("Skipping drug2cell visualization.")
         return
 
-    drug_list = config.drug_list
-    available_drugs = adata.uns["drug2cell"].var_names.tolist()
+    drug_list = config.drug_list  # the drugs you want to visualize
+    available_drugs = adata.uns[
+        "drug2cell"
+    ].var_names.tolist()  # all drugs with calculated scores
     missing_drugs = [drug for drug in drug_list if drug not in available_drugs]
     if missing_drugs:
         logger.warning(
@@ -132,40 +167,6 @@ def visualize_drug2cell(config, adata, annotation: str = ANNOTATION, cmap=None):
             cmap=cmap,
             save=f"_{config.module_name}_{roi}_scatter.png",
         )
-
-
-def filter_low_count_groups(
-    adata, annotation: str = ANNOTATION, min_cells_per_group: int = 10
-):
-    """Filter adata to only include groups with sufficient cell counts.
-
-    Args:
-        adata (anndata.AnnData): Annotated data object
-        annotation (str, optional):Defaults to ANNOTATION.
-        min_cells_per_group (int, optional): Minimum number of cells per group.
-
-    Returns:
-        adata_filtered (): filtered adata object
-    """
-    # Check if we have enough cells per group for differential expression
-    group_counts = adata.obs[annotation].value_counts()
-    valid_groups = group_counts[group_counts >= min_cells_per_group].index.tolist()
-
-    if len(valid_groups) < 2:
-        logger.warning(
-            f"Not enough groups with >= {min_cells_per_group} cells "
-            f"Skipping filtering adata object."
-        )
-    else:
-        # Filter to only valid groups
-        valid_mask = adata.obs[annotation].isin(valid_groups)
-        adata_filtered = adata.uns["drug2cell"][valid_mask, :]
-
-        logger.info(
-            f"Filtered for {len(valid_groups)} groups "
-            f"with >= {min_cells_per_group} cells each"
-        )
-        return adata_filtered
 
 
 def calc_n_plot_DE(adata, config, annotation: str = ANNOTATION, cmap=None):
@@ -237,8 +238,8 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
         return
 
     logger.info("Filtering low count groups for differential expression...")
-    filtered_drug2cell = filter_low_count_groups(adata, cell_type_top=ANNOTATION)
-    if filtered_drug2cell is None:
+    adata = filter_low_count_groups(adata, annotation=ANNOTATION)
+    if adata is None:
         logger.error("Failed to filter low count groups. Aborting module.")
         return
 
@@ -249,8 +250,9 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
             f"Column '{ANNOTATION}' not found in adata.obs. "
             f"Available columns: {list(adata.obs.columns)}"
         )
-        logger.info(f"Proceeding with {ANNOTATION} only...")
-    visualize_drug2cell(config, adata=adata, annotation=ANNOTATION, cmap=cmap_blues)
+    else:
+        # Visualize drugs from drug list in a UMAP (all) and spatial scatter (each ROI)
+        visualize_drug2cell(config, adata=adata, annotation=ANNOTATION, cmap=cmap_blues)
 
     if "drug2cell" in adata.uns:
         logger.info("Calculating differential expression...")

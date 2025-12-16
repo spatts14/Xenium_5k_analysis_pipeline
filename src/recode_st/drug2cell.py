@@ -17,7 +17,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 logger = getLogger(__name__)
 
 # Variables
-CELL_TYPE_TOP = "manual_annotation"
+ANNOTATION = "manual_annotation"
 
 
 def drug2cell_calculation(adata, module_dir):
@@ -73,13 +73,13 @@ def drug2cell_calculation(adata, module_dir):
     return adata
 
 
-def visualize_drug2cell(config, adata, cell_type_top: str = CELL_TYPE_TOP, cmap=None):
+def visualize_drug2cell(config, adata, annotation: str = ANNOTATION, cmap=None):
     """Visualize drug2cell scores.
 
     Args:
         config (Drug2CellModuleConfig): Configuration object
         adata (anndata.AnnData): Annotated data object with drug2cell scores
-        cell_type_top (str): Column name for cell type annotations
+        annotation (str): Column name for cell type annotations
         cmap: Color map for visualization
 
     Returns:
@@ -135,20 +135,20 @@ def visualize_drug2cell(config, adata, cell_type_top: str = CELL_TYPE_TOP, cmap=
 
 
 def filter_low_count_groups(
-    adata, cell_type_top: str = CELL_TYPE_TOP, min_cells_per_group: int = 10
+    adata, annotation: str = ANNOTATION, min_cells_per_group: int = 10
 ):
     """Filter adata to only include groups with sufficient cell counts.
 
     Args:
         adata (anndata.AnnData): Annotated data object
-        cell_type_top (str, optional):Defaults to CELL_TYPE_TOP.
+        annotation (str, optional):Defaults to ANNOTATION.
         min_cells_per_group (int, optional): Minimum number of cells per group.
 
     Returns:
         adata_filtered (): filtered adata object
     """
     # Check if we have enough cells per group for differential expression
-    group_counts = adata.obs[cell_type_top].value_counts()
+    group_counts = adata.obs[annotation].value_counts()
     valid_groups = group_counts[group_counts >= min_cells_per_group].index.tolist()
 
     if len(valid_groups) < 2:
@@ -158,7 +158,7 @@ def filter_low_count_groups(
         )
     else:
         # Filter to only valid groups
-        valid_mask = adata.obs[cell_type_top].isin(valid_groups)
+        valid_mask = adata.obs[annotation].isin(valid_groups)
         adata_filtered = adata.uns["drug2cell"][valid_mask, :]
 
         logger.info(
@@ -168,28 +168,30 @@ def filter_low_count_groups(
         return adata_filtered
 
 
-def calc_DE(adata, config, cell_type_top: str = CELL_TYPE_TOP, cmap=None):
+def calc_n_plot_DE(adata, config, annotation: str = ANNOTATION, cmap=None):
     """Calculate differential expression for drug2cell scores.
 
     Args:
         adata (anndata.AnnData): Annotated data object
         config (Drug2CellModuleConfig): Configuration object
-        cell_type_top (str): Column name for cell type annotations
+        annotation (str): Column name for cell type annotations
         cmap: Color map for visualization
     Returns:
         None
     """
     logger.info("Calculating differential expression for drug2cell scores...")
-    sc.tl.rank_genes_groups(adata, method="wilcoxon", groupby=CELL_TYPE_TOP)
+    sc.tl.rank_genes_groups(
+        adata.uns["drug2cell"], method="wilcoxon", groupby=ANNOTATION
+    )
 
     logger.info("Visualizing differential expression results...")
     sc.pl.rank_genes_groups_dotplot(
-        adata,
+        adata.uns["drug2cell"],
         swap_axes=True,
         dendrogram=False,
         n_genes=3,
         cmap=cmap,
-        save=f"_{config.module_name}_{CELL_TYPE_TOP}_dotplot.png",
+        save=f"_{config.module_name}_{ANNOTATION}_dotplot.png",
     )
 
 
@@ -215,6 +217,7 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)
+    cmap_blues = sns.color_palette("Blues", as_cmap=True)
 
     logger.info("Starting Drug2Cell module...")
 
@@ -229,33 +232,29 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
 
     logger.info("Calculating drug score every cell in adata using ChEMBL database")
     adata = drug2cell_calculation(adata, module_dir)
-    logger.info(
-        f"Successfully calculated drug scores for "
-        f"{adata.uns['drug2cell'].shape[1]} drugs"
-    )
     if adata is None:
         logger.error("Failed to calculate drug2cell scores. Aborting module.")
         return
 
     logger.info("Filtering low count groups for differential expression...")
-    filtered_drug2cell = filter_low_count_groups(adata, cell_type_top=CELL_TYPE_TOP)
+    filtered_drug2cell = filter_low_count_groups(adata, cell_type_top=ANNOTATION)
     if filtered_drug2cell is None:
         logger.error("Failed to filter low count groups. Aborting module.")
         return
 
     logger.info("Visualize drug2cell...")
     # Validate required columns exist
-    if CELL_TYPE_TOP not in adata.obs.columns:
+    if ANNOTATION not in adata.obs.columns:
         logger.warning(
-            f"Column '{CELL_TYPE_TOP}' not found in adata.obs. "
+            f"Column '{ANNOTATION}' not found in adata.obs. "
             f"Available columns: {list(adata.obs.columns)}"
         )
-        logger.info(f"Proceeding with {CELL_TYPE_TOP} only...")
-    visualize_drug2cell(config, adata=adata, cell_type_top=CELL_TYPE_TOP, cmap=cmap)
+        logger.info(f"Proceeding with {ANNOTATION} only...")
+    visualize_drug2cell(config, adata=adata, annotation=ANNOTATION, cmap=cmap_blues)
 
     if "drug2cell" in adata.uns:
         logger.info("Calculating differential expression...")
-        calc_DE(adata, config, cell_type_top=CELL_TYPE_TOP, cmap=cmap)
+        calc_n_plot_DE(adata, config, annotation=ANNOTATION, cmap=cmap)
     else:
         logger.warning(
             "Skipping differential expression analysis - no drug2cell results available"
@@ -272,24 +271,24 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
         return
 
     # Apply the same filtering as used in differential expression
-    group_counts = adata.obs[CELL_TYPE_TOP].value_counts()
+    group_counts = adata.obs[ANNOTATION].value_counts()
     min_cells_per_group = 10  # Same threshold as calc_DE
     valid_groups = group_counts[group_counts >= min_cells_per_group].index.tolist()
 
     if len(valid_groups) >= 2:
         # Filter to only valid groups for respiratory drugs visualization
         drug2cell_adata = adata.uns["drug2cell"].copy()
-        valid_mask = drug2cell_adata.obs[CELL_TYPE_TOP].isin(valid_groups)
+        valid_mask = drug2cell_adata.obs[ANNOTATION].isin(valid_groups)
         drug2cell_filtered = drug2cell_adata[valid_mask, :].copy()
 
         plot_args = d2c.util.prepare_plot_args(drug2cell_filtered, categories=["R"])
         sc.pl.dotplot(
             drug2cell_filtered,
-            groupby=CELL_TYPE_TOP,
+            groupby=ANNOTATION,
             swap_axes=True,
             **plot_args,
             cmap=cmap,
-            save=f"_{config.module_name}_{CELL_TYPE_TOP}_respiratory_drugs_by.png",
+            save=f"_{config.module_name}_{ANNOTATION}_respiratory_drugs_by.png",
         )
     else:
         logger.warning(

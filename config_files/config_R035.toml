@@ -19,4 +19,12 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 
 [modules.drug2cell]
 module_name = "drug2cell"
-drug_list = ["CHEMBL1256391|PIRFENIDONE", "CHEMBL3039504|NINTEDANIB ESYLATE"]
+drug_list = [
+    "CHEMBL2134724|IPRATROPIUM BROMIDE",
+    "CHEMBL32800|FENOTEROL",
+    "CHEMBL1370|BUDESONIDE",
+    "CHEMBL1473|FLUTICASONE PROPIONATE",
+    "CHEMBL1676|FLUTICASONE FUROATE",
+    "CHEMBL1200500|BECLOMETHASONE DIPROPIONATE",
+    "CHEMBL1512|FLUNISOLIDE",
+]

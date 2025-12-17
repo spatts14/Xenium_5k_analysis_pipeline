@@ -237,6 +237,16 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
         logger.error("Failed to calculate drug2cell scores. Aborting module.")
         return
 
+    logger.info("Visualize dotplot of drug2cell scores across cell types")
+    sc.pl.dotplot(
+        adata.uns["drug2cell"],
+        var_names=config.drug_list,
+        groupby=ANNOTATION,
+        swap_axes=True,
+        cmap=cmap,
+        save=f"_{config.module_name}_{ANNOTATION}_all_drugs_by.png",
+    )
+
     logger.info("Filtering low count groups for differential expression...")
     filtered_drug2cell = filter_low_count_groups(adata, annotation=ANNOTATION)
     if filtered_drug2cell is None:

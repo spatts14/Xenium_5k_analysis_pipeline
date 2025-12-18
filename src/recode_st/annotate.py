@@ -47,7 +47,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     module_dir.mkdir(exist_ok=True)
 
     # Set figure directory for this module (overrides global setting)
-    # sc.settings.figdir = module_dir
+    sc.settings.figdir = module_dir
 
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))

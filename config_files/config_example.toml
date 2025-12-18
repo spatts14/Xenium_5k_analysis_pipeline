@@ -53,6 +53,10 @@ max_cell_area = 1000            # Maximum cell area to filter cells
 norm_approach = "cell_area"     # Normalization approach to use
 remove_cells = []               # List of cell IDs to remove from the dataset
 
+#DOUBLET IDENTIFICATION MODULE
+[modules.doublet_identification]
+module_name = "doublet_identification" # Name of the module - will be used in the output directory name
+
 # DIMENSION REDUCTION MODULE
 [modules.dimension_reduction]
 module_name = "dimension_reduction" # Name of the module - will be used in the output directory name
@@ -73,34 +77,24 @@ marker_genes = [
     "VWF",
 ] # Cell type marker plots
 
-
+# INTEGRATION MODULES
 [modules.integrate]
+module_name = "integrate"
 
-module_name = "3_integrate"
-# Label for this step’s output directory.
-# Currently no additional parameters.
-
-
+# ANNOTATION MODULE
 [modules.annotate]
+module_name = "annotate"
+cluster_name = "leiden"
+clusters_label = "manual_annotation"
 
-module_name = "4_annotate"
-# Label for this step’s output directory.
+[modules.annotate.cluster_to_cell_type]
+"0" = "Epithelial cells"
+"1" = "Fibroblasts"
+"2" = "Endothelial cells"
+"3" = "Immune cells"
+"4" = "Smooth muscle cells"
+"5" = "Unknown"
 
-cluster_name = "predicted_cell_type"
-# Column in adata.obs that contains cluster assignments before annotation.
-
-new_clusters = "HLCA_full_num_cluster"
-# Column name to store the new annotated cell types.
-
-[modules.view_images]
-module_name = "4_view_images" # Name of the module - will be used in the output directory name
-gene_list = [ # List of genes to visualize on tissue
-    "EPCAM",
-    "CD3D",
-    "CD68",
-    "PTPRC",
-    "ACTA2",
-]
 
 [modules.spatial_statistics]
 module_name = "5_spatial_stats" # Name of the module - will be used in the output directory name

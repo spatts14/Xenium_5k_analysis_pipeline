@@ -42,6 +42,9 @@ class QualityControlModuleConfig(BaseModuleConfig):
     max_cell_area: int
     """Minimum area to filter cells."""
 
+    remove_cells: list[str] = []
+    """List of cell types to remove from the dataset."""
+
     norm_approach: Literal["scanpy_log", "sctransform", "cell_area", "none"] = (
         "cell_area"
     )

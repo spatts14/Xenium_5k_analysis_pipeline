@@ -117,7 +117,7 @@ def load_data(
 
     # Define file paths
     data_path = (
-        Path(io_config.output_dir) / "1_quality_control" / f"adata_{norm_approach}.h5ad"
+        Path(io_config.output_dir) / "quality_control" / f"adata_{norm_approach}.h5ad"
     )
     module_dir = Path(io_config.output_dir) / config.module_name
     subsample_path = module_dir / f"adata_subsample_{config.norm_approach}.h5ad"

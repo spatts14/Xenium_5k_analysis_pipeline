@@ -43,7 +43,7 @@ def load_data(config: QualityControlModuleConfig, io_config: IOConfig):
     else:
         try:
             logger.info("Loading Xenium data...")
-            combined_path = io_config.adata_dir / "COPD_V1_v_IPF.h5ad"
+            combined_path = io_config.adata_dir / "_all_samples.h5ad"
 
             # Import data
             adata = sc.read_h5ad(combined_path)
@@ -203,7 +203,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info("Loading data...")
     # adata = load_data(config, io_config)
     adata = sc.read_h5ad(
-        io_config.adata_dir / "_COPD_R035.h5ad"
+        io_config.adata_dir / "_COPD_V1_v_IPF.h5ad"
     )  # TODO remove after testing
 
     logger.info("Calculating QC metrics...")

@@ -41,8 +41,17 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 #   - index column: ensembl_id
 #   - column: gene_symbol
 
+
 # ANNOTATION MODULE
 [modules.annotate]
 module_name = "annotate"
 cluster_name = "leiden"
-new_clusters = "manual_annotation"
+clusters_label = "manual_annotation"
+
+[modules.annotate.cluster_to_cell_type]
+"0" = "Epithelial cells"
+"1" = "Fibroblasts"
+"2" = "Endothelial cells"
+"3" = "Immune cells"
+"4" = "Smooth muscle cells"
+"5" = "Unknown"

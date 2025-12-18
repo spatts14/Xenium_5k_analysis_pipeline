@@ -16,32 +16,17 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 logger = getLogger(__name__)
 
-INGEST_LABEL_COL = "ingest_pred_cell_type"
-SCANVI_LABEL_COL = "scANVI_pred_cell_type"
-REF_CELL_LABEL_COL = "cell_type"  # Column in reference data with cell type labels
 
+def remove_small_clusters(adata: sc.AnnData, cluster_name: str) -> sc.AnnData:
+    """Remove clusters with less than 10 cells.
 
-def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
-    """Run annotation on Xenium data."""
-    # Set variables
-    module_dir = io_config.output_dir / config.module_name
-    cluster_name = INGEST_LABEL_COL
-    new_clusters = config.new_clusters
+    Args:
+        adata: AnnData object.
+        cluster_name: Name of the cluster column in adata.obs.
 
-    # Create output directories if they do not exist
-    module_dir.mkdir(exist_ok=True)
-
-    # Set figure directory for this module (overrides global setting)
-    sc.settings.figdir = module_dir
-
-    # Set figure settings to ensure consistency across all modules
-    configure_scanpy_figures(str(io_config.output_dir))
-    cmap = sns.color_palette("Spectral", as_cmap=True)
-
-    # Import data
-    logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "3_integrate" / "adata.h5ad")
-
+    Returns:
+        Filtered AnnData object.
+    """
     # Remove cell clusters with less than 10 cells
     logger.info("Removing clusters with fewer than 10 cells...")
     cluster_counts = adata.obs[cluster_name].value_counts()
@@ -49,6 +34,29 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     adata = adata[~adata.obs[cluster_name].isin(clusters_to_remove)].copy()
     logger.info(f"Clusters removed after filtering: {clusters_to_remove.tolist()}")
     logger.info(f"Remaining clusters: {adata.obs[cluster_name].unique().tolist()}")
+
+
+def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
+    """Run annotation on Xenium data."""
+    # Set variables
+    module_dir = io_config.output_dir / config.module_name
+    cluster_name = config.cluster_name
+    new_clusters = config.clusters_label
+
+    # Create output directories if they do not exist
+    module_dir.mkdir(exist_ok=True)
+
+    # Set figure directory for this module (overrides global setting)
+    # sc.settings.figdir = module_dir
+
+    # Set figure settings to ensure consistency across all modules
+    configure_scanpy_figures(str(io_config.output_dir))
+    cmap = sns.color_palette("Spectral", as_cmap=True)
+    palette = sns.color_palette("Spectral", as_cmap=False)
+
+    # Import data
+    logger.info("Loading Xenium data...")
+    adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
 
     # Calculate the differentially expressed genes for every cluster,
     # compared to the rest of the cells in our adata
@@ -136,17 +144,50 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
         logger.info(f"Exported cluster {cluster_number} data to {csv_filename}")
 
     # Rename the clusters based on the markers
+    cluster_to_cell_type = config.cluster_to_cell_type
+    logger.info(f"Cluster to cell type mapping: {cluster_to_cell_type}")
+    logger.info(f"Type of data in mapping: {type(cluster_to_cell_type)}")
+
     logger.info("Renaming clusters based on markers...")
+    cluster_to_cell_type_dict = {
+        "0": "Basal epithelial cells",
+        "1": "Unknown - MUC5B low",
+        "2": "Fibroblasts",
+        "3": "Endothelial cells",
+        "4": "Ciliated epithelial cells",
+        "5": "Basal epithelial cells",
+        "6": "Goblet cell MUC5AChi MUC5Blo",
+        "7": "Ciliated epithelial cells",
+        "8": "Fibroblasts SPARChi",
+        "9": "Smooth muscle cells",
+        "10": "Secretory epithelial / Club cells",
+        "11": "T cells",
+        "12": "Macrophages",
+        "13": "FNhi",
+        "14": "Goblet cell MUC5AClo MUC5Bhi",
+        "15": "Plasma cells / B cells",
+        "16": "Mast cells",
+        "17": "Lymphatic endothelial cells",
+    }
+
     # Get unique clusters
-    unique_clusters = (
-        adata.obs[cluster_name].astype(str).unique()
-    )  # Get unique cluster names
-    cluster_names = {
-        cluster: f"Cluster_{cluster}" for cluster in unique_clusters
-    }  # Create a mapping of cluster names
-    adata.obs[new_clusters] = (
-        adata.obs[cluster_name].astype(str).map(cluster_names)
-    )  # Map the cluster names to the cell_type column
+    adata.obs[new_clusters] = adata.obs[cluster_name].map(cluster_to_cell_type_dict)
+
+    logger.info("Plotting UMAP with new cluster names...")
+    sc.pl.umap(
+        adata,
+        color=[cluster_name, new_clusters],
+        legend_loc="right margin",
+        legend_fontsize=12,
+        frameon=False,
+        ncols=2,  # Side by side
+        wspace=0.4,  # Space between plots
+        title=new_clusters,
+        palette=palette,
+        show=False,
+        save=f"_{config.module_name}_{new_clusters}_combined_annotation.png",
+    )
+    logger.info(f"UMAP plot with new cluster names saved to {sc.settings.figdir}")
 
     # Save anndata object
     adata.write_h5ad(module_dir / "adata.h5ad")

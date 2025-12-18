@@ -8,7 +8,6 @@ import seaborn as sns
 import squidpy as sq
 
 from recode_st.config import IOConfig, SpatialStatisticsModuleConfig
-from recode_st.helper_function import configure_scanpy_figures
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -24,13 +23,17 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
+    # Load variables
+    cluster = config.clusters_label
+
     # Set figure settings to ensure consistency across all modules
-    configure_scanpy_figures(str(io_config.output_dir))
+    # configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)
+    # palette = sns.color_palette("Spectral", as_cmap=False)
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "4_view_images" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "annotate" / "adata.h5ad")
 
     # Calculate spatial statistics
     logger.info("Building spatial neighborhood graph...")
@@ -39,11 +42,12 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
     )  # compute connectivity
 
     logger.info("Computing and plotting centrality scores...")
-    sq.gr.centrality_scores(adata, cluster_key="leiden")
+    sq.gr.centrality_scores(adata, cluster_key=cluster)
     sq.pl.centrality_scores(
         adata,
-        cluster_key="leiden",
-        figsize=(16, 5),
+        cluster_key=cluster,
+        figsize=(30, 10),
+        size=10,
         save=module_dir / "centrality_scores.png",
     )
     logger.info(
@@ -60,26 +64,27 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
     # Visualize co-occurrence
     sq.gr.co_occurrence(
         adata_subsample,
-        cluster_key="leiden",
+        cluster_key=cluster,
     )
-    sq.pl.co_occurrence(
-        adata_subsample,
-        cluster_key="leiden",
-        clusters="12",
-        figsize=(10, 10),
-        save=module_dir / "co_occurrence.png",
-    )
-    logger.info(f"Co-occurrence plot saved to {module_dir / 'co_occurrence.png'}")
+    for cell_type in cluster:
+        sq.pl.co_occurrence(
+            adata_subsample,
+            cluster_key=cell_type,
+            figsize=(20, 10),
+            save=module_dir / f"co_occurrence_{cell_type}.png",
+        )
+        logger.info(f"Co-occurrence plot saved to co_occurrence_{cell_type}.png")
 
     # Neighborhood enrichment analysis
     logger.info("Performing neighborhood enrichment analysis...")
-    sq.gr.nhood_enrichment(adata, cluster_key="leiden")
+    sq.gr.nhood_enrichment(adata, cluster_key=cluster)
 
     # Plot neighborhood enrichment
     sq.pl.nhood_enrichment(
         adata,
-        cluster_key="leiden",
-        figsize=(8, 8),
+        cluster_key=cluster,
+        cmap=cmap,
+        figsize=(12, 8),
         title="Neighborhood enrichment adata",
         save=module_dir / "nhood_enrichment.png",
     )

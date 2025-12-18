@@ -42,6 +42,9 @@ class QualityControlModuleConfig(BaseModuleConfig):
     max_cell_area: int
     """Minimum area to filter cells."""
 
+    remove_cells: list[str] = []
+    """List of cell types to remove from the dataset."""
+
     norm_approach: Literal["scanpy_log", "sctransform", "cell_area", "none"] = (
         "cell_area"
     )
@@ -90,8 +93,14 @@ class IntegrateSCVIModuleConfig(BaseModuleConfig):
 class AnnotateModuleConfig(BaseModuleConfig):
     """Configuration for the Annotate module."""
 
-    new_clusters: str
+    cluster_name: str
+    """Name of the cluster column in adata.obs to use for annotation."""
+
+    clusters_label: str
     """Name of the new cluster column in adata.obs."""
+
+    cluster_to_cell_type: dict[str, str]
+    """Mapping from cluster labels to cell type annotations."""
 
 
 class ViewImagesModuleConfig(BaseModuleConfig):
@@ -103,6 +112,9 @@ class ViewImagesModuleConfig(BaseModuleConfig):
 
 class SpatialStatisticsModuleConfig(BaseModuleConfig):
     """Configuration for the Spatial Statistics module."""
+
+    clusters_label: str
+    """Name of the new cluster column in adata.obs."""
 
 
 class Drug2CellModuleConfig(BaseModuleConfig):

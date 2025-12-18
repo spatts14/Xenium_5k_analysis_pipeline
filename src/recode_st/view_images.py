@@ -25,43 +25,51 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
+    # Set figure directory for this module (overrides global setting)
+    sc.settings.figdir = module_dir
+
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "3_annotate" / "adata.h5ad")
-
-    # View plots
-    logger.info("Visualize clusters on tissue...")
-    sq.pl.spatial_scatter(
-        adata,
-        library_id="spatial",
-        shape=None,
-        outline=False,
-        color=["leiden", "total_counts"],
-        wspace=0.4,
-        size=1,
-        save=module_dir / "leiden_clusters.png",
-        dpi=300,
-    )
-    logger.info(f"Saved leiden clusters plot to {module_dir / 'leiden_clusters.png'}")
+    adata = sc.read_h5ad(io_config.output_dir / "annotate" / "adata.h5ad")
 
     # View specific gene expression
     logger.info("Plotting genes of interest on tissue...")
-    sq.pl.spatial_scatter(
-        adata,
-        library_id="spatial",
-        color=config.gene_list,
-        shape=None,
-        size=2,
-        img=False,
-        save=module_dir / "gene_expression.png",
-    )
-    logger.info(f"Saved gene expression plot to {module_dir / 'gene_expression.png'}")
+    ROI_list = adata.obs["ROI"].unique().tolist()
+    for roi in ROI_list:
+        adata_roi = adata[adata.obs["ROI"] == roi]
 
-    # Save anndata object
-    adata.write_h5ad(module_dir / "adata.h5ad")
-    logger.info(f"Data saved to {module_dir / 'adata.h5ad'}")
+        # Gene expression plots
+        sq.pl.spatial_scatter(
+            adata_roi,
+            library_id="spatial",
+            color=config.gene_list,
+            cmap=cmap,
+            shape=None,
+            vmax=2,
+            size=0.5,
+            img=False,
+            save=f"gene_expression_{roi}.png",
+        )
+        logger.info(f"Saved gene expression plot for ROI {roi} to {module_dir}")
+
+        # Cluster plots
+        sq.pl.spatial_scatter(
+            adata_roi,
+            library_id="spatial",
+            shape=None,
+            outline=False,
+            color=["total_counts", "leiden", "manual_annotation"],
+            cmap=cmap,
+            wspace=0.4,
+            vmax=400,
+            size=0.5,
+            save=f"clusters_{roi}.png",
+            dpi=300,
+        )
+        logger.info(f"Saved cluster plot for ROI {roi} to {module_dir}")
+
     logger.info("Imaging module completed successfully.")

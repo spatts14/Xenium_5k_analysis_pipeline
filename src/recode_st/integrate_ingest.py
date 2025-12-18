@@ -19,9 +19,12 @@ logger = getLogger(__name__)
 
 # Define global variables - SHOULD THESE BE HERE OR INSIDE THE RUN FUNCTION?
 INGEST_LABEL_COL = "ingest_pred_cell_type"
-REF_CELL_LABEL_COL = "cell_type"  # Column in reference data with cell type labels
+REF_CELL_LABEL_COL = (
+    "transf_ann_level_3_label"  # Column in reference data with cell type labels
+)
 BATCH_COL = "dataset_origin"
 ANNOTATION_COLS = [  # Define the annotation columns to transfer
+    "cell_type",
     "transf_ann_level_1_label",
     "transf_ann_level_2_label",
     "transf_ann_level_3_label",
@@ -333,6 +336,26 @@ def ingest_integration(adata_ref, adata, adata_ingest):
     """
     logger.info("Starting integration...")
     logger.info("Integrating data using ingest...")
+
+    # Final validation before ingest
+    logger.info(f"Reference var_names shape: {adata_ref.var_names.shape}")
+    logger.info(f"Ingest var_names shape: {adata_ingest.var_names.shape}")
+    logger.info(
+        f"Var_names match exactly: {adata_ref.var_names.equals(adata_ingest.var_names)}"
+    )
+
+    if not adata_ref.var_names.equals(adata_ingest.var_names):
+        logger.error("Gene name mismatch detected before ingest!")
+        logger.info(f"First 5 ref genes: {adata_ref.var_names[:5].tolist()}")
+        logger.info(f"First 5 ingest genes: {adata_ingest.var_names[:5].tolist()}")
+        logger.info(f"Last 5 ref genes: {adata_ref.var_names[-5:].tolist()}")
+        logger.info(f"Last 5 ingest genes: {adata_ingest.var_names[-5:].tolist()}")
+
+        # Attempt to fix by reordering again
+        logger.info("Attempting to fix gene ordering...")
+        adata_ingest = adata_ingest[:, adata_ref.var_names].copy()
+        logger.info("After reordering :var_names match:")
+        logger.info(f"{adata_ref.var_names.equals(adata_ingest.var_names)}")
 
     # Run ingest to map Xenium data onto HLCA reference
     sc.tl.ingest(

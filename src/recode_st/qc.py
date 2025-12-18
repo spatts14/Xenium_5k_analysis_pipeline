@@ -354,13 +354,15 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     # TODO: remove specific cells based on QC plots
     logger.info("Removing specific cells based on QC plots...")
     remove_cells = config.remove_cells
-    if len(remove_cells) > 0:
+    if remove_cells:
         logger.info(f"Checking is cell IDs {remove_cells} are in the data...")
         for cell in remove_cells:
             if cell not in adata.obs_names:
                 logger.warning(f"Cell ID {cell} not found in adata.obs_names")
         logger.info(f"Removing specific cells based on QC plots: {remove_cells}")
         adata = adata[~adata.obs_names.isin(remove_cells), :].copy()
+    else:
+        logger.info("No specific cells to remove based on QC plots.")
 
     logger.info(f"adata shape after area filtering: {adata.shape}")
 

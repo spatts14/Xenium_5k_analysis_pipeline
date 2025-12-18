@@ -56,7 +56,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "dimension_reduction" / "adata.h5ad")
 
     # Calculate the differentially expressed genes for every cluster,
     # compared to the rest of the cells in our adata

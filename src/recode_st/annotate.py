@@ -52,11 +52,16 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)
-    palette = sns.color_palette("Spectral", as_cmap=False)
 
     # Import data
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "dimension_reduction" / "adata.h5ad")
+
+    # Ensure categorical and set colors
+    adata.obs[cluster_name] = adata.obs[cluster_name].astype("category")
+    adata.uns[f"{cluster_name}_colors"] = sns.color_palette(
+        "hls", len(adata.obs[cluster_name].cat.categories)
+    ).as_hex()
 
     # Calculate the differentially expressed genes for every cluster,
     # compared to the rest of the cells in our adata
@@ -151,33 +156,13 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     logger.info(f"Type of data in mapping: {type(cluster_to_cell_type)}")
 
     logger.info("Renaming clusters based on markers...")
-    cluster_to_cell_type_dict = config.cluster_to_cell_type
-    # cluster_to_cell_type_dict = {
-    #     "0": "Basal epithelial cells",
-    #     "1": "Fibroblast MFAP4+APOD+",
-    #     "2": "Fibroblast LUM+COL6A2",
-    #     "3": "Goblet cells MUC5AClo MUC5Bhi",
-    #     "4": "Smooth muscle cells 1",
-    #     "5": "Macrophages 1",
-    #     "6": "T cells",
-    #     "7": "AT2 cells",
-    #     "8": "Fibroblast SPARC+",
-    #     "9": "Blood endothelial cells VIM+",
-    #     "10": "Smooth muscle cells 2",
-    #     "11": "Blood endothelial cells EPAS1+",
-    #     "12": "Ciliated epithelial cells",
-    #     "13": "Plasma cells",
-    #     "14": "Goblet cells MUC5AChi, MUC5Blo",
-    #     "15": "Endothelial cells",
-    #     "16": "Pericytes",
-    #     "17": "Mast cells",
-    #     "18": "Lymphatic endothelial cells",
-    #     "19": "Macrophages 2",
-    #     "20": "Serous acinar cells",
-    # }
-
-    # Get unique clusters
+    cluster_to_cell_type_dict = config.cluster_to_cell_type  # import from config
     adata.obs[new_clusters] = adata.obs[cluster_name].map(cluster_to_cell_type_dict)
+
+    # Create a palette for the new clusters
+    adata.uns[f"{new_clusters}_colors"] = sns.color_palette(
+        "hls", len(adata.obs[new_clusters].unique())
+    ).as_hex()
 
     logger.info("Plotting UMAP with new cluster names...")
     sc.pl.umap(
@@ -189,7 +174,6 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
         ncols=2,  # Side by side
         wspace=0.4,  # Space between plots
         title=new_clusters,
-        palette=palette,
         show=False,
         save=f"_{config.module_name}_{new_clusters}_combined_annotation.png",
     )

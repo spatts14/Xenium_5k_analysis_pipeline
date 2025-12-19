@@ -60,7 +60,9 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
 
     # Calculate the differentially expressed genes for every cluster,
     # compared to the rest of the cells in our adata
-    logger.info("Calculating differentially expressed genes for each cluster...")
+    logger.info(
+        f"Calculating differentially expressed genes for each cluster: {cluster_name}"
+    )
     sc.tl.rank_genes_groups(adata, groupby=cluster_name, method="wilcoxon")
 
     logger.info("Plotting the top differentially expressed genes for each cluster...")
@@ -192,6 +194,25 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
         save=f"_{config.module_name}_{new_clusters}_combined_annotation.png",
     )
     logger.info(f"UMAP plot with new cluster names saved to {sc.settings.figdir}")
+
+    # Calculate the differentially expressed genes for every cluster,
+    # compared to the rest of the cells in our adata
+    logger.info(
+        f"Calculating differentially expressed genes for each cluster: {new_clusters}"
+    )
+    sc.tl.rank_genes_groups(adata, groupby=new_clusters, method="wilcoxon")
+
+    logger.info("Plotting the top differentially expressed genes for each cluster...")
+    sc.pl.rank_genes_groups_dotplot(
+        adata,
+        groupby=new_clusters,
+        standard_scale="var",
+        n_genes=5,
+        cmap=cmap,
+        show=False,
+        save=f"{config.module_name}_{new_clusters}.png",
+    )
+    logger.info(f"Dotplot saved to {sc.settings.figdir}")
 
     # Save anndata object
     adata.write_h5ad(module_dir / "adata.h5ad")

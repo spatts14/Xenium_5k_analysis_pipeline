@@ -149,29 +149,30 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     logger.info(f"Type of data in mapping: {type(cluster_to_cell_type)}")
 
     logger.info("Renaming clusters based on markers...")
-    cluster_to_cell_type_dict = {
-        "0": "Basal epithelial cells",
-        "1": "Fibroblast MFAP4+APOD+",
-        "2": "Fibroblast LUM+COL6A2",
-        "3": "Goblet cells MUC5AClo MUC5Bhi",
-        "4": "Smooth muscle cells 1",
-        "5": "Macrophages 1",
-        "6": "T cells",
-        "7": "AT2 cells",
-        "8": "Fibroblast SPARC+",
-        "9": "Blood endothelial cells VIM+",
-        "10": "Smooth muscle cells 2",
-        "11": "Blood endothelial cells EPAS1+",
-        "12": "Ciliated epithelial cells",
-        "13": "Plasma cells",
-        "14": "Goblet cells MUC5AChi, MUC5Blo",
-        "15": "Endothelial cells",
-        "16": "Pericytes",
-        "17": "Mast cells",
-        "18": "Lymphatic endothelial cells",
-        "19": "Macrophages 2",
-        "20": "Serous acinar cells",
-    }
+    cluster_to_cell_type_dict = config.cluster_to_cell_type
+    # cluster_to_cell_type_dict = {
+    #     "0": "Basal epithelial cells",
+    #     "1": "Fibroblast MFAP4+APOD+",
+    #     "2": "Fibroblast LUM+COL6A2",
+    #     "3": "Goblet cells MUC5AClo MUC5Bhi",
+    #     "4": "Smooth muscle cells 1",
+    #     "5": "Macrophages 1",
+    #     "6": "T cells",
+    #     "7": "AT2 cells",
+    #     "8": "Fibroblast SPARC+",
+    #     "9": "Blood endothelial cells VIM+",
+    #     "10": "Smooth muscle cells 2",
+    #     "11": "Blood endothelial cells EPAS1+",
+    #     "12": "Ciliated epithelial cells",
+    #     "13": "Plasma cells",
+    #     "14": "Goblet cells MUC5AChi, MUC5Blo",
+    #     "15": "Endothelial cells",
+    #     "16": "Pericytes",
+    #     "17": "Mast cells",
+    #     "18": "Lymphatic endothelial cells",
+    #     "19": "Macrophages 2",
+    #     "20": "Serous acinar cells",
+    # }
 
     # Get unique clusters
     adata.obs[new_clusters] = adata.obs[cluster_name].map(cluster_to_cell_type_dict)

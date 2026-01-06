@@ -9,7 +9,6 @@ import seaborn as sns
 import squidpy as sq
 
 from recode_st.config import IOConfig, ViewImagesModuleConfig
-from recode_st.helper_function import configure_scanpy_figures
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -29,7 +28,6 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
     sc.settings.figdir = module_dir
 
     # Set figure settings to ensure consistency across all modules
-    configure_scanpy_figures(str(io_config.output_dir))
     # cmap = sns.color_palette("Spectral", as_cmap=True)
     cmap_blue = sns.color_palette("ch:start=.2,rot=-.3", as_cmap=True)
 

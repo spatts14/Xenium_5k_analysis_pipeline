@@ -64,7 +64,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             color=[
                 "total_counts",
                 "leiden",
-                "mannual_annotation",
+                "manual_annotation",
             ],  # TODO: remove hard coding
             wspace=0.4,
             vmax=400,

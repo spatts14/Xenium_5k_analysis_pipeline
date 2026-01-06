@@ -30,7 +30,8 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
 
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
-    cmap = sns.color_palette("Spectral", as_cmap=True)
+    # cmap = sns.color_palette("Spectral", as_cmap=True)
+    cmap_blue = sns.color_palette("ch:start=.2,rot=-.3", as_cmap=True)
 
     # Import data
     logger.info("Loading Xenium data...")
@@ -47,7 +48,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             adata_roi,
             library_id="spatial",
             color=config.gene_list,
-            cmap=cmap,
+            cmap=cmap_blue,
             shape=None,
             vmax=2,
             size=0.5,
@@ -62,8 +63,11 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             library_id="spatial",
             shape=None,
             outline=False,
-            color=["total_counts", "leiden", "manual_annotation"],
-            cmap=cmap,
+            color=[
+                "total_counts",
+                "leiden",
+                "mannual_annotation",
+            ],  # TODO: remove hard coding
             wspace=0.4,
             vmax=400,
             size=0.5,

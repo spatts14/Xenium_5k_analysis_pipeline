@@ -105,4 +105,14 @@ clusters_label = "manual_annotation"
 # VIEW IMAGE MODULE
 [modules.view_images]
 module_name = "view_images"
-gene_list = ["SPP1", "CD68", "MRC1", "CTHRC1", "COL1A1", "PDGFRA", "CD3E", "CD8A"]
+gene_list = [
+    "SPP1",
+    "CD68",
+    "MRC1",
+    "CTHRC1",
+    "COL1A1",
+    "PDGFRA",
+    "CD3E",
+    "CD8A",
+    "CD8B",
+]

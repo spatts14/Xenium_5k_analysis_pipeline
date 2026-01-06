@@ -218,6 +218,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
             outline=False,
             color=new_clusters,
             size=0.5,
+            figsize=(15, 15),
             save=f"clusters_{roi}.png",
             dpi=300,
         )

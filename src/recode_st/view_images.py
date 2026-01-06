@@ -48,8 +48,8 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             color=config.gene_list,
             cmap=cmap_blue,
             shape=None,
-            vmax=5,
-            size=0.5,
+            vmax=2,
+            size=2,
             img=False,
             save=f"gene_expression_{roi}.png",
         )
@@ -67,8 +67,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
                 "manual_annotation",
             ],  # TODO: remove hard coding
             wspace=0.4,
-            vmax=400,
-            size=0.5,
+            size=2,
             save=f"clusters_{roi}.png",
             dpi=300,
         )

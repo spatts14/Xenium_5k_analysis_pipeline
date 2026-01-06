@@ -50,7 +50,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             color=config.gene_list,
             cmap=cmap_blue,
             shape=None,
-            vmax=2,
+            vmax=5,
             size=0.5,
             img=False,
             save=f"gene_expression_{roi}.png",

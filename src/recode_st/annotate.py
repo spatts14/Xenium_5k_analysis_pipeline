@@ -10,7 +10,6 @@ import seaborn as sns
 import squidpy as sq
 
 from recode_st.config import AnnotateModuleConfig, IOConfig
-from recode_st.helper_function import configure_scanpy_figures
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -51,7 +50,6 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     sc.settings.figdir = module_dir
 
     # Set figure settings to ensure consistency across all modules
-    configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)
 
     # Import data
@@ -219,8 +217,6 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
             shape=None,
             outline=False,
             color=new_clusters,
-            wspace=0.4,
-            vmax=400,
             size=0.5,
             save=f"clusters_{roi}.png",
             dpi=300,

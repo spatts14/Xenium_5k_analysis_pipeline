@@ -61,9 +61,10 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     # Ensure categorical
     adata.obs[cluster_name] = adata.obs[cluster_name].astype("category")
     # Create a palette for the clusters
-    adata.uns[f"{cluster_name}_colors"] = sns.color_palette(
+    color_palette = sns.color_palette(
         "hls", len(adata.obs[cluster_name].cat.categories)
-    ).as_hex()
+    )
+    adata.uns[f"{cluster_name}_colors"] = [color for color in color_palette.as_hex()]
     logger.info(
         f"Saved palette {cluster_name}_colors: {adata.uns[f'{cluster_name}_colors']}"
     )
@@ -167,9 +168,8 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     # Ensure categorical
     adata.obs[new_clusters] = adata.obs[new_clusters].astype("category")
     # Create a palette for the new clusters
-    adata.uns[f"{new_clusters}_colors"] = sns.color_palette(
-        "hls", len(adata.obs[new_clusters].unique())
-    ).as_hex()
+    color_palette = sns.color_palette("hls", len(adata.obs[new_clusters].unique()))
+    adata.uns[f"{new_clusters}_colors"] = [color for color in color_palette.as_hex()]
     logger.info(
         f"Saved palette {new_clusters}_colors: {adata.uns[f'{new_clusters}_colors']}"
     )

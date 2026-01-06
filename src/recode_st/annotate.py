@@ -7,6 +7,7 @@ from logging import getLogger
 import pandas as pd
 import scanpy as sc
 import seaborn as sns
+import squidpy as sq
 
 from recode_st.config import AnnotateModuleConfig, IOConfig
 from recode_st.helper_function import configure_scanpy_figures
@@ -57,11 +58,15 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "dimension_reduction" / "adata.h5ad")
 
-    # Ensure categorical and set colors
+    # Ensure categorical
     adata.obs[cluster_name] = adata.obs[cluster_name].astype("category")
+    # Create a palette for the clusters
     adata.uns[f"{cluster_name}_colors"] = sns.color_palette(
         "hls", len(adata.obs[cluster_name].cat.categories)
     ).as_hex()
+    logger.info(
+        f"Saved palette {cluster_name}_colors: {adata.uns[f'{cluster_name}_colors']}"
+    )
 
     # Calculate the differentially expressed genes for every cluster,
     # compared to the rest of the cells in our adata
@@ -159,10 +164,15 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     cluster_to_cell_type_dict = config.cluster_to_cell_type  # import from config
     adata.obs[new_clusters] = adata.obs[cluster_name].map(cluster_to_cell_type_dict)
 
+    # Ensure categorical
+    adata.obs[new_clusters] = adata.obs[new_clusters].astype("category")
     # Create a palette for the new clusters
     adata.uns[f"{new_clusters}_colors"] = sns.color_palette(
         "hls", len(adata.obs[new_clusters].unique())
     ).as_hex()
+    logger.info(
+        f"Saved palette {new_clusters}_colors: {adata.uns[f'{new_clusters}_colors']}"
+    )
 
     logger.info("Plotting UMAP with new cluster names...")
     sc.pl.umap(
@@ -197,6 +207,25 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
         save=f"{config.module_name}_{new_clusters}.png",
     )
     logger.info(f"Dotplot saved to {sc.settings.figdir}")
+
+    # View specific gene expression
+    logger.info("Plotting genes of interest on tissue...")
+    ROI_list = adata.obs["ROI"].unique().tolist()
+    for roi in ROI_list:
+        adata_roi = adata[adata.obs["ROI"] == roi]
+        sq.pl.spatial_scatter(
+            adata_roi,
+            library_id="spatial",
+            shape=None,
+            outline=False,
+            color=new_clusters,
+            wspace=0.4,
+            vmax=400,
+            size=0.5,
+            save=f"clusters_{roi}.png",
+            dpi=300,
+        )
+        logger.info(f"Saved cluster plot for ROI {roi} to {module_dir}")
 
     # Save anndata object
     adata.write_h5ad(module_dir / "adata.h5ad")

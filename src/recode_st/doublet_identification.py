@@ -104,7 +104,7 @@ def process_roi_doublets(roi_name, roi_df, module_dir, cmap):
     ax.scatter(roi_df[::n, "x"], roi_df[::n, "y"], s=0.1)
     _ = ax.set(aspect="equal")
     plt.savefig(
-        roi_output_dir / f"{roi_name}_transcripts_overview.png",
+        roi_output_dir / f"{roi_name}_transcripts_overview.svg",
         dpi=300,
         bbox_inches="tight",
     )
@@ -122,14 +122,14 @@ def process_roi_doublets(roi_name, roi_df, module_dir, cmap):
     logger.info("Visualizing results ...")
     fig = ovrlpy.plot_pseudocells(roi_ob)
     plt.savefig(
-        roi_output_dir / f"{roi_name}_pseudocells.png", dpi=300, bbox_inches="tight"
+        roi_output_dir / f"{roi_name}_pseudocells.svg", dpi=300, bbox_inches="tight"
     )
     plt.close()
 
     # plot SVI per ROI
     fig = ovrlpy.plot_signal_integrity(roi_ob, signal_threshold=3)
     plt.savefig(
-        roi_output_dir / f"{roi_name}_signal_integrity.png",
+        roi_output_dir / f"{roi_name}_signal_integrity.svg",
         dpi=300,
         bbox_inches="tight",
     )
@@ -151,7 +151,7 @@ def process_roi_doublets(roi_name, roi_df, module_dir, cmap):
     _ = ax.set_aspect("equal")
     _ = fig.colorbar(_scatter, ax=ax)
     plt.savefig(
-        roi_output_dir / f"{roi_name}_doublets_overview.png",
+        roi_output_dir / f"{roi_name}_doublets_overview.svg",
         dpi=300,
         bbox_inches="tight",
     )
@@ -163,7 +163,7 @@ def process_roi_doublets(roi_name, roi_df, module_dir, cmap):
     x, y = doublets["x"][doublet_case], doublets["y"][doublet_case]
     _ = ovrlpy.plot_region_of_interest(roi_ob, x, y, window_size=60)
     plt.savefig(
-        roi_output_dir / f"{roi_name}_doublets_{doublet_case}.png",
+        roi_output_dir / f"{roi_name}_doublets_{doublet_case}.svg",
         dpi=300,
         bbox_inches="tight",
     )
@@ -197,7 +197,7 @@ def process_roi_doublets(roi_name, roi_df, module_dir, cmap):
     ratio = roi_ob.transcripts["x"].max() / roi_ob.transcripts["y"].max()
     ax.set_box_aspect([ratio, 1, 0.75])
     plt.savefig(
-        roi_output_dir / f"{roi_name}_3d_transcripts.png",
+        roi_output_dir / f"{roi_name}_3d_transcripts.svg",
         dpi=300,
         bbox_inches="tight",
     )

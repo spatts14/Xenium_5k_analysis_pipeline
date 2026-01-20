@@ -59,7 +59,7 @@ def calculate_and_plot_cross_pcf(
 
     # Save PCF plot
     pcf_plot_path = (
-        module_dir / f"cross_pair_correlation_function_{cell_type_1}_{cell_type_2}.png"
+        module_dir / f"cross_pair_correlation_function_{cell_type_1}_{cell_type_2}.svg"
     )
     plt.savefig(pcf_plot_path)
     logger.info(f"Cross-PCF plot saved at {pcf_plot_path}")
@@ -81,7 +81,7 @@ def calculate_and_plot_cross_pcf(
     ax.set_xlabel(f"{cell_type_1}", fontsize=15)
     ax.set_ylabel(f"{cell_type_2}", fontsize=15)
 
-    vis_plot_path = module_dir / f"visualize_{cell_type_1}_{cell_type_2}.png"
+    vis_plot_path = module_dir / f"visualize_{cell_type_1}_{cell_type_2}.svg"
     plt.savefig(vis_plot_path)
     logger.info(f"Visualization saved at {vis_plot_path}")
 
@@ -124,7 +124,7 @@ def calculate_pairwise_cross_pcf(
             ax.set_xlabel("$r$", fontsize=20)
 
     plt.tight_layout()
-    output_path = Path(module_dir) / "cross_pair_correlation_function_all.png"
+    output_path = Path(module_dir) / "cross_pair_correlation_function_all.svg"
     plt.savefig(output_path)
     logger.info(f"Cross-PCF matrix plot saved at {output_path}")
 

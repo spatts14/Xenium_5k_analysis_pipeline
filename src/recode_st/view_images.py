@@ -50,7 +50,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             shape=None,
             size=1,
             img=False,
-            save=f"gene_expression_{roi}.png",
+            save=f"gene_expression_{roi}.svg",
         )
         logger.info(f"Saved gene expression plot for ROI {roi} to {module_dir}")
 
@@ -65,7 +65,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             ],  # TODO: remove hard coding
             wspace=0.4,
             size=1,
-            save=f"clusters_{roi}.png",
+            save=f"clusters_{roi}.svg",
             dpi=300,
         )
         logger.info(f"Saved cluster plot for ROI {roi} to {module_dir}")

@@ -103,6 +103,16 @@ class AnnotateModuleConfig(BaseModuleConfig):
     """Mapping from cluster labels to cell type annotations."""
 
 
+class PsuedobulkModuleConfig(BaseModuleConfig):
+    """Configuration for the Psuedobulk module."""
+
+    annotation_var: str
+    """Name of the annotation in adata.obs to use for pseudobulk aggregation."""
+
+    subset_key: str
+    """Key in adata.obs to subset the data for pseudobulk analysis."""
+
+
 class ViewImagesModuleConfig(BaseModuleConfig):
     """Configuration for the View Images module."""
 

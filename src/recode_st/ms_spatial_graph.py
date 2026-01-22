@@ -136,7 +136,7 @@ def plot_delaunay_networks(domain, module_dir):
     )
 
     plt.tight_layout()
-    plt.savefig(module_dir / "muspan_delaunay.svg")
+    plt.savefig(module_dir / "muspan_delaunay.pdf")
     logger.info("Delaunay networks plotted and saved")
 
 
@@ -254,7 +254,7 @@ def plot_proximity_shape(domain, module_dir):
 
     This function visualizes the cell boundaries and the contact
     network (proximity network) for the provided spatial domain object.
-    The resulting plot is saved as a svg file in the specified module directory.
+    The resulting plot is saved as a pdf file in the specified module directory.
 
     Args:
         domain: (muspan object)
@@ -262,7 +262,7 @@ def plot_proximity_shape(domain, module_dir):
         module_dir (Path or str): Directory path where the output image will be saved.
 
     Side Effects:
-        - Saves svg image named 'muspan_proximity_shape.svg' in the specified directory.
+        - Saves pdf image named 'muspan_proximity_shape.pdf' in the specified directory.
         - Logs an info message upon successful plot creation.
     """
     fig, ax = plt.subplots(1, 1, figsize=(6, 6))
@@ -289,7 +289,7 @@ def plot_proximity_shape(domain, module_dir):
     )
 
     plt.tight_layout()
-    plt.savefig(module_dir / "muspan_proximity_shape.svg")
+    plt.savefig(module_dir / "muspan_proximity_shape.pdf")
     logger.info("Proximity networks (shape-like objects) plotted and saved")
 
 
@@ -298,7 +298,7 @@ def plot_knn_networks(domain, module_dir, cmap, k_list):
 
     For each value of k in `k_list`, this function visualizes the corresponding
     k-NN network using the provided color map for edge weights and saves the
-    resulting figure as 'muspan_knn.svg' in the specified module directory.
+    resulting figure as 'muspan_knn.pdf' in the specified module directory.
 
     Args:
         domain: (muspan object)
@@ -311,7 +311,7 @@ def plot_knn_networks(domain, module_dir, cmap, k_list):
         None
 
     Side Effects:
-        - Saves the generated plot as 'muspan_knn.svg' in `module_dir`.
+        - Saves the generated plot as 'muspan_knn.pdf' in `module_dir`.
         - Logs an info message upon successful plot saving.
     """
     fig, axes = plt.subplots(1, len(k_list), figsize=(6 * len(k_list), 6))
@@ -335,7 +335,7 @@ def plot_knn_networks(domain, module_dir, cmap, k_list):
         )
 
     plt.tight_layout()
-    plt.savefig(module_dir / "muspan_knn.svg")
+    plt.savefig(module_dir / "muspan_knn.pdf")
     logger.info("KNN networks plotted and saved")
 
 
@@ -382,7 +382,7 @@ def plot_proximity_networks(domain, module_dir, cmap, distance_list):
         define proximity networks.
 
     Returns:
-        None. The function saves the generated plot as 'muspan_proximity_point.svg'
+        None. The function saves the generated plot as 'muspan_proximity_point.pdf'
         in the specified directory and logs the completion of the plotting process.
     """
     fig, axes = plt.subplots(1, len(distance_list), figsize=(20, 6))
@@ -407,5 +407,5 @@ def plot_proximity_networks(domain, module_dir, cmap, distance_list):
             ),
         )
     plt.tight_layout()
-    plt.savefig(module_dir / "muspan_proximity_point.svg")
+    plt.savefig(module_dir / "muspan_proximity_point.pdf")
     logger.info("Proximity networks (point-like objects) plotted and saved")

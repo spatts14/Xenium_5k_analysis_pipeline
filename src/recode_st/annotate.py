@@ -82,7 +82,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
         n_genes=5,
         cmap=cmap,
         show=False,
-        save=f"{config.module_name}_{cluster_name}.svg",
+        save=f"{config.module_name}_{cluster_name}.pdf",
     )
     logger.info(f"Dotplot saved to {sc.settings.figdir}")
 
@@ -95,7 +95,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
         legend_fontsize=10,
         cmap=cmap,
         show=False,
-        save=f"_{config.module_name}_{cluster_name}.svg",
+        save=f"_{config.module_name}_{cluster_name}.pdf",
     )
     logger.info(f"UMAP plot saved to {sc.settings.figdir}")
 
@@ -183,7 +183,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
         wspace=0.4,  # Space between plots
         title=new_clusters,
         show=False,
-        save=f"_{config.module_name}_{new_clusters}_combined_annotation.svg",
+        save=f"_{config.module_name}_{new_clusters}_combined_annotation.pdf",
     )
     logger.info(f"UMAP plot with new cluster names saved to {sc.settings.figdir}")
 
@@ -202,7 +202,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
         n_genes=5,
         cmap=cmap,
         show=False,
-        save=f"{config.module_name}_{new_clusters}.svg",
+        save=f"{config.module_name}_{new_clusters}.pdf",
     )
     logger.info(f"Dotplot saved to {sc.settings.figdir}")
 
@@ -219,7 +219,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
             color=new_clusters,
             size=0.5,
             figsize=(15, 15),
-            save=f"clusters_{roi}.svg",
+            save=f"clusters_{roi}.pdf",
             dpi=300,
         )
         logger.info(f"Saved cluster plot for ROI {roi} to {module_dir}")

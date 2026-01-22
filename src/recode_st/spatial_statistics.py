@@ -48,10 +48,10 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
         cluster_key=cluster,
         figsize=(30, 10),
         size=10,
-        save=module_dir / "centrality_scores.svg",
+        save=module_dir / "centrality_scores.pdf",
     )
     logger.info(
-        f"Centrality scores plot saved to {module_dir / 'centrality_scores.svg'}"
+        f"Centrality scores plot saved to {module_dir / 'centrality_scores.pdf'}"
     )
 
     # Compute co-occurrence probability
@@ -71,9 +71,9 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
             adata_subsample,
             cluster_key=cell_type,
             figsize=(20, 10),
-            save=module_dir / f"co_occurrence_{cell_type}.svg",
+            save=module_dir / f"co_occurrence_{cell_type}.pdf",
         )
-        logger.info(f"Co-occurrence plot saved to co_occurrence_{cell_type}.svg")
+        logger.info(f"Co-occurrence plot saved to co_occurrence_{cell_type}.pdf")
 
     # Neighborhood enrichment analysis
     logger.info("Performing neighborhood enrichment analysis...")
@@ -86,10 +86,10 @@ def run_spatial_statistics(config: SpatialStatisticsModuleConfig, io_config: IOC
         cmap=cmap,
         figsize=(12, 8),
         title="Neighborhood enrichment adata",
-        save=module_dir / "nhood_enrichment.svg",
+        save=module_dir / "nhood_enrichment.pdf",
     )
     logger.info(
-        f"Neighborhood enrichment plot saved to {module_dir / 'nhood_enrichment.svg'}"
+        f"Neighborhood enrichment plot saved to {module_dir / 'nhood_enrichment.pdf'}"
     )
 
     # Moran's I

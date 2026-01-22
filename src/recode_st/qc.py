@@ -100,7 +100,7 @@ def plot_metrics(module_dir, adata):
     plt.tight_layout(rect=[0, 0, 1, 0.95])
 
     # Save figure
-    output_path = module_dir / "cell_summary_histograms.svg"
+    output_path = module_dir / "cell_summary_histograms.pdf"
     plt.savefig(output_path, dpi=300)
     plt.close()
     logger.info(f"Saved plots to {output_path}")
@@ -274,7 +274,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     plt.ylabel("Total transcripts per cell")
     plt.title("QC: Genes vs Total Counts per Cell")
     plt.grid(False)
-    plt.savefig(module_dir / "qc_genes_vs_total_counts_pre_filter.svg", dpi=300)
+    plt.savefig(module_dir / "qc_genes_vs_total_counts_pre_filter.pdf", dpi=300)
     plt.close()
 
     # Plot the summary metrics
@@ -345,7 +345,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
     plt.tight_layout()
     plt.savefig(
-        module_dir / "qc_genes_vs_total_counts_post_filter.svg",
+        module_dir / "qc_genes_vs_total_counts_post_filter.pdf",
         dpi=300,
         bbox_inches="tight",
     )

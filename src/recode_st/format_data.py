@@ -96,6 +96,7 @@ def convert_all_xenium(io_config: IOConfig):
                 # Extract AnnData and add labels
                 try:
                     # extract AnnData from SpatialData
+                    logger.info(f"Creating AnnData for {roi_name}")
                     adata = sdata.tables["table"]
 
                     # Add metadata to AnnData

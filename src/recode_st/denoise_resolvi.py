@@ -3,6 +3,7 @@
 import warnings
 from logging import getLogger
 
+import matplotlib.pyplot as plt
 import scanpy as sc
 import scvi
 
@@ -28,43 +29,39 @@ def run_resolvi(
 ):
     """Run ResolVI denoising on QC-filtered Xenium data.
 
-    Parameters
-    ----------
-    adata : AnnData
-        QC-filtered spatial data
-    n_latent : int
-        Dimensionality of latent space
-    n_hidden : int
-        Number of hidden units in neural network layers
-    n_layers : int
-        Number of hidden layers
-    max_epochs : int
-        Maximum training epochs
-    batch_size : int
-        Training batch size
-    early_stopping : bool
-        Whether to use early stopping
-    use_gpu : bool
-        Whether to use GPU if available
+    Args:
+        adata : AnnData
+            QC-filtered spatial data
+        n_latent : int
+            Dimensionality of latent space
+        n_hidden : int
+            Number of hidden units in neural network layers
+        n_layers : int
+            Number of hidden layers
+        max_epochs : int
+            Maximum training epochs
+        batch_size : int
+            Training batch size
+        early_stopping : bool
+            Whether to use early stopping
+        use_gpu : bool
+            Whether to use GPU if available
 
     Returns:
-    -------
-    model : RESOLVI
-        Trained ResolVI model
-    adata : AnnData
-        AnnData with denoised representations added
+        model : RESOLVI
+            Trained ResolVI model
+        adata : AnnData
+            AnnData with denoised representations added
     """
-    print("=" * 60)
-    print("ResolVI DENOISING")
-    print("=" * 60)
+    logger.info("Staring ResolVI denoise function...")
 
     # Store raw counts (ResolVI needs raw counts)
     adata.layers["counts"] = adata.X.copy()
 
-    # Setup AnnData for ResolVI
+    logger.info("Set up adata for ResolVI...")
     scvi.external.RESOLVI.setup_anndata(adata, layer="counts")
 
-    # Initialize model
+    logger.info("Initialize model...")
     model = scvi.external.RESOLVI(
         adata,
         n_latent=n_latent,
@@ -72,16 +69,16 @@ def run_resolvi(
         n_layers=n_layers,
     )
 
-    print("\nModel architecture:")
-    print(f"  Latent dimensions: {n_latent}")
-    print(f"  Hidden units: {n_hidden}")
-    print(f"  Layers: {n_layers}")
-    print(
+    logger.info("\nModel architecture:")
+    logger.info(f"Latent dimensions: {n_latent}")
+    logger.info(f"Hidden units: {n_hidden}")
+    logger.info(f"Layers: {n_layers}")
+    logger.info(
         f"Training on: {'GPU' if use_gpu and scvi.settings.dl_pin_memory_gpu_training else 'CPU'}"
     )
 
     # Train model
-    print(f"\nTraining ResolVI (max {max_epochs} epochs)...")
+    logger.info(f"Training ResolVI (max {max_epochs} epochs)...")
 
     model.train(
         max_epochs=max_epochs,
@@ -93,10 +90,9 @@ def run_resolvi(
         plan_kwargs={"lr": 1e-3},
     )
 
-    print(f"Training completed at epoch {model.history['elbo_train'].shape[0]}")
+    logger.info(f"Training completed at epoch {model.history['elbo_train'].shape[0]}")
 
-    # Extract denoised representations
-    print("\nExtracting denoised representations...")
+    logger.info("Extracting denoised representations...")
 
     # 1. Latent representation (for clustering, UMAP, etc.)
     adata.obsm["X_resolvi"] = model.get_latent_representation()
@@ -106,10 +102,83 @@ def run_resolvi(
         library_size=1e4  # Normalize to 10,000 counts
     )
 
-    print(f"  Added adata.obsm['X_resolvi']: latent representation ({n_latent} dims)")
-    print("  Added adata.layers['resolvi_denoised']: denoised expression")
+    print(f"Added adata.obsm['X_resolvi']: latent representation ({n_latent} dims)")
+    print("Added adata.layers['resolvi_denoised']: denoised expression")
 
     return model, adata
+
+
+def post_resolvi_analysis(adata, resolution=0.5, save_path=None):
+    """Perform downstream analysis on ResolVI-denoised data.
+
+    Args:
+        adata : AnnData
+            Data with ResolVI representations
+        resolution : float
+            Leiden clustering resolution
+        save_path : str, optional
+            Path to save figures
+
+    Returns:
+        adata : AnnData
+            Data with clustering and UMAP added
+    """
+    logger.info("Post ResolVI analysis to visualize results...")
+
+    logger.info("Computing PCA on ResolVI latent space...")
+    sc.tl.pca(adata, use_rep="X_resolvi")
+
+    # Compute neighbors using ResolVI latent space
+    logger.info("Computing neighbors from ResolVI latent space...")
+    sc.pp.neighbors(adata, use_rep="X_resolvi", n_neighbors=40)
+
+    logger.info("Computing UMAP...")
+    sc.tl.umap(
+        adata,
+        # min_dist=0.1,
+        # spread=2.0
+    )
+
+    logger.info(f"Clustering (resolution={resolution})...")
+    sc.tl.leiden(adata, resolution=resolution, key_added="leiden_resolvi")
+
+    n_clusters = adata.obs["leiden_resolvi"].nunique()
+    print(f"  Found {n_clusters} clusters")
+
+    # Visualization
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+
+    # UMAP colored by cluster
+    sc.pl.umap(
+        adata,
+        color="leiden_resolvi",
+        ax=axes[0],
+        show=False,
+        title="Clusters (ResolVI)",
+    )
+
+    # UMAP colored by total counts
+    sc.pl.umap(
+        adata, color="total_counts", ax=axes[1], show=False, title="Total Counts"
+    )
+
+    # Spatial plot colored by cluster
+    sc.pl.embedding(
+        adata,
+        basis="spatial",
+        color="leiden_resolvi",
+        ax=axes[2],
+        show=False,
+        title="Spatial Clusters",
+    )
+
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(f"{save_path}/resolvi_analysis.svg", bbox_inches="tight")
+    plt.show()
+
+    return adata
 
 
 # Define global constants for integration
@@ -137,7 +206,17 @@ def run_denoise_resolvi(config: DenoiseResolVIModuleConfig, io_config: IOConfig)
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
 
-    logger.info("Starting integration of scRNAseq and spatial transcriptomics data...")
+    logger.info("Staring module to denoise STx data...")
 
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "quality_control" / "adata.h5ad")
+
+    logger.info("Run ResolVI model to denoise...")
+    model, adata = run_resolvi(
+        adata, n_latent=config.n_latent, max_epochs=config.max_epochs
+    )
+
+    logger.info("Vizualize post ResolVI...")
+    adata = post_resolvi_analysis(
+        adata, resolution=clustering_resolution, save_path=output_path
+    )

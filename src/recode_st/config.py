@@ -63,20 +63,8 @@ class DenoiseResolVIModuleConfig(BaseModuleConfig):
     n_latent: int
     """Dimensionality of the latent space."""
 
-    n_layers: int
-    """Number of layers in the neural network."""
-
-    dropout_rate: float
-    """Dropout rate for the neural network."""
-
-    n_epochs: int
+    max_epochs: int
     """Number of training epochs."""
-
-    batch_size: int
-    """Batch size for training."""
-
-    learning_rate: float
-    """Learning rate for the optimizer."""
 
 
 class DimensionReductionModuleConfig(BaseModuleConfig):

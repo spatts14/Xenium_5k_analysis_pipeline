@@ -57,6 +57,13 @@ max_cell_area = 1000            # Maximum cell area to filter cells
 norm_approach = "cell_area"     # Normalization approach to use
 remove_cells = []               # List of cell IDs to remove from the dataset
 
+# DENOISE MODULE
+[modules.denoise_resolvi]
+module_name = "denoise_resolvi" # Name of the module - will be used in the output
+n_latent = 30
+max_epochs = 400
+
+
 # DIMENSION REDUCTION MODULE
 [modules.dimension_reduction]
 module_name = "dimension_reduction" # Name of the module - will be used in the output directory name

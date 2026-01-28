@@ -20,7 +20,7 @@ def extract_roi_name(folder_name: str) -> str:
     # Example: "output-...__IPF_RBH_19__20251001__141533" → "IPF_RBH_19"
     parts = folder_name.split("__")
     for part in parts:
-        if part.startswith(("IPF", "COPD", "PM08")):
+        if part.startswith(("IPF", "COPD", "PM08", "MICA_III")):
             return part
     raise ValueError(f"Could not parse ROI name from: {folder_name}")
 

@@ -15,7 +15,7 @@ data_dir = "data"
 xenium_dir = "xenium_raw"
 # Subdirectory (inside data_dir) containing raw Xenium output files.
 
-output_data_dir = "out_data"
+output_data_dir = "out"
 # Folder (inside data_dir) where processed/intermediate data will be written.
 
 adata_dir = "adata"

@@ -201,10 +201,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     # cmap = sns.color_palette("Spectral", as_cmap=True)
 
     logger.info("Loading data...")
-    # adata = load_data(config, io_config)
-    adata = sc.read_h5ad(
-        io_config.adata_dir / "_COPD_V1_v_IPF.h5ad"
-    )  # TODO remove after testing
+    adata = load_data(config, io_config)
 
     logger.info("Calculating QC metrics...")
     # Calculate quality control metrics

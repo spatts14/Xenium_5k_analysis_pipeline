@@ -20,7 +20,7 @@ def extract_roi_name(folder_name: str) -> str:
     # Example: "output-...__IPF_RBH_19__20251001__141533" → "IPF_RBH_19"
     parts = folder_name.split("__")
     for part in parts:
-        if part.startswith(("IPF", "COPD", "PM08", "MICA")):
+        if part.startswith(("IPF", "COPD", "PM08")):
             return part
     raise ValueError(f"Could not parse ROI name from: {folder_name}")
 
@@ -45,6 +45,12 @@ def convert_all_xenium(io_config: IOConfig):
     if not xenium_path.exists():
         raise FileNotFoundError(f"Xenium root directory not found: {xenium_path}")
 
+    # Get all run directories and log them
+    all_run_dirs = [d for d in xenium_path.iterdir() if d.is_dir()]
+    logger.info(f"Found {len(all_run_dirs)} run directories:")
+    for run_dir in sorted(all_run_dirs):
+        logger.info(f"  - {run_dir.name}")
+
     # Loop over date/run folders directly inside Xenium root
     for date_dir in xenium_path.iterdir():
         if not date_dir.is_dir():
@@ -53,37 +59,30 @@ def convert_all_xenium(io_config: IOConfig):
         run_name = date_dir.name  # e.g. "20251001__141239__SP25164_SARA_PATTI_RUN_1"
         logger.info(f"Processing run: {run_name}")
 
-        # Count ROI folders for this run
+        # Count and log ROI folders for this run
         roi_folders = [
             f for f in date_dir.iterdir() if f.is_dir() and f.name.startswith("output-")
         ]
-        logger.info(f"Found {len(roi_folders)} output folders in {run_name}")
+        logger.info(f"Found {len(roi_folders)} output-* folders in {run_name}")
 
         # Loop over ROI folders
-        for roi_folder in roi_folders:
-            try:
-                roi_name = extract_roi_name(roi_folder.name)
-                logger.info(
-                    f"Processing ROI: {roi_name} from folder: {roi_folder.name}"
-                )
-            except ValueError as err:
-                logger.warning(f"Skipping folder {roi_folder.name}: {err}")
-                continue
-
-            try:
-                sdata = xenium(roi_folder)
-                logger.info(f"Loaded Xenium data for {roi_name}")
-            except Exception as err:
-                logger.error(
-                    f"Failed loading Xenium data for {roi_name} from {roi_folder.name}: {err}"
-                )
-                # Print the folder contents to help debug
+        for roi_folder in date_dir.iterdir():
+            if roi_folder.is_dir() and roi_folder.name.startswith("output-"):
                 try:
-                    contents = [f.name for f in roi_folder.iterdir()]
-                    logger.error(f"Folder contents: {contents}")
-                except Exception as list_err:
-                    logger.error(f"Could not list folder contents: {list_err}")
-                continue
+                    roi_name = extract_roi_name(roi_folder.name)
+                    logger.info(
+                        f"Processing ROI: {roi_name} from folder: {roi_folder.name}"
+                    )
+                except ValueError as err:
+                    logger.warning(f"Skipping folder {roi_folder.name}: {err}")
+                    continue
+
+                try:
+                    sdata = xenium(roi_folder)
+                    logger.info(f"Loaded Xenium data for {roi_name}")
+                except Exception as err:
+                    logger.error(f"Failed loading Xenium data for {roi_name}: {err}")
+                    continue
 
                 # Save Zarr per ROI
                 roi_zarr_path = zarr_root / f"{roi_name}.zarr"
@@ -102,9 +101,9 @@ def convert_all_xenium(io_config: IOConfig):
                     # Add metadata to AnnData
                     adata.obs["ROI"] = roi_name  # add ROI name
                     adata.obs["batch"] = run_name  # add run/date name
-                    condition = (  # Add "IPF", "COPD", "PM08", "MICA", "Unknown"
+                    condition = (  # Add condition "IPF", "COPD", "PM08", "Unknown"
                         roi_name.split("_")[0]
-                        if roi_name.split("_")[0] in ["IPF", "COPD", "PM08", "MICA"]
+                        if roi_name.split("_")[0] in ["IPF", "COPD", "PM08", "MICA_III"]
                         else "Unknown"
                     )
                     adata.obs["condition"] = condition

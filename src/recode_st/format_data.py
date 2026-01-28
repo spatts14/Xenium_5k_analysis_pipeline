@@ -77,6 +77,14 @@ def convert_all_xenium(io_config: IOConfig):
                     logger.warning(f"Skipping folder {roi_folder.name}: {err}")
                     continue
 
+                # Check if output file already exists
+                adata_output_path = adata_dir / f"{roi_name}.h5ad"
+                if adata_output_path.exists():
+                    logger.info(
+                        f"Skipping {roi_name} output file already exists for {roi_name}"
+                    )
+                    continue
+
                 try:
                     sdata = xenium(roi_folder)
                     logger.info(f"Loaded Xenium data for {roi_name}")

@@ -731,7 +731,7 @@ def run_integration(
     adata_ref = sc.read_h5ad(ref_path)
 
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "dimension_reduction" / "adata.h5ad")
 
     logger.info(
         "Checking if need to subsample reference dataset for faster integration..."

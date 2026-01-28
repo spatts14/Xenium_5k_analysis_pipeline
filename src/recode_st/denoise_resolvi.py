@@ -5,7 +5,6 @@ from logging import getLogger
 
 import scanpy as sc
 import scvi
-import seaborn as sns
 
 from recode_st.config import DenoiseResolVIModuleConfig, IOConfig
 from recode_st.helper_function import configure_scanpy_figures

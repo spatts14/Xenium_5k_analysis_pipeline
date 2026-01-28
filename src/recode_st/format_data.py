@@ -89,6 +89,19 @@ def convert_all_xenium(io_config: IOConfig):
                         else "Unknown"
                     )
                     adata.obs["condition"] = condition
+                    adata.obs["sample_ID"] = "_".join(
+                        roi_name.split("_")[:-1]
+                    )  # e.g. "IPF_RBH_19"
+                    adata.obs["timepoint"] = (  # Add timepoint "V1", "V2", "V3", "NA"
+                        roi_name.split("_")[-1]
+                        if roi_name.split("_")[-1] in ["V1", "V2", "V3"]
+                        else "NA"
+                    )
+                    adata.obs["timepoint_label"] = {
+                        "V1": "baseline",
+                        "V2": "6_weeks",
+                        "V3": "6_months",
+                    }.get(roi_name.split("_")[-1], "NA")
                     logger.info(
                         f"Added {roi_name}, {run_name}, and {condition} "
                         f"to AnnData for {roi_name}"

@@ -7,9 +7,9 @@ from logging import getLogger
 import pandas as pd
 import scanpy as sc
 import seaborn as sns
+import squidpy as sq
 
 from recode_st.config import AnnotateModuleConfig, IOConfig
-from recode_st.helper_function import configure_scanpy_figures
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -47,20 +47,31 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     module_dir.mkdir(exist_ok=True)
 
     # Set figure directory for this module (overrides global setting)
-    # sc.settings.figdir = module_dir
+    sc.settings.figdir = module_dir
 
     # Set figure settings to ensure consistency across all modules
-    configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)
-    palette = sns.color_palette("Spectral", as_cmap=False)
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "2_dimension_reduction" / "adata.h5ad")
+    adata = sc.read_h5ad(io_config.output_dir / "dimension_reduction" / "adata.h5ad")
+
+    # Ensure categorical
+    adata.obs[cluster_name] = adata.obs[cluster_name].astype("category")
+    # Create a palette for the clusters
+    color_palette = sns.color_palette(
+        "hls", len(adata.obs[cluster_name].cat.categories)
+    )
+    adata.uns[f"{cluster_name}_colors"] = [color for color in color_palette.as_hex()]
+    logger.info(
+        f"Saved palette {cluster_name}_colors: {adata.uns[f'{cluster_name}_colors']}"
+    )
 
     # Calculate the differentially expressed genes for every cluster,
     # compared to the rest of the cells in our adata
-    logger.info("Calculating differentially expressed genes for each cluster...")
+    logger.info(
+        f"Calculating differentially expressed genes for each cluster: {cluster_name}"
+    )
     sc.tl.rank_genes_groups(adata, groupby=cluster_name, method="wilcoxon")
 
     logger.info("Plotting the top differentially expressed genes for each cluster...")
@@ -71,7 +82,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
         n_genes=5,
         cmap=cmap,
         show=False,
-        save=f"{config.module_name}_{cluster_name}.png",
+        save=f"{config.module_name}_{cluster_name}.pdf",
     )
     logger.info(f"Dotplot saved to {sc.settings.figdir}")
 
@@ -84,7 +95,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
         legend_fontsize=10,
         cmap=cmap,
         show=False,
-        save=f"_{config.module_name}_{cluster_name}.png",
+        save=f"_{config.module_name}_{cluster_name}.pdf",
     )
     logger.info(f"UMAP plot saved to {sc.settings.figdir}")
 
@@ -149,29 +160,17 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     logger.info(f"Type of data in mapping: {type(cluster_to_cell_type)}")
 
     logger.info("Renaming clusters based on markers...")
-    cluster_to_cell_type_dict = {
-        "0": "Basal epithelial cells",
-        "1": "Unknown - MUC5B low",
-        "2": "Fibroblasts",
-        "3": "Endothelial cells",
-        "4": "Ciliated epithelial cells",
-        "5": "Basal epithelial cells",
-        "6": "Goblet cell MUC5AChi MUC5Blo",
-        "7": "Ciliated epithelial cells",
-        "8": "Fibroblasts SPARChi",
-        "9": "Smooth muscle cells",
-        "10": "Secretory epithelial / Club cells",
-        "11": "T cells",
-        "12": "Macrophages",
-        "13": "FNhi",
-        "14": "Goblet cell MUC5AClo MUC5Bhi",
-        "15": "Plasma cells / B cells",
-        "16": "Mast cells",
-        "17": "Lymphatic endothelial cells",
-    }
-
-    # Get unique clusters
+    cluster_to_cell_type_dict = config.cluster_to_cell_type  # import from config
     adata.obs[new_clusters] = adata.obs[cluster_name].map(cluster_to_cell_type_dict)
+
+    # Ensure categorical
+    adata.obs[new_clusters] = adata.obs[new_clusters].astype("category")
+    # Create a palette for the new clusters
+    color_palette = sns.color_palette("hls", len(adata.obs[new_clusters].unique()))
+    adata.uns[f"{new_clusters}_colors"] = [color for color in color_palette.as_hex()]
+    logger.info(
+        f"Saved palette {new_clusters}_colors: {adata.uns[f'{new_clusters}_colors']}"
+    )
 
     logger.info("Plotting UMAP with new cluster names...")
     sc.pl.umap(
@@ -183,11 +182,47 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
         ncols=2,  # Side by side
         wspace=0.4,  # Space between plots
         title=new_clusters,
-        palette=palette,
         show=False,
-        save=f"_{config.module_name}_{new_clusters}_combined_annotation.png",
+        save=f"_{config.module_name}_{new_clusters}_combined_annotation.pdf",
     )
     logger.info(f"UMAP plot with new cluster names saved to {sc.settings.figdir}")
+
+    # Calculate the differentially expressed genes for every cluster,
+    # compared to the rest of the cells in our adata
+    logger.info(
+        f"Calculating differentially expressed genes for each cluster: {new_clusters}"
+    )
+    sc.tl.rank_genes_groups(adata, groupby=new_clusters, method="wilcoxon")
+
+    logger.info("Plotting the top differentially expressed genes for each cluster...")
+    sc.pl.rank_genes_groups_dotplot(
+        adata,
+        groupby=new_clusters,
+        standard_scale="var",
+        n_genes=5,
+        cmap=cmap,
+        show=False,
+        save=f"{config.module_name}_{new_clusters}.pdf",
+    )
+    logger.info(f"Dotplot saved to {sc.settings.figdir}")
+
+    # View specific gene expression
+    logger.info("Plotting genes of interest on tissue...")
+    ROI_list = adata.obs["ROI"].unique().tolist()
+    for roi in ROI_list:
+        adata_roi = adata[adata.obs["ROI"] == roi]
+        sq.pl.spatial_scatter(
+            adata_roi,
+            library_id="spatial",
+            shape=None,
+            outline=False,
+            color=new_clusters,
+            size=0.5,
+            figsize=(15, 15),
+            save=f"clusters_{roi}.pdf",
+            dpi=300,
+        )
+        logger.info(f"Saved cluster plot for ROI {roi} to {module_dir}")
 
     # Save anndata object
     adata.write_h5ad(module_dir / "adata.h5ad")

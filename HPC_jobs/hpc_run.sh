@@ -1,6 +1,6 @@
 #!/bin/bash
-#PBS -l walltime=5:0:0
-#PBS -lselect=1:ncpus=16:mem=512gb
+#PBS -l walltime=2:0:0
+#PBS -lselect=1:ncpus=8:mem=256gb
 
 # Load production tools
 module load tools/prod
@@ -15,4 +15,4 @@ cd /rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline
 source xenium_5k_venv/bin/activate
 
 # Run
-python -m recode_st config_files/config_R035.toml
+python -m recode_st config_files/config_COPD_V1_v_IPF.toml

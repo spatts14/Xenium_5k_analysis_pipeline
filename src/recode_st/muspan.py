@@ -113,7 +113,7 @@ def run_muspan(config: MuspanModuleConfig, io_config: IOConfig):
     ax[1, 1].set_title("Nuclei")
 
     plt.tight_layout()
-    plt.savefig(module_dir / "muspan_domain_visualization.png")
+    plt.savefig(module_dir / "muspan_domain_visualization.pdf")
     logger.info("Muspan Domain Visualization plotted and saved")
 
     logger.info("Convert cell boundaries to cell centres (centroids)")
@@ -134,7 +134,7 @@ def run_muspan(config: MuspanModuleConfig, io_config: IOConfig):
         ax=plt.gca(),
     )
     plt.tight_layout()
-    plt.savefig(module_dir / "muspan_cell_centroids.png")
+    plt.savefig(module_dir / "muspan_cell_centroids.pdf")
     logger.info(
         "Cell centroids visualized with cell_type color coding plotted and saved"
     )
@@ -153,7 +153,7 @@ def run_muspan(config: MuspanModuleConfig, io_config: IOConfig):
         add_cbar=False,
     )
     plt.tight_layout()
-    plt.savefig(module_dir / "muspan_cell_centroids_n_boundaries.png")
+    plt.savefig(module_dir / "muspan_cell_centroids_n_boundaries.pdf")
     logger.info(
         "Cell centroids & cell boundaries with cell type color plotted and saved"
     )

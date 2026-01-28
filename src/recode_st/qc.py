@@ -43,7 +43,7 @@ def load_data(config: QualityControlModuleConfig, io_config: IOConfig):
     else:
         try:
             logger.info("Loading Xenium data...")
-            combined_path = io_config.adata_dir / "all_samples.h5ad"
+            combined_path = io_config.adata_dir / "_all_samples.h5ad"
 
             # Import data
             adata = sc.read_h5ad(combined_path)
@@ -100,7 +100,7 @@ def plot_metrics(module_dir, adata):
     plt.tight_layout(rect=[0, 0, 1, 0.95])
 
     # Save figure
-    output_path = module_dir / "cell_summary_histograms.png"
+    output_path = module_dir / "cell_summary_histograms.pdf"
     plt.savefig(output_path, dpi=300)
     plt.close()
     logger.info(f"Saved plots to {output_path}")
@@ -203,7 +203,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info("Loading data...")
     # adata = load_data(config, io_config)
     adata = sc.read_h5ad(
-        io_config.adata_dir / "_COPD_R035.h5ad"
+        io_config.adata_dir / "_COPD_V1_v_IPF.h5ad"
     )  # TODO remove after testing
 
     logger.info("Calculating QC metrics...")
@@ -274,7 +274,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     plt.ylabel("Total transcripts per cell")
     plt.title("QC: Genes vs Total Counts per Cell")
     plt.grid(False)
-    plt.savefig(module_dir / "qc_genes_vs_total_counts_pre_filter.png", dpi=300)
+    plt.savefig(module_dir / "qc_genes_vs_total_counts_pre_filter.pdf", dpi=300)
     plt.close()
 
     # Plot the summary metrics
@@ -345,7 +345,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
     plt.tight_layout()
     plt.savefig(
-        module_dir / "qc_genes_vs_total_counts_post_filter.png",
+        module_dir / "qc_genes_vs_total_counts_post_filter.pdf",
         dpi=300,
         bbox_inches="tight",
     )
@@ -354,13 +354,15 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     # TODO: remove specific cells based on QC plots
     logger.info("Removing specific cells based on QC plots...")
     remove_cells = config.remove_cells
-    if len(remove_cells) > 0:
+    if remove_cells:
         logger.info(f"Checking is cell IDs {remove_cells} are in the data...")
         for cell in remove_cells:
             if cell not in adata.obs_names:
                 logger.warning(f"Cell ID {cell} not found in adata.obs_names")
         logger.info(f"Removing specific cells based on QC plots: {remove_cells}")
         adata = adata[~adata.obs_names.isin(remove_cells), :].copy()
+    else:
+        logger.info("No specific cells to remove based on QC plots.")
 
     logger.info(f"adata shape after area filtering: {adata.shape}")
 

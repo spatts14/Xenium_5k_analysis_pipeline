@@ -419,7 +419,7 @@ def scVI_integration(config, adata_combined, module_dir):
         color=[BATCH_COL, REF_CELL_LABEL_COL],
         frameon=False,
         ncols=1,
-        save=f"_{config.module_name}_scvi_umap.png",
+        save=f"_{config.module_name}_scvi_umap.pdf",
     )
 
     logger.info("Saving scANVI model...")
@@ -544,7 +544,7 @@ def scANVI_label_transfer(config, adata_combined, scvi_model, module_dir):
         color=[BATCH_COL, REF_CELL_LABEL_COL],
         frameon=False,
         ncols=1,
-        save=f"_{config.module_name}_scanvi_umap.png",
+        save=f"_{config.module_name}_scanvi_umap.pdf",
     )
     return adata_combined, scanvi_model
 
@@ -587,7 +587,7 @@ def extract_predictions_and_visualize(adata_combined, scanvi_model, adata, modul
     plt.xlabel("Predicted")
     plt.ylabel("Observed")
     plt.savefig(
-        module_dir / "scanvi_confusion_matrix.png", dpi=300, bbox_inches="tight"
+        module_dir / "scanvi_confusion_matrix.pdf", dpi=300, bbox_inches="tight"
     )
 
     # Get prediction probabilities
@@ -674,7 +674,7 @@ def extract_predictions_and_visualize(adata_combined, scanvi_model, adata, modul
     plt.tight_layout()
 
     # Save plot
-    plot_path = module_dir / "scanvi_integration_results.png"
+    plot_path = module_dir / "scanvi_integration_results.pdf"
     plt.savefig(plot_path, dpi=300, bbox_inches="tight")
     plt.close()
 

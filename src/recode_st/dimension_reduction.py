@@ -117,7 +117,7 @@ def load_data(
 
     # Define file paths
     data_path = (
-        Path(io_config.output_dir) / "1_quality_control" / f"adata_{norm_approach}.h5ad"
+        Path(io_config.output_dir) / "quality_control" / f"adata_{norm_approach}.h5ad"
     )
     module_dir = Path(io_config.output_dir) / config.module_name
     subsample_path = module_dir / f"adata_subsample_{config.norm_approach}.h5ad"
@@ -244,7 +244,7 @@ def plot_dimensionality_reduction(
         cmap=cmap,
         wspace=0.4,
         show=False,
-        save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}.png",
+        save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}.pdf",
         frameon=False,
     )
 
@@ -258,7 +258,7 @@ def plot_dimensionality_reduction(
             cmap=cmap,
             wspace=0.4,
             show=False,
-            save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}_obs_fields.png",
+            save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}_obs_fields.pdf",
             frameon=False,
         )
     else:
@@ -274,7 +274,7 @@ def plot_dimensionality_reduction(
             ncols=4,
             wspace=0.4,
             show=False,
-            save=f"_{module_name}_cell_markers_{norm_approach}_neighbors_{n_neighbors}.png",
+            save=f"_{module_name}_cell_markers_{norm_approach}_neighbors_{n_neighbors}.pdf",
             frameon=False,
         )
     else:
@@ -305,7 +305,7 @@ def plot_spatial_distribution(
             shape=None,
             color=[cluster_name],
             wspace=0.4,
-            save=module_dir / f"{cluster_name}_{roi}_spatial.png",
+            save=module_dir / f"{cluster_name}_{roi}_spatial.pdf",
         )
 
     logger.info(f"Spatial plots saved to {module_dir}")
@@ -357,7 +357,7 @@ def run_dimension_reduction(
         log=True,
         n_pcs=80,
         show=False,
-        save=f"_{config.module_name}.png",
+        save=f"_{config.module_name}.pdf",
     )
 
     logger.info("Plotting PCA scatter plots...")
@@ -369,7 +369,7 @@ def run_dimension_reduction(
         ncols=2,
         size=2,
         show=False,
-        save=f"_{config.module_name}.png",
+        save=f"_{config.module_name}.pdf",
     )
 
     # Plot PCA with observation fields if available
@@ -384,7 +384,7 @@ def run_dimension_reduction(
                 ncols=3,
                 size=2,
                 show=False,
-                save=f"_{config.module_name}_{_obs_field}.png",
+                save=f"_{config.module_name}_{_obs_field}.pdf",
             )
     else:
         logger.info(

@@ -149,7 +149,7 @@ def visualize_drug2cell(config, adata, annotation: str = ANNOTATION, cmap=None):
         adata.uns["drug2cell"],
         color=drug_list,
         color_map=cmap,
-        save=f"_{config.module_name}_drug2cell_umap.png",
+        save=f"_{config.module_name}_drug2cell_umap.pdf",
     )
     logger.info("Visualize drug score in spatial scatter plots")
     for roi in adata.obs["ROI"].unique():
@@ -165,7 +165,7 @@ def visualize_drug2cell(config, adata, annotation: str = ANNOTATION, cmap=None):
             color=drug_list,
             wspace=0.4,
             cmap=cmap,
-            save=f"_{config.module_name}_{roi}_scatter.png",
+            save=f"_{config.module_name}_{roi}_scatter.pdf",
         )
 
 
@@ -192,7 +192,7 @@ def calc_n_plot_DE(adata, config, annotation: str = ANNOTATION, cmap=None):
         dendrogram=False,
         n_genes=3,
         cmap=cmap,
-        save=f"_{config.module_name}_{ANNOTATION}_dotplot.png",
+        save=f"_{config.module_name}_{ANNOTATION}_dotplot.pdf",
     )
 
 
@@ -244,7 +244,7 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
         groupby=ANNOTATION,
         swap_axes=True,
         cmap=cmap,
-        save=f"_{config.module_name}_{ANNOTATION}_all_drugs_by.png",
+        save=f"_{config.module_name}_{ANNOTATION}_all_drugs_by.pdf",
     )
 
     logger.info("Filtering low count groups for differential expression...")
@@ -300,7 +300,7 @@ def run_drug2cell(config: Drug2CellModuleConfig, io_config: IOConfig):
             swap_axes=True,
             **plot_args,
             cmap=cmap,
-            save=f"_{config.module_name}_{ANNOTATION}_respiratory_drugs_by.png",
+            save=f"_{config.module_name}_{ANNOTATION}_respiratory_drugs_by.pdf",
         )
     else:
         logger.warning(

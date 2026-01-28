@@ -9,7 +9,6 @@ import seaborn as sns
 import squidpy as sq
 
 from recode_st.config import IOConfig, ViewImagesModuleConfig
-from recode_st.helper_function import configure_scanpy_figures
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -29,8 +28,8 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
     sc.settings.figdir = module_dir
 
     # Set figure settings to ensure consistency across all modules
-    configure_scanpy_figures(str(io_config.output_dir))
-    cmap = sns.color_palette("Spectral", as_cmap=True)
+    # cmap = sns.color_palette("Spectral", as_cmap=True)
+    cmap_blue = sns.color_palette("ch:start=.2,rot=-.3", as_cmap=True)
 
     # Import data
     logger.info("Loading Xenium data...")
@@ -47,12 +46,11 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             adata_roi,
             library_id="spatial",
             color=config.gene_list,
-            cmap=cmap,
+            cmap=cmap_blue,
             shape=None,
-            vmax=2,
-            size=0.5,
+            size=1,
             img=False,
-            save=f"gene_expression_{roi}.png",
+            save=f"gene_expression_{roi}.pdf",
         )
         logger.info(f"Saved gene expression plot for ROI {roi} to {module_dir}")
 
@@ -62,12 +60,12 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             library_id="spatial",
             shape=None,
             outline=False,
-            color=["total_counts", "leiden", "manual_annotation"],
-            cmap=cmap,
+            color=[
+                "manual_annotation",
+            ],  # TODO: remove hard coding
             wspace=0.4,
-            vmax=400,
-            size=0.5,
-            save=f"clusters_{roi}.png",
+            size=1,
+            save=f"clusters_{roi}.pdf",
             dpi=300,
         )
         logger.info(f"Saved cluster plot for ROI {roi} to {module_dir}")

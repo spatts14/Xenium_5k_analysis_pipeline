@@ -170,7 +170,7 @@ def process_reference_data(config, io_config, adata_ref):
 
     Side Effects:
         - Writes the processed reference AnnData object to `HLCA_INT_SAVE`.
-        - Saves a UMAP visualization as a PNG file.
+        - Saves a UMAP visualization as a pdf file.
 
     Logs:
         - Whether preprocessing is needed.
@@ -250,7 +250,7 @@ def process_reference_data(config, io_config, adata_ref):
         adata_ref,
         color=REF_CELL_LABEL_COL,
         title="HLCA reference data UMAP",
-        save=f"_{config.module_name}_hlca_umap.png",
+        save=f"_{config.module_name}_hlca_umap.pdf",
     )
     return adata_ref
 
@@ -277,7 +277,7 @@ def process_subset_reference_data(config, io_config, adata_ref_subset):
 
     Side Effects:
         - Writes the processed reference AnnData object to `SUBSET_HLCA_INT_SAVE`.
-        - Saves a UMAP visualization as a PNG file.
+        - Saves a UMAP visualization as a pdf file.
 
     Logs:
         - Whether preprocessing is needed.
@@ -304,7 +304,7 @@ def process_subset_reference_data(config, io_config, adata_ref_subset):
             adata_ref_subset,
             color=REF_CELL_LABEL_COL,
             title="HLCA reference subset for ingest UMAP",
-            save=f"_{config.module_name}_hlca_subset_ingest_umap.png",
+            save=f"_{config.module_name}_hlca_subset_ingest_umap.pdf",
         )
         logger.info(f"UMAP for {REF_CELL_LABEL_COL} saved for adata_ref_subset")
 
@@ -517,7 +517,7 @@ def visualize_integration(config, cmap, adata):
             title=f"HLCA integration: {method}",
             show=False,  # change to True if you want inline display
             cmap=cmap,
-            save=f"_{config.module_name}_{method}.png",
+            save=f"_{config.module_name}_{method}.pdf",
         )
 
     for obs in ANNOTATION_COLS:
@@ -531,7 +531,7 @@ def visualize_integration(config, cmap, adata):
             title=f"HLCA integration: {obs}",
             show=False,  # change to True if you want inline display
             cmap=cmap,
-            save=f"_{config.module_name}_{obs}.png",
+            save=f"_{config.module_name}_{obs}.pdf",
         )
 
     logger.info(f"UMAP plots saved to {sc.settings.figdir}")

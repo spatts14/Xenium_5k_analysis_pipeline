@@ -57,6 +57,28 @@ class DoubletIdentificationModuleConfig(BaseModuleConfig):
     """Configuration for the Doublet Identification module."""
 
 
+class DenoiseResolVIModuleConfig(BaseModuleConfig):
+    """Configuration for the Denoising and Resolution using ResolVI module."""
+
+    n_latent: int
+    """Dimensionality of the latent space."""
+
+    n_layers: int
+    """Number of layers in the neural network."""
+
+    dropout_rate: float
+    """Dropout rate for the neural network."""
+
+    n_epochs: int
+    """Number of training epochs."""
+
+    batch_size: int
+    """Batch size for training."""
+
+    learning_rate: float
+    """Learning rate for the optimizer."""
+
+
 class DimensionReductionModuleConfig(BaseModuleConfig):
     """Configuration for the Quality Control module."""
 
@@ -200,6 +222,9 @@ class ModulesConfig(BaseModel):
 
     quality_control: QualityControlModuleConfig | None = None
     """Configuration for the Quality Control module."""
+
+    denoise_resolvi: DenoiseResolVIModuleConfig | None = None
+    """Configuration for the Denoising and Resolution uusing ResolVI module."""
 
     doublet_identification: DoubletIdentificationModuleConfig | None = None
     """Configuration for doublet detection with ovrlypy module."""

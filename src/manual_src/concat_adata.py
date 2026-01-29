@@ -6,7 +6,7 @@ import anndata as ad
 
 # Define the directory path
 adata_path = Path(
-    "/Volumes/sep22/home/wet_lab/_Experiments/009_ST_Xenium/out/data/adata"
+    "/Volumes/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/data/out/adata/"
 )
 
 # Get all .h5ad files

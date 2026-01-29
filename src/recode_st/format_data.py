@@ -155,14 +155,42 @@ def convert_all_xenium(io_config: IOConfig):
                 except KeyError:
                     logger.warning(f"No table found in {roi_name}, skipping AnnData.")
 
-    # Concatenate all adatas
-    if all_adatas:
-        combined = ad.concat(all_adatas, join="outer", fill_value=0)
-        combined_path = adata_dir / "all_samples.h5ad"
-        combined.write(combined_path)
-        logger.info(f"Combined AnnData written to {combined_path}")
+    # Create combined AnnData from all existing h5ad files
+    combined_path = adata_dir / "all_samples.h5ad"
+    if combined_path.exists():
+        logger.info(
+            f"Combined AnnData already exists at {combined_path}, skipping creation"
+        )
     else:
-        logger.warning("No AnnData objects were created. Combined AnnData not written.")
+        logger.info("Creating combined AnnData from all existing h5ad files...")
+
+        # Find all individual h5ad files (excluding any existing all_samples.h5ad)
+        h5ad_files = [
+            f for f in adata_dir.glob("*.h5ad") if f.name != "all_samples.h5ad"
+        ]
+
+        if h5ad_files:
+            logger.info(f"Found {len(h5ad_files)} individual h5ad files to combine")
+            all_adatas = []
+
+            for h5ad_file in sorted(h5ad_files):
+                try:
+                    logger.info(f"Loading {h5ad_file.name}...")
+                    adata = ad.read_h5ad(h5ad_file)
+                    all_adatas.append(adata)
+                except Exception as err:
+                    logger.error(f"Failed to load {h5ad_file.name}: {err}")
+                    continue
+
+            if all_adatas:
+                logger.info(f"Concatenating {len(all_adatas)} AnnData objects...")
+                combined = ad.concat(all_adatas, join="outer", fill_value=0)
+                combined.write(combined_path)
+                logger.info(f"Combined AnnData written to {combined_path}")
+            else:
+                logger.warning("No AnnData objects could be loaded for combination.")
+        else:
+            logger.warning("No individual h5ad files found to combine.")
 
 
 def run_format(io_config: IOConfig):

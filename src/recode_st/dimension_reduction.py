@@ -383,6 +383,7 @@ def run_dimension_reduction(
                 dimensions=[(0, 1)],
                 ncols=3,
                 size=2,
+                alpha=0.5,
                 show=False,
                 save=f"_{config.module_name}_{_obs_field}.pdf",
             )

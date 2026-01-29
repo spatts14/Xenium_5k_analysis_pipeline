@@ -68,11 +68,11 @@ remove_cells = []               # List of cell IDs to remove from the dataset
 [modules.dimension_reduction]
 module_name = "dimension_reduction" # Name of the module - will be used in the output directory name
 norm_approach = "cell_area" # Normalization approach to use
-n_pca = 30 # number of principal components to use for neighborhood graph
+n_pca = 40 # number of principal components to use for neighborhood graph
 n_neighbors = 40 # number of neighbors for the neighborhood graph
 resolution = 1 # resolution for leiden clustering
 cluster_name = "leiden" # name of the cluster column in adata.obs
-obs_vis_list = ["ROI", "condition", "batch"]
+obs_vis_list = ["batch", "ROI", "condition", "timepoint"]
 marker_genes = [
     "PTPRC",
     "CD3E",

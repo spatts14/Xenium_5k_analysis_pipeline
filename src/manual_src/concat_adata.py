@@ -15,8 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def concatenate_h5ad_files(adata_dir: str, output_path: str = None):
-    """
-    Load all .h5ad files from a directory and concatenate them.
+    """Load all .h5ad files from a directory and concatenate them.
 
     Parameters
     ----------
@@ -25,7 +24,7 @@ def concatenate_h5ad_files(adata_dir: str, output_path: str = None):
     output_path : str, optional
         Path where to save the concatenated file. If None, saves to adata_dir/all_samples.h5ad
 
-    Returns
+    Returns:
     -------
     ad.AnnData
         Concatenated AnnData object

@@ -100,6 +100,9 @@ def plot_scatter_genes_v_count(module_dir, adata, filter_status, hue=None):
     ax.set_ylabel("Total transcripts per cell")
     ax.set_title(f"Genes vs Total Counts per Cell: {filter_status}")
     ax.grid(False)
+    ax.legend(
+        bbox_to_anchor=(1.05, 1), loc="upper left", borderaxespad=0.0, frameon=False
+    )
     fig.tight_layout()
     fig.savefig(
         module_dir / f"qc_genes_vs_total_counts_{filter_status_save}.png",
@@ -367,7 +370,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     )
 
     # Plot the summary metrics after filtering
-    plot_metrics(module_dir, adata, filt_status="post-filtering")
+    plot_metrics(module_dir, adata, filter_status="post-filtering")
 
     logger.info(f"adata shape after area filtering: {adata.shape}")
 

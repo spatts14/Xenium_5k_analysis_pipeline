@@ -43,7 +43,7 @@ def load_data(config: QualityControlModuleConfig, io_config: IOConfig):
     else:
         try:
             logger.info("Loading Xenium data...")
-            combined_path = io_config.adata_dir / "combined_adata.h5ad"
+            combined_path = io_config.adata_dir / "all_samples.h5ad"
 
             # Import data
             adata = sc.read_h5ad(combined_path)

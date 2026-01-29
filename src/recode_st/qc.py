@@ -19,7 +19,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 logger = getLogger(__name__)
 
 
-def plot_metrics(module_dir, adata):
+def plot_metrics(module_dir, adata, filter_status):
     """Generates and saves histograms summarizing key cell metrics.
 
     This function creates a 1x4 grid of histograms visualizing:
@@ -37,6 +37,7 @@ def plot_metrics(module_dir, adata):
             - 'n_genes_by_counts'
             - 'cell_area'
             - 'nucleus_area'
+        filter_status (str): Description of the filtering status (e.g. "pre-filtering").
 
     Returns:
         None
@@ -58,15 +59,53 @@ def plot_metrics(module_dir, adata):
         adata.obs["nucleus_area"] / adata.obs["cell_area"], kde=False, ax=axs[3]
     )
 
-    fig.suptitle("QC metrics pre-normalization", fontsize=16)
+    fig.suptitle(f"QC metrics pre-normalization and {filter_status}", fontsize=16)
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
 
     # Save figure
-    output_path = module_dir / "cell_summary_histograms.pdf"
+    filter_status = filter_status.replace("-", "_").lower()
+    output_path = module_dir / "cell_summary_histograms_{filter_status}.pdf"
     plt.savefig(output_path, dpi=300)
     plt.close()
     logger.info(f"Saved plots to {output_path}")
+
+
+def plot_scatter_genes_v_count(module_dir, adata, filter_status, hue=None):
+    """Generate scatter plot of number of genes vs total counts per cell.
+
+    Args:
+        module_dir: Directory to save the plot
+        adata: AnnData object with cell metrics
+        hue: Column in adata.obs to color points by
+        filter_status: Status of filtering (e.g., "pre-filtering", "post-filtering")
+
+    Returns:
+        None.
+    """
+    filter_status_save = filter_status.replace("-", "_").lower()
+    sns.set_theme(style="white")
+    fig, ax = plt.subplots()
+    sns.scatterplot(
+        data=adata.obs,
+        x="n_genes_by_counts",
+        y="total_counts",
+        hue=hue,
+        palette="Spectral",
+        s=5,
+        alpha=0.5,
+        ax=ax,
+    )
+    ax.set_xlabel("Number of genes detected per cell")
+    ax.set_ylabel("Total transcripts per cell")
+    ax.set_title(f"Genes vs Total Counts per Cell: {filter_status}")
+    ax.grid(False)
+    fig.tight_layout()
+    fig.savefig(
+        module_dir / f"qc_genes_vs_total_counts_{filter_status_save}.png",
+        dpi=300,
+    )
+    plt.close(fig)
 
 
 def normalize_data(adata, norm_approach):
@@ -236,31 +275,10 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     adata = calc_qc_meterics(adata)
 
     # Scatter plot of number of genes vs total counts
-    sns.set_theme(style="white")
-
-    fig, ax = plt.subplots()
-    sns.scatterplot(
-        data=adata.obs,
-        x="n_genes_by_counts",
-        y="total_counts",
-        s=5,
-        alpha=0.5,
-        ax=ax,
-    )
-    ax.set_xlabel("Number of genes detected per cell")
-    ax.set_ylabel("Total transcripts per cell")
-    ax.set_title("QC: Genes vs Total Counts per Cell")
-    ax.grid(False)
-
-    fig.tight_layout()
-    fig.savefig(
-        module_dir / "qc_genes_vs_total_counts_pre_filter.pdf",
-        dpi=300,
-    )
-    plt.close(fig)
+    plot_scatter_genes_v_count(module_dir, adata, filter_status="pre-filtering")
 
     # Plot the summary metrics
-    plot_metrics(module_dir, adata)
+    plot_metrics(module_dir, adata, filter_status="pre-filtering")
 
     # Filter cells and genes
     logger.info("Filtering cells and genes...")
@@ -310,7 +328,6 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     genes_removed = n_genes_after - n_genes_after_area
 
     logger.info(f"Cells removed: {cells_removed} ({cells_removed / n_cells_after:.1%})")
-    logger.info(f"Genes removed: {genes_removed} ({genes_removed / n_genes_after:.1%})")
 
     # Remove cells who have a nucleus ratio = 0 or > 0.99
     num_cells_nucleus_ratio_zero = (
@@ -331,35 +348,6 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         :,
     ]
 
-    # Scatter plot of number of genes vs total counts after filtering
-    sns.set_theme(style="white")
-
-    fig, ax = plt.subplots(figsize=(6, 5))
-    sns.scatterplot(
-        data=adata.obs,
-        x="n_genes_by_counts",
-        y="total_counts",
-        hue="ROI",
-        s=5,
-        alpha=0.5,
-        palette="Spectral",
-        ax=ax,
-    )
-
-    ax.set_xlabel("Number of genes detected per cell")
-    ax.set_ylabel("Total transcripts per cell")
-    ax.set_title("QC: Genes vs Total Counts per Cell")
-    ax.grid(False)
-    ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
-
-    fig.tight_layout()
-    fig.savefig(
-        module_dir / "qc_genes_vs_total_counts_post_filter.pdf",
-        dpi=300,
-        bbox_inches="tight",
-    )
-    plt.close(fig)
-
     # TODO: remove specific cells based on QC plots
     logger.info("Removing specific cells based on QC plots...")
     remove_cells = config.remove_cells
@@ -372,6 +360,14 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         adata = adata[~adata.obs_names.isin(remove_cells), :]
     else:
         logger.info("No specific cells to remove based on QC plots.")
+
+    # Scatter plot of number of genes vs total counts after filtering
+    plot_scatter_genes_v_count(
+        module_dir, adata, filter_status="post-filtering", hue="ROI"
+    )
+
+    # Plot the summary metrics after filtering
+    plot_metrics(module_dir, adata, filt_status="post-filtering")
 
     logger.info(f"adata shape after area filtering: {adata.shape}")
 

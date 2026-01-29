@@ -9,7 +9,6 @@ import scanpy as sc
 import scipy.sparse as sp
 import scTransform
 import seaborn as sns
-from zarr.errors import PathNotFoundError
 
 from recode_st.config import IOConfig, QualityControlModuleConfig
 from recode_st.helper_function import configure_scanpy_figures
@@ -18,42 +17,6 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 logger = getLogger(__name__)
-
-
-def load_data(config: QualityControlModuleConfig, io_config: IOConfig):
-    """Load Xenium data.
-
-    Args:
-        io_config: IO configuration
-        config: Quality control module configuration
-
-    Raises:
-        err: If the data file is not found or is not a valid AnnData file
-    """
-    # Set variables
-    subsample_data = config.subsample_data
-
-    # If using subsampled data, load that
-    if subsample_data is True:
-        logger.info("Loading subsampled Xenium data...")
-        subsample_path = io_config.output_dir / "0.5_subsample_data" / "adata.h5ad"
-        adata = sc.read_h5ad(subsample_path)
-        logger.info(f"Dataset contains {len(adata)} cells.")
-
-    else:
-        try:
-            logger.info("Loading Xenium data...")
-            combined_path = io_config.adata_dir / "all_samples.h5ad"
-
-            # Import data
-            adata = sc.read_h5ad(combined_path)
-            logger.info(f"Dataset contains {len(adata)} cells.")
-
-        except PathNotFoundError as err:
-            logger.error(
-                f"File not found (or not a valid AnnData file): {combined_path}"
-            )
-            raise err
 
 
 def plot_metrics(module_dir, adata):
@@ -201,7 +164,9 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     # cmap = sns.color_palette("Spectral", as_cmap=True)
 
     logger.info("Loading data...")
-    adata = load_data(config, io_config)
+    combined_path = io_config.adata_dir / "all_samples.h5ad"
+    adata = sc.read_h5ad(combined_path)
+    logger.info(f"Dataset contains {len(adata)} cells.")
 
     logger.info("Calculating QC metrics...")
     # Calculate quality control metrics
@@ -310,7 +275,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         (adata.obs["cell_area"] >= min_cell_area)
         & (adata.obs["cell_area"] <= max_cell_area),
         :,
-    ].copy()
+    ]
 
     # Number of cells and genes after area filtering
     n_cells_after_area = adata.n_obs

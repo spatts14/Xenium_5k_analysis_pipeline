@@ -107,6 +107,17 @@ def convert_all_xenium(io_config: IOConfig):
                     logger.info(f"Creating AnnData for {roi_name}")
                     adata = sdata.tables["table"]
 
+                    # Validate AnnData structure
+                    if adata.X is None:
+                        logger.error(
+                            f"AnnData for {roi_name} has no .X matrix, skipping"
+                        )
+                        continue
+
+                    logger.info(
+                        f"AnnData for {roi_name} has shape {adata.shape} with .X type: {type(adata.X)}"
+                    )
+
                     # Add metadata to AnnData
                     adata.obs["ROI"] = roi_name  # add ROI name
                     adata.obs["batch"] = run_name  # add run/date name
@@ -149,6 +160,16 @@ def convert_all_xenium(io_config: IOConfig):
                         )
 
                     # Save individual AnnData
+                    # Final validation before saving
+                    if adata.X is None:
+                        logger.error(
+                            f"AnnData for {roi_name} lost .X matrix before saving, skipping"
+                        )
+                        continue
+
+                    logger.info(
+                        f"Saving AnnData for {roi_name} with .X shape: {adata.X.shape}"
+                    )
                     adata.write(adata_dir / f"{roi_name}.h5ad")
                     logger.info(f"AnnData for {roi_name} saved.")
                     all_adatas.append(adata)
@@ -177,6 +198,13 @@ def convert_all_xenium(io_config: IOConfig):
                 try:
                     logger.info(f"Loading {h5ad_file.name}...")
                     adata = ad.read_h5ad(h5ad_file)
+
+                    # Validate that the loaded AnnData has a proper .X matrix
+                    if adata.X is None:
+                        logger.error(f"Skipping {h5ad_file.name} - has no .X matrix")
+                        continue
+
+                    logger.info(f"Loaded {h5ad_file.name} with shape {adata.shape}")
                     all_adatas.append(adata)
                 except Exception as err:
                     logger.error(f"Failed to load {h5ad_file.name}: {err}")

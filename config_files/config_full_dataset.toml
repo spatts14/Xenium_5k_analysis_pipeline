@@ -50,7 +50,7 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 [modules.quality_control]
 module_name = "quality_control" # Name of the module - output directory name
 subsample_data = false          # Whether to subsample the data for dev
-min_counts = 20                 # Minimum number of counts required to keep a cell
+min_counts = 15                 # Minimum number of counts required to keep a cell
 min_cells = 100                 # Minimum number of cells that express the gene
 min_cell_area = 25              # Minimum cell area to filter cells
 max_cell_area = 1000            # Maximum cell area to filter cells

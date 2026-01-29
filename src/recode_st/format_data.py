@@ -165,18 +165,14 @@ def convert_all_xenium(io_config: IOConfig):
                 except KeyError:
                     logger.warning(f"No table found in {roi_name}, skipping AnnData.")
 
-                # Concatenate all adatas
-                if all_adatas:
-                    combined = ad.concat(all_adatas, join="outer", fill_value=0)
-                    combined_path = adata_dir / "all_samples.h5ad"
-                    combined.write(combined_path)
-                    logger.info(f"Combined AnnData written to {combined_path}")
-                else:
-                    logger.warning(
-                        "No AnnData objects were created. Combined AnnData not written."
-                    )
-        else:
-            logger.warning("No individual h5ad files found to combine.")
+    # Concatenate all adatas (after all runs and ROIs are processed)
+    if all_adatas:
+        combined = ad.concat(all_adatas, join="outer", fill_value=0)
+        combined_path = adata_dir / "all_samples.h5ad"
+        combined.write(combined_path)
+        logger.info(f"Combined AnnData written to {combined_path}")
+    else:
+        logger.warning("No AnnData objects were created. Combined AnnData not written.")
 
 
 def run_format(io_config: IOConfig):

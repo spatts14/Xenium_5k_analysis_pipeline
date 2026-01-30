@@ -3,7 +3,6 @@
 import warnings
 from logging import getLogger
 
-import matplotlib.pyplot as plt
 import scanpy as sc
 import scvi
 
@@ -55,26 +54,30 @@ def run_resolvi(
     """
     logger.info("Staring ResolVI denoise function...")
 
-    # Store raw counts (ResolVI needs raw counts)
-    adata.layers["counts"] = adata.X.copy()
+    # Check adata has raw counts
+    if "counts" not in adata.layers:
+        logger.info("adata does not have 'counts' layer!")
+        raise ValueError("adata must have raw counts in adata.layers['counts']")
 
     logger.info("Set up adata for ResolVI...")
-    scvi.external.RESOLVI.setup_anndata(adata, layer="counts")
+    scvi.external.RESOLVI.setup_anndata(adata, layer="counts", batch_key="ROI")
 
     logger.info("Initialize model...")
     model = scvi.external.RESOLVI(
         adata,
+        dispersion="gene-batch",  # gene dispersion can differ between different batches
         n_latent=n_latent,
         n_hidden=n_hidden,
         n_layers=n_layers,
     )
 
-    logger.info("\nModel architecture:")
+    logger.info("Model architecture:")
     logger.info(f"Latent dimensions: {n_latent}")
     logger.info(f"Hidden units: {n_hidden}")
     logger.info(f"Layers: {n_layers}")
+    logger.info("Training on:")
     logger.info(
-        f"Training on: {'GPU' if use_gpu and scvi.settings.dl_pin_memory_gpu_training else 'CPU'}"
+        f"{'GPU' if use_gpu and scvi.settings.dl_pin_memory_gpu_training else 'CPU'}"
     )
 
     # Train model
@@ -91,6 +94,10 @@ def run_resolvi(
     )
 
     logger.info(f"Training completed at epoch {model.history['elbo_train'].shape[0]}")
+
+    # Save trained model
+    logger.info(f"Saving model to resolvi_model_{n_latent}latent...")
+    model.save(f"resolvi_model_{n_latent}_latent", overwrite=True)
 
     logger.info("Extracting denoised representations...")
 
@@ -143,40 +150,44 @@ def post_resolvi_analysis(adata, resolution=0.5, save_path=None):
     sc.tl.leiden(adata, resolution=resolution, key_added="leiden_resolvi")
 
     n_clusters = adata.obs["leiden_resolvi"].nunique()
-    print(f"  Found {n_clusters} clusters")
-
-    # Visualization
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    print(f"Found {n_clusters} clusters")
 
     # UMAP colored by cluster
     sc.pl.umap(
         adata,
         color="leiden_resolvi",
-        ax=axes[0],
         show=False,
         title="Clusters (ResolVI)",
+        save="resolVI_cluster.png",
     )
 
     # UMAP colored by total counts
     sc.pl.umap(
-        adata, color="total_counts", ax=axes[1], show=False, title="Total Counts"
+        adata,
+        color="total_counts",
+        show=False,
+        title="Total Counts",
+        save="resolVI_total_counts.png",
     )
 
-    # Spatial plot colored by cluster
     sc.pl.embedding(
         adata,
         basis="spatial",
         color="leiden_resolvi",
-        ax=axes[2],
         show=False,
         title="Spatial Clusters",
+        save="_resolVI_embedding.png",
     )
 
-    plt.tight_layout()
-
-    if save_path:
-        plt.savefig(f"{save_path}/resolvi_analysis.svg", bbox_inches="tight")
-    plt.show()
+    # Spatial plot colored by cluster
+    for roi in adata.obs["ROI"].unique():
+        sc.pl.spatial(
+            adata[adata.obs["ROI"] == roi],
+            color="leiden_resolvi",
+            title=f"Spatial Clusters: {roi}",
+            show=False,
+            save=f"_resolVI_spatial_clusters_{roi}.png",
+        )
 
     return adata
 
@@ -216,7 +227,7 @@ def run_denoise_resolvi(config: DenoiseResolVIModuleConfig, io_config: IOConfig)
         adata, n_latent=config.n_latent, max_epochs=config.max_epochs
     )
 
-    logger.info("Vizualize post ResolVI...")
-    adata = post_resolvi_analysis(
-        adata, resolution=clustering_resolution, save_path=output_path
-    )
+    logger.info("Visualize post ResolVI...")
+    adata = post_resolvi_analysis(adata, resolution=1, save_path=module_dir)
+
+    logger.info(f"\nResolVI module '{config.module_name}' complete.\n")

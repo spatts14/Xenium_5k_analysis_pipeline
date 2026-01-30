@@ -1,5 +1,4 @@
 #!/bin/bash
-#PBS -q gpu72
 #PBS -l walltime=8:00:00
 #PBS -l select=1:ncpus=8:mem=128gb:ngpus=1
 #PBS -j oe
@@ -19,4 +18,3 @@ source xenium_5k_venv/bin/activate
 
 # Run
 python -m recode_st config_files/resolvi.toml
-

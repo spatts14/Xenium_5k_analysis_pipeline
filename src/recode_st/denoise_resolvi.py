@@ -230,4 +230,9 @@ def run_denoise_resolvi(config: DenoiseResolVIModuleConfig, io_config: IOConfig)
     logger.info("Visualize post ResolVI...")
     adata = post_resolvi_analysis(adata, resolution=1, save_path=module_dir)
 
+    # Save final results
+    output_path = module_dir / "adata.h5ad"
+    adata.write_h5ad(output_path)
+    logger.info(f"\nFinal results saved to {output_path}")
+
     logger.info(f"\nResolVI module '{config.module_name}' complete.\n")

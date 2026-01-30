@@ -385,7 +385,19 @@ def run_dimension_reduction(
                 size=2,
                 alpha=0.5,
                 show=False,
-                save=f"_{config.module_name}_{_obs_field}.pdf",
+                save=f"_{config.module_name}_{_obs_field}_PC1_PC2.pdf",
+            )
+        for _obs_field in config.obs_vis_list:
+            sc.pl.pca(
+                adata,
+                color=_obs_field,
+                palette=palette,
+                dimensions=[(2, 3)],
+                ncols=3,
+                size=2,
+                alpha=0.5,
+                show=False,
+                save=f"_{config.module_name}_{_obs_field}_PC3_PC4.pdf",
             )
     else:
         logger.info(

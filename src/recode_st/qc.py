@@ -85,7 +85,7 @@ def plot_scatter_genes_v_count(module_dir, adata, filter_status, hue=None):
     """
     filter_status_save = filter_status.replace("-", "_").lower()
     sns.set_theme(style="white")
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(10, 8))
     sns.scatterplot(
         data=adata.obs,
         x="n_genes_by_counts",
@@ -100,14 +100,20 @@ def plot_scatter_genes_v_count(module_dir, adata, filter_status, hue=None):
     ax.set_ylabel("Total transcripts per cell")
     ax.set_title(f"Genes vs Total Counts per Cell: {filter_status}")
     ax.grid(False)
-    ax.legend(
-        bbox_to_anchor=(1.05, 1), loc="upper left", borderaxespad=0.0, frameon=False
-    )
-    fig.tight_layout()
+
+    # Safely remove legend if it exists
+    if ax.get_legend() is not None:
+        ax.get_legend().remove()
+
+    # Adjust layout with padding
+    plt.subplots_adjust(left=0.1, bottom=0.1, right=0.95, top=0.9)
     fig.savefig(
         module_dir / f"qc_genes_vs_total_counts_{filter_status_save}.png",
         dpi=300,
         bbox_inches="tight",
+        pad_inches=0.2,
+        facecolor="white",
+        edgecolor="none",
     )
     plt.close(fig)
 
@@ -296,7 +302,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info(
         f"Removing cells with < {min_counts} counts and genes in < {min_cells} cells"
     )
-    percentile = 98
+    percentile = 99.9
     max_counts = np.percentile(adata.obs["total_counts"], percentile)
 
     logger.info(f"Removing cells above the {100 - percentile}% highest counts")
@@ -374,9 +380,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         logger.info("No specific cells to remove based on QC plots.")
 
     # Scatter plot of number of genes vs total counts after filtering
-    plot_scatter_genes_v_count(
-        module_dir, adata, filter_status="post-filtering", hue="ROI"
-    )
+    plot_scatter_genes_v_count(module_dir, adata, filter_status="post-filtering")
 
     # Plot the summary metrics after filtering
     plot_metrics(module_dir, adata, filter_status="post-filtering")

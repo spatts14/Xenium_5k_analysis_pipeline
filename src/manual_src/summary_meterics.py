@@ -9,37 +9,44 @@ import pandas as pd
 
 # Define the base directory
 base_dir = Path(
-    "/Volumes/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/data/xenium_raw/20251028__162706__SP25164_SARA_PATTI_RUN_2"
+    "/Volumes/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/data/xenium_raw"
 )
 
 output_dir = Path(
-    "/Volumes/sep22/home/wet_lab/_Experiments/009_ST_Xenium/data/out_data/summary_metrics/csv"
+    "/Volumes/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/data/out/summary_metrics/csv"
 )
-
-run = "_".join(base_dir.name.split("_")[-2:])
 
 output_dir.mkdir(parents=True, exist_ok=True)
 
 # List to store dataframes
 dfs = []
 
-# Iterate through directories starting with "output-"
-#! Need to come back so it is dynamic and will go into run_2,
-# !run_3 etc and look for the folder and files
-for folder in base_dir.glob("output-*"):
-    if folder.is_dir():
-        csv_path = folder / "metrics_summary.csv"
+# Iterate through run directories, then look for "output-*" folders within each
+for run_folder in base_dir.iterdir():
+    if run_folder.is_dir() and "RUN_" in run_folder.name:
+        print(f"Processing run folder: {run_folder.name}")
 
-        if csv_path.exists():
-            print(f"Reading: {csv_path}")
-            df = pd.read_csv(csv_path)
+        # Look for "output-*" folders within this run folder
+        for output_folder in run_folder.glob("output-*"):
+            if output_folder.is_dir():
+                csv_path = output_folder / "metrics_summary.csv"
 
-            # Add a column to track which folder the data came from
-            df["source_folder"] = folder.name
+                if csv_path.exists():
+                    print(f"Reading: {csv_path}")
+                    df = pd.read_csv(csv_path)
 
-            dfs.append(df)
-        else:
-            print(f"Warning: metrics_summary.csv not found in {folder.name}")
+                    # Add columns to track which folders the data came from
+                    df["run"] = run_folder.name.split("_")[-1]
+                    df["run_folder"] = run_folder.name
+                    df["source_folder"] = output_folder.name
+
+                    dfs.append(df)
+                else:
+                    print(f"Warning: metrics_summary.csv not found in {output_folder}")
+            else:
+                print(f"Skipping non-directory: {output_folder}")
+    else:
+        print(f"Skipping folder (no RUN_ in name): {run_folder.name}")
 
 # Concatenate all dataframes
 if dfs:
@@ -60,7 +67,7 @@ if dfs:
     print(f"\nColumns in combined dataframe:\n{combined_df.columns.tolist()}")
 
     # Save the combined dataframe
-    output_path = base_dir / f"combined_metrics_summary_{run}.csv"
+    output_path = output_dir / "combined_metrics_summary_all.csv"
     combined_df.to_csv(output_path, index=False)
     print(f"\nCombined data saved to: {output_path}")
 
@@ -69,11 +76,3 @@ if dfs:
     print(combined_df.head())
 else:
     print("No CSV files found to concatenate")
-
-# Add column with run identifier
-combined_df["run"] = int(str(base_dir).split("_")[-1])
-
-# Save the combined dataframe
-output_path = output_dir / f"combined_metrics_summary_{run}.csv"
-combined_df.to_csv(output_path, index=False)
-print(f"\nCombined data saved to: {output_path}")

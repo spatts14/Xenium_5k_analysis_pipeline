@@ -65,7 +65,7 @@ def plot_metrics(module_dir, adata, filter_status):
 
     # Save figure
     filter_status = filter_status.replace("-", "_").lower()
-    output_path = module_dir / "cell_summary_histograms_{filter_status}.pdf"
+    output_path = module_dir / f"cell_summary_histograms_{filter_status}.pdf"
     plt.savefig(output_path, dpi=300)
     plt.close()
     logger.info(f"Saved plots to {output_path}")

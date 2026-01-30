@@ -1,0 +1,47 @@
+# CONFIG FILE FOR COPD V1 vs IPF ANALYSIS
+
+log_level = "INFO" # Logging detail level. Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+seed = 19960915    # Random seed for reproducibility
+
+# IO CONFIGURATION
+[io]
+
+base_dir = "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium"
+# Root directory of the project. All other paths are interpreted relative to this.
+
+data_dir = "data"
+# Folder (inside base_dir) containing input data.
+
+xenium_dir = "xenium_raw"
+# Subdirectory (inside data_dir) containing raw Xenium output files.
+
+output_data_dir = "out"
+# Folder (inside data_dir) where processed/intermediate data will be written.
+
+adata_dir = "adata"
+# Subdirectory (inside output_data_dir) for storing AnnData (.h5ad) objects.
+
+zarr_dir = "xenium.zarr"
+# Directory (inside output_data_dir) where Zarr-formatted Xenium data will be stored.
+
+output_dir = "airscape_analysis"
+# Folder (inside base_dir) where all pipeline output (plots, logs, results) is stored.
+
+area_path = "selected_cells_stats.csv"
+# Path (inside data_dir) to the CSV file that contains per-cell area statistics.
+
+logging_dir = "logs"
+# Subdirectory (inside output_dir) where log files will be saved.
+
+ref_path = "/rds/general/user/sep22/home/Projects/_Public_datasets/HLCA/data/hlca_full_processed.h5ad"
+# Full path to the HLCA reference dataset used for annotation.
+
+gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/data/gene_id_dict.csv"
+# Full path to a CSV mapping Ensembl IDs to gene symbols. Must contain:
+#   - index column: ensembl_id
+#   - column: gene_symbol
+
+# DENOISE MODULE
+[modules.denoise_resolvi]
+n_latent = 30
+max_epochs = 100

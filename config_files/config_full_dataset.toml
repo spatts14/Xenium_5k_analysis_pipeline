@@ -42,8 +42,8 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 #   - column: gene_symbol
 
 # FORMAT DATA MODULE
-[modules.format_data]
-module_name = "format" # Name of the module - will be used in the output directory name
+#[modules.format_data]
+#module_name = "format" # Name of the module - will be used in the output directory name
 
 
 # QUALITY CONTROL MODULE

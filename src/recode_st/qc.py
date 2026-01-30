@@ -302,11 +302,13 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info(
         f"Removing cells with < {min_counts} counts and genes in < {min_cells} cells"
     )
-    percentile = 99.9
-    max_counts = np.percentile(adata.obs["total_counts"], percentile)
+    # percentile = 99.9
+    # max_counts = np.percentile(adata.obs["total_counts"], percentile)
+    # logger.info(f"Removing cells above the {100 - percentile}% highest counts")
+    # logger.info(f"Max counts threshold (p{percentile}): {max_counts:.0f}")
 
-    logger.info(f"Removing cells above the {100 - percentile}% highest counts")
-    logger.info(f"Max counts threshold (p{percentile}): {max_counts:.0f}")
+    max_counts = 14000  # fixed threshold for memory-optimized version
+    logger.info(f"Removed cells with total counts >{max_counts}")
 
     # Filter cells and genes in separate calls (scanpy limitation)
     sc.pp.filter_cells(adata, min_counts=min_counts)

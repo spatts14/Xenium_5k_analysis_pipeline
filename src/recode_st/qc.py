@@ -301,7 +301,9 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info(f"Removing cells above the {100 - percentile}% highest counts")
     logger.info(f"Max counts threshold (p{percentile}): {max_counts:.0f}")
 
-    sc.pp.filter_cells(adata, min_counts=min_counts, max_counts=max_counts)
+    # Filter cells and genes in separate calls (scanpy limitation)
+    sc.pp.filter_cells(adata, min_counts=min_counts)
+    sc.pp.filter_cells(adata, max_counts=max_counts)
     sc.pp.filter_genes(adata, min_cells=min_cells)
 
     # Number of cells and genes after filtering

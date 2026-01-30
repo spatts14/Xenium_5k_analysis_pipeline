@@ -307,7 +307,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     # logger.info(f"Removing cells above the {100 - percentile}% highest counts")
     # logger.info(f"Max counts threshold (p{percentile}): {max_counts:.0f}")
 
-    max_counts = 4000  # fixed threshold for memory-optimized version
+    max_counts = 4000  # total counts
     logger.info(f"Removed cells with total counts >{max_counts}")
 
     # Filter cells and genes in separate calls (scanpy limitation)

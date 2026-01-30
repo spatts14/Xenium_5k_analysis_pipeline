@@ -9,18 +9,40 @@ import seaborn as sns
 
 # Setup
 base_dir = Path(
-    "/Volumes/sep22/home/wet_lab/_Experiments/009_ST_Xenium/data/out_data/summary_metrics/"
+    "/Volumes/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/data/out/summary_metrics"
 )
 
 out_dir = base_dir / "figs"
 out_dir.mkdir(parents=True, exist_ok=True)
 
 # Load combined dataframe
-df = pd.read_excel(base_dir / "csv/combined_run_dfs.xlsx")
-print(df.columns)
+df = pd.read_csv(base_dir / "csv/combined_metrics_summary_all.csv")
+print("DataFrame shape:", df.shape)
+print("Columns:", df.columns.tolist())
+
+# Diagnostic: Check what conditions are present
+if "Condition" in df.columns:
+    print("Unique conditions found:", df["Condition"].unique().tolist())
+    print("Condition value counts:")
+    print(df["Condition"].value_counts())
+else:
+    print("Warning: 'Condition' column not found")
+
+# Diagnostic: Check region names to understand the pattern
+if "region_name" in df.columns:
+    print("\nSample of region names:")
+    print(df["region_name"].head(10).tolist())
+    print("\nUnique region name prefixes:")
+    prefixes = df["region_name"].str.split("_").str[0].unique()
+    print(prefixes)
 
 # Color palettes
-condition_color_dict = {"PM08": "#BC3C29", "IPF": "#E18727", "COPD": "#0072B5"}
+condition_color_dict = {
+    "PM08": "#BC3C29",
+    "IPF": "#E18727",
+    "COPD": "#0072B5",
+    "MICA": "#8AB184",
+}
 treatment_color_dict = {"Sham": "#FFDC91", "Treamtment": "#20854E"}
 
 # Global style
@@ -42,7 +64,7 @@ plt.rcParams.update(
 
 # Data prep
 df["Condition"] = pd.Categorical(
-    df["Condition"], categories=["PM08", "COPD", "IPF"], ordered=True
+    df["Condition"], categories=["PM08", "MICA", "COPD", "IPF"], ordered=True
 )
 df["norm_transcript"] = (
     df["total_high_quality_decoded_transcripts"] / df["total_cell_area"]
@@ -277,7 +299,7 @@ for y, title, ylabel, ylim, filename in plots:
         title=title,
         ylabel=ylabel,
         filename=out_dir / filename,
-        order=["PM08", "COPD", "IPF"],
+        order=["PM08", "MICA", "COPD", "IPF"],
         ylim=ylim,
     )
 
@@ -286,7 +308,7 @@ for y, title, ylabel, ylim, filename in plots:
         x="Condition",
         y=y,
         hue="run",
-        order=["PM08", "COPD", "IPF"],
+        order=["PM08", "MICA", "COPD", "IPF"],
         hue_order=sorted(df["run"].unique()),
         palette="Set2",
         title=title,

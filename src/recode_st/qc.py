@@ -107,6 +107,7 @@ def plot_scatter_genes_v_count(module_dir, adata, filter_status, hue=None):
     fig.savefig(
         module_dir / f"qc_genes_vs_total_counts_{filter_status_save}.png",
         dpi=300,
+        bbox_inches="tight",
     )
     plt.close(fig)
 
@@ -301,9 +302,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info(f"Removing cells above the {100 - percentile}% highest counts")
     logger.info(f"Max counts threshold (p{percentile}): {max_counts:.0f}")
 
-    # Filter cells and genes in separate calls (scanpy limitation)
-    sc.pp.filter_cells(adata, min_counts=min_counts)
-    sc.pp.filter_cells(adata, max_counts=max_counts)
+    sc.pp.filter_cells(adata, min_counts=min_counts, max_counts=max_counts)
     sc.pp.filter_genes(adata, min_cells=min_cells)
 
     # Number of cells and genes after filtering

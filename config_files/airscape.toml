@@ -43,19 +43,19 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 
 # FORMAT DATA MODULE
 #[modules.format_data]
-#module_name = "format" # Name of the module - will be used in the output directory name
+# module_name = "format" # Name of the module - will be used in the output directory name
 
 
 # QUALITY CONTROL MODULE
-[modules.quality_control]
-module_name = "quality_control" # Name of the module - output directory name
-subsample_data = false          # Whether to subsample the data for dev
-min_counts = 15                 # Minimum number of counts required to keep a cell
-min_cells = 100                 # Minimum number of cells that express the gene
-min_cell_area = 20              # Minimum cell area to filter cells
-max_cell_area = 1000            # Maximum cell area to filter cells
-norm_approach = "cell_area"     # Normalization approach to use
-remove_cells = []               # List of cell IDs to remove from the dataset
+#[modules.quality_control]
+#module_name = "quality_control" # Name of the module - output directory name
+#subsample_data = false          # Whether to subsample the data for dev
+#min_counts = 15                 # Minimum number of counts required to keep a cell
+#min_cells = 100                 # Minimum number of cells that express the gene
+#min_cell_area = 20              # Minimum cell area to filter cells
+#max_cell_area = 1000            # Maximum cell area to filter cells
+#norm_approach = "cell_area"     # Normalization approach to use
+#remove_cells = []               # List of cell IDs to remove from the dataset
 
 # DENOISE MODULE
 # [modules.denoise_resolvi]
@@ -69,7 +69,7 @@ remove_cells = []               # List of cell IDs to remove from the dataset
 module_name = "dimension_reduction" # Name of the module - will be used in the output directory name
 norm_approach = "cell_area" # Normalization approach to use
 n_pca = 40 # number of principal components to use for neighborhood graph
-n_neighbors = 40 # number of neighbors for the neighborhood graph
+n_neighbors = 20 # number of neighbors for the neighborhood graph
 resolution = 1 # resolution for leiden clustering
 cluster_name = "leiden" # name of the cluster column in adata.obs
 obs_vis_list = ["batch", "sample_ID", "condition", "timepoint", "ROI"]

@@ -209,7 +209,7 @@ def compute_dimensionality_reduction(
     sc.tl.leiden(
         adata,
         resolution=resolution,
-        key_added=cluster_name,
+        key_added=cluster_name + "_igraph",
         flavor="igraph",  # Faster than default leidenalg
         n_iterations=2,  # Fewer iterations, usually sufficient
     )

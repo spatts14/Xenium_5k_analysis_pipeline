@@ -24,7 +24,7 @@ adata_dir = "adata"
 zarr_dir = "xenium.zarr"
 # Directory (inside output_data_dir) where Zarr-formatted Xenium data will be stored.
 
-output_dir = "airscape_analysis"
+output_dir = "airscape_analysis_2"
 # Folder (inside base_dir) where all pipeline output (plots, logs, results) is stored.
 
 area_path = "selected_cells_stats.csv"

@@ -293,7 +293,7 @@ def plot_dimensionality_reduction(
     # Check if cluster column exists before plotting
     color_list = ["total_counts", "n_genes_by_counts"]
     if cluster_name in adata.obs.columns:
-        color_list.append(cluster_name)
+        color_list.append(cluster_name)  # adding cluster_name to color list
         logger.info(f"Including '{cluster_name}' in UMAP plots.")
     else:
         logger.warning(
@@ -490,10 +490,9 @@ def run_dimension_reduction(
     )
 
     logger.info("Saving adata with computed dimension reduction...")
-    # Save final results
     output_path = module_dir / "adata.h5ad"
     adata.write_h5ad(output_path)
-    logger.info(f"\nFinal results saved to {output_path}")
+    logger.info(f"Final results saved to {output_path}")
 
     logger.info("Plotting dimension reduction...")
 

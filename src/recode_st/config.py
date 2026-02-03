@@ -82,6 +82,8 @@ class DimensionReductionModuleConfig(BaseModuleConfig):
     """ number of neighbors for the neighborhood graph"""
     resolution: float
     """resolution for leiden clustering"""
+    cluster_name: str
+    """Name of the cluster column in adata.obs to use for visualization."""
     norm_approach: Literal["scanpy_log", "sctransform", "cell_area", "none"] = (
         "cell_area"
     )

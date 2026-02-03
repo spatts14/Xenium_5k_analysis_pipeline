@@ -407,7 +407,7 @@ def run_dimension_reduction(
     sc.settings.figdir = module_dir
 
     # Define variables
-    CLUSTER_NAME = "leiden"
+    CLUSTER_NAME = config.cluster_name
 
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
@@ -489,6 +489,7 @@ def run_dimension_reduction(
         min_dist=0.1,
     )
 
+    logger.info("Saving adata with computed dimension reduction...")
     # Save final results
     output_path = module_dir / "adata.h5ad"
     adata.write_h5ad(output_path)

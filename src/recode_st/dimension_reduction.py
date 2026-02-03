@@ -206,10 +206,12 @@ def compute_dimensionality_reduction(
     sc.tl.umap(adata, min_dist=min_dist, spread=2.0)
 
     logger.info(f"Clustering with resolution={resolution}...")
+    logger.info("Using the 'igraph' implementation of Leiden for faster performance.")
+    cluster_name = cluster_name + "_igraph"
     sc.tl.leiden(
         adata,
         resolution=resolution,
-        key_added=cluster_name + "_igraph",
+        key_added=cluster_name,
         flavor="igraph",  # Faster than default leidenalg
         n_iterations=2,  # Fewer iterations, usually sufficient
     )

@@ -27,6 +27,9 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
     # Set figure directory for this module (overrides global setting)
     sc.settings.figdir = module_dir
 
+    # Define variables
+    CLUSTER_NAME = config.cluster_name
+
     # Set figure settings to ensure consistency across all modules
     # cmap = sns.color_palette("Spectral", as_cmap=True)
     cmap_blue = sns.color_palette("ch:start=.2,rot=-.3", as_cmap=True)
@@ -60,9 +63,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             library_id="spatial",
             shape=None,
             outline=False,
-            color=[
-                "manual_annotation",
-            ],  # TODO: remove hard coding
+            color=[CLUSTER_NAME],
             wspace=0.4,
             size=1,
             save=f"clusters_{roi}.pdf",

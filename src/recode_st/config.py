@@ -128,6 +128,9 @@ class PsuedobulkModuleConfig(BaseModuleConfig):
 class ViewImagesModuleConfig(BaseModuleConfig):
     """Configuration for the View Images module."""
 
+    cluster_name: str
+    """Name of the cluster column in adata.obs to use for visualization."""
+
     gene_list: tuple[str, ...]
     """List of genes to visualize on tissue. A tuple of any length."""
 

@@ -302,7 +302,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info(
         f"Removing cells with < {min_counts} counts and genes in < {min_cells} cells"
     )
-    max_count = True
+    max_count = False
     if max_count:
         max_counts = 2000
         logger.info(f"Removed cells with total counts >{max_counts}")

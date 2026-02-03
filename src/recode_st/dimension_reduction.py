@@ -211,13 +211,54 @@ def compute_dimensionality_reduction(
     logger.info(
         f"Using the '{flavor}' implementation of Leiden for faster performance."
     )
-    sc.tl.leiden(
-        adata,
-        resolution=resolution,
-        key_added=cluster_name,
-        flavor=flavor,  # Faster than default leidenalg
-        n_iterations=2,  # Fewer iterations, usually sufficient
-    )
+
+    try:
+        sc.tl.leiden(
+            adata,
+            resolution=resolution,
+            key_added=cluster_name,
+            flavor=flavor,  # Faster than default leidenalg
+            n_iterations=2,  # Fewer iterations, usually sufficient
+        )
+        logger.info(
+            f"Leiden clustering completed successfully."
+            f"Added '{cluster_name} to adata.obs."
+        )
+
+        # Verify the clustering was added
+        if cluster_name not in adata.obs.columns:
+            raise ValueError(
+                f"Clustering column '{cluster_name}' was not created successfully."
+            )
+
+        logger.info(
+            f"Number of clusters found: {len(adata.obs[cluster_name].unique())}"
+        )
+
+    except Exception as e:
+        logger.error(f"Leiden clustering failed with error: {e}")
+        logger.info("Falling back to default leidenalg implementation...")
+
+        # Fallback to default implementation
+        sc.tl.leiden(
+            adata,
+            resolution=resolution,
+            key_added=cluster_name,
+            flavor="leidenalg",
+            n_iterations=2,
+        )
+
+        # Verify the fallback worked
+        if cluster_name not in adata.obs.columns:
+            raise ValueError(
+                f"Both igraph and leidenalg implementations failed"
+                f"to create column '{cluster_name}'"
+            )
+
+        logger.info(
+            f"Fallback using leidenalg successful."
+            f"Number of clusters: {len(adata.obs[cluster_name].unique())}"
+        )
 
     return adata
 
@@ -248,9 +289,22 @@ def plot_dimensionality_reduction(
 
     # QC and metadata plots
     logger.info("Plotting UMAPs with QC meterics...")
+
+    # Check if cluster column exists before plotting
+    color_list = ["total_counts", "n_genes_by_counts"]
+    if cluster_name in adata.obs.columns:
+        color_list.append(cluster_name)
+        logger.info(f"Including '{cluster_name}' in UMAP plots.")
+    else:
+        logger.warning(
+            f"Cluster column '{cluster_name}' not found in adata.obs."
+            f"Skipping cluster visualization."
+        )
+        logger.info(f"Available columns in adata.obs: {list(adata.obs.columns)}")
+
     sc.pl.umap(
         adata,
-        color=["total_counts", "n_genes_by_counts", cluster_name],
+        color=color_list,
         ncols=3,
         cmap=cmap,
         wspace=0.4,
@@ -306,6 +360,15 @@ def plot_spatial_distribution(
         cluster_name: Name of cluster annotation
         module_dir: Directory to save plots
     """
+    # Check if cluster column exists before plotting
+    if cluster_name not in adata.obs.columns:
+        logger.warning(
+            f"Cluster column '{cluster_name}' not found in adata.obs."
+            f"Skipping spatial cluster plots."
+        )
+        logger.info(f"Available columns in adata.obs: {list(adata.obs.columns)}")
+        return
+
     logger.info(f"Plotting {cluster_name} spatial distribution...")
 
     for roi in adata.obs["ROI"].unique():

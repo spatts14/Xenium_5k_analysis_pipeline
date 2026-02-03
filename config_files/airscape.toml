@@ -86,11 +86,11 @@ marker_genes = [
 
 
 # ANNOTATION MODULE
-#[modules.annotate]
-#module_name = "annotate"
-#cluster_name = "leiden"
-#cluster_to_cell_type = "manual_annotation"
-#clusters_label = "manual_annotation"
+[modules.annotate]
+module_name = "annotate"
+cluster_name = "leiden"
+clusters_label = "manual_annotation"
+# cluster_to_cell_type mapping is optional - remove this line if you don't want to rename clusters
 
 # VIEW IMAGE MODULE
 [modules.view_images]

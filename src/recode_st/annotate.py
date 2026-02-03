@@ -156,73 +156,84 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
 
     # Rename the clusters based on the markers
     cluster_to_cell_type = config.cluster_to_cell_type
-    logger.info(f"Cluster to cell type mapping: {cluster_to_cell_type}")
-    logger.info(f"Type of data in mapping: {type(cluster_to_cell_type)}")
+    if cluster_to_cell_type:
+        logger.info("Renaming clusters based on provided mapping...")
+        cluster_to_cell_type = config.cluster_to_cell_type
+        logger.info(f"Cluster to cell type mapping: {cluster_to_cell_type}")
+        logger.info(f"Type of data in mapping: {type(cluster_to_cell_type)}")
 
-    logger.info("Renaming clusters based on markers...")
-    cluster_to_cell_type_dict = config.cluster_to_cell_type  # import from config
-    adata.obs[new_clusters] = adata.obs[cluster_name].map(cluster_to_cell_type_dict)
+        logger.info("Renaming clusters based on markers...")
+        cluster_to_cell_type_dict = config.cluster_to_cell_type  # import from config
+        adata.obs[new_clusters] = adata.obs[cluster_name].map(cluster_to_cell_type_dict)
 
-    # Ensure categorical
-    adata.obs[new_clusters] = adata.obs[new_clusters].astype("category")
-    # Create a palette for the new clusters
-    color_palette = sns.color_palette("hls", len(adata.obs[new_clusters].unique()))
-    adata.uns[f"{new_clusters}_colors"] = [color for color in color_palette.as_hex()]
-    logger.info(
-        f"Saved palette {new_clusters}_colors: {adata.uns[f'{new_clusters}_colors']}"
-    )
-
-    logger.info("Plotting UMAP with new cluster names...")
-    sc.pl.umap(
-        adata,
-        color=[cluster_name, new_clusters],
-        legend_loc="right margin",
-        legend_fontsize=12,
-        frameon=False,
-        ncols=2,  # Side by side
-        wspace=0.4,  # Space between plots
-        title=new_clusters,
-        show=False,
-        save=f"_{config.module_name}_{new_clusters}_combined_annotation.pdf",
-    )
-    logger.info(f"UMAP plot with new cluster names saved to {sc.settings.figdir}")
-
-    # Calculate the differentially expressed genes for every cluster,
-    # compared to the rest of the cells in our adata
-    logger.info(
-        f"Calculating differentially expressed genes for each cluster: {new_clusters}"
-    )
-    sc.tl.rank_genes_groups(adata, groupby=new_clusters, method="wilcoxon")
-
-    logger.info("Plotting the top differentially expressed genes for each cluster...")
-    sc.pl.rank_genes_groups_dotplot(
-        adata,
-        groupby=new_clusters,
-        standard_scale="var",
-        n_genes=5,
-        cmap=cmap,
-        show=False,
-        save=f"{config.module_name}_{new_clusters}.pdf",
-    )
-    logger.info(f"Dotplot saved to {sc.settings.figdir}")
-
-    # View specific gene expression
-    logger.info("Plotting genes of interest on tissue...")
-    ROI_list = adata.obs["ROI"].unique().tolist()
-    for roi in ROI_list:
-        adata_roi = adata[adata.obs["ROI"] == roi]
-        sq.pl.spatial_scatter(
-            adata_roi,
-            library_id="spatial",
-            shape=None,
-            outline=False,
-            color=new_clusters,
-            size=0.5,
-            figsize=(15, 15),
-            save=f"clusters_{roi}.pdf",
-            dpi=300,
+        # Ensure categorical
+        adata.obs[new_clusters] = adata.obs[new_clusters].astype("category")
+        # Create a palette for the new clusters
+        color_palette = sns.color_palette("hls", len(adata.obs[new_clusters].unique()))
+        adata.uns[f"{new_clusters}_colors"] = [
+            color for color in color_palette.as_hex()
+        ]
+        logger.info(
+            f"Saved palette {new_clusters}_colors: {adata.uns[f'{new_clusters}_colors']}"
         )
-        logger.info(f"Saved cluster plot for ROI {roi} to {module_dir}")
+
+        logger.info("Plotting UMAP with new cluster names...")
+        sc.pl.umap(
+            adata,
+            color=[cluster_name, new_clusters],
+            legend_loc="right margin",
+            legend_fontsize=12,
+            frameon=False,
+            ncols=2,  # Side by side
+            wspace=0.4,  # Space between plots
+            title=new_clusters,
+            show=False,
+            save=f"_{config.module_name}_{new_clusters}_combined_annotation.pdf",
+        )
+        logger.info(f"UMAP plot with new cluster names saved to {sc.settings.figdir}")
+
+        # Calculate the differentially expressed genes for every cluster,
+        # compared to the rest of the cells in our adata
+        logger.info(
+            f"Calculating differentially expressed genes for each cluster: {new_clusters}"
+        )
+        sc.tl.rank_genes_groups(adata, groupby=new_clusters, method="wilcoxon")
+
+        logger.info(
+            "Plotting the top differentially expressed genes for each cluster..."
+        )
+        sc.pl.rank_genes_groups_dotplot(
+            adata,
+            groupby=new_clusters,
+            standard_scale="var",
+            n_genes=5,
+            cmap=cmap,
+            show=False,
+            save=f"{config.module_name}_{new_clusters}.pdf",
+        )
+        logger.info(f"Dotplot saved to {sc.settings.figdir}")
+
+        # View specific gene expression
+        logger.info("Plotting genes of interest on tissue...")
+        ROI_list = adata.obs["ROI"].unique().tolist()
+        for roi in ROI_list:
+            adata_roi = adata[adata.obs["ROI"] == roi]
+            sq.pl.spatial_scatter(
+                adata_roi,
+                library_id="spatial",
+                shape=None,
+                outline=False,
+                color=new_clusters,
+                size=0.5,
+                figsize=(15, 15),
+                save=f"clusters_{roi}.pdf",
+                dpi=300,
+            )
+            logger.info(f"Saved cluster plot for ROI {roi} to {module_dir}")
+    else:
+        logger.info(
+            "No cluster to cell type mapping provided. Skipping renaming of clusters."
+        )
 
     # Save anndata object
     adata.write_h5ad(module_dir / "adata.h5ad")

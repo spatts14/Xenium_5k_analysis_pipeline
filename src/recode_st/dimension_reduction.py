@@ -296,7 +296,7 @@ def evaluate_resolutions(
         labels = adata.obs[key].astype(int).values
         n_clusters = len(np.unique(labels))
 
-        logger.info(f"  Resolution {res} ({n_clusters} clusters)...")
+        logger.info(f"Resolution {res} ({n_clusters} clusters)...")
 
         if n_clusters > 1:
             sil_score = silhouette_score(X, labels)
@@ -326,7 +326,7 @@ def evaluate_resolutions(
             }
         )
 
-        logger.info(f"    → Silhouette: {sil_score:.3f}")
+        logger.info(f"Silhouette: {sil_score:.3f}")
 
     metrics_df = pd.DataFrame(results)
 
@@ -334,7 +334,7 @@ def evaluate_resolutions(
     best_idx = metrics_df["silhouette_score"].idxmax()
     best = metrics_df.loc[best_idx]
     logger.info(
-        f"  Best resolution: {best['resolution']} "
+        f" Best resolution: {best['resolution']} "
         f"({best['n_clusters']} clusters, silhouette={best['silhouette_score']:.3f})"
     )
 
@@ -345,9 +345,8 @@ def plot_dimensionality_reduction(
     adata: sc.AnnData,
     module_dir: Path,
     norm_approach: str,
-    module_name: str,
     n_neighbors: int,
-    cluster_name: str = "leiden_best",
+    leiden_key: str = "leiden_best",
     cmap: Any = None,
     config: DimensionReductionModuleConfig | None = None,
 ) -> None:
@@ -357,10 +356,9 @@ def plot_dimensionality_reduction(
         adata: AnnData with computed UMAP and clusters
         module_dir: Directory to save figures
         norm_approach: Normalization approach label
-        module_name: Name of module for file naming
         n_neighbors: Number of neighbors used
-        cluster_name: Name of cluster annotation column
-        cmap: Colormap for plots
+        leiden_key: Leiden clustering column name
+        cmap: Colormap for continuous variables
         config: Configuration object with visualization settings
     """
     if cmap is None:
@@ -370,12 +368,11 @@ def plot_dimensionality_reduction(
 
     # Build color list
     color_list = ["total_counts", "n_genes_by_counts"]
-    if cluster_name in adata.obs.columns:
-        color_list.append(cluster_name)
-        logger.info(f"  Including '{cluster_name}' in plots")
+    if leiden_key in adata.obs.columns:
+        color_list.append(leiden_key)
+        logger.info(f"  Including '{leiden_key}' in plots")
     else:
-        logger.warning(f"  Cluster column '{cluster_name}' not found, skipping")
-
+        logger.warning(f"  Cluster column '{leiden_key}' not found, skipping")
     # Main UMAP plot
     sc.pl.umap(
         adata,
@@ -384,7 +381,7 @@ def plot_dimensionality_reduction(
         cmap=cmap,
         wspace=0.4,
         show=False,
-        save=f"_{module_name}_{norm_approach}_n{n_neighbors}_{cluster_name}.pdf",
+        save=f"_{leiden_key}_{norm_approach}_n{n_neighbors}.pdf",
         frameon=False,
     )
 
@@ -398,7 +395,7 @@ def plot_dimensionality_reduction(
             cmap=cmap,
             wspace=0.4,
             show=False,
-            save=f"_{module_name}_{norm_approach}_obs_fields.pdf",
+            save=f"_{leiden_key}_{norm_approach}_obs_fields.pdf",
             frameon=False,
         )
 
@@ -412,28 +409,28 @@ def plot_dimensionality_reduction(
             ncols=4,
             wspace=0.4,
             show=False,
-            save=f"_{module_name}_markers_{norm_approach}.pdf",
+            save=f"_{leiden_key}_markers_{norm_approach}.pdf",
             frameon=False,
         )
 
-    logger.info(f"  Plots saved to {module_dir}")
+    logger.info(f"Plots saved to {module_dir}")
 
 
 def plot_spatial_distribution(
     adata: sc.AnnData,
     module_dir: Path,
-    cluster_name: str = "leiden_best",
+    leiden_key: str = "leiden_best",
 ) -> None:
     """Plot spatial distribution of clusters for each ROI.
 
     Args:
         adata: AnnData with cluster annotations
         module_dir: Directory to save plots
-        cluster_name: Name of cluster annotation column
+        leiden_key: Leiden clustering column name
     """
-    if cluster_name not in adata.obs.columns:
+    if leiden_key not in adata.obs.columns:
         logger.warning(
-            f"Cluster column '{cluster_name}' not found, skipping spatial plots"
+            f"Cluster column '{leiden_key}' not found, skipping spatial plots"
         )
         return
 
@@ -441,7 +438,7 @@ def plot_spatial_distribution(
         logger.warning("'ROI' column not found, skipping spatial plots")
         return
 
-    logger.info(f"Plotting spatial distribution of '{cluster_name}'...")
+    logger.info(f"Plotting spatial distribution of '{leiden_key}'...")
 
     for roi in adata.obs["ROI"].unique():
         subset = adata[adata.obs["ROI"] == roi]
@@ -449,9 +446,9 @@ def plot_spatial_distribution(
             subset,
             library_id="spatial",
             shape=None,
-            color=[cluster_name],
+            color=[leiden_key],
             wspace=0.4,
-            save=module_dir / f"{cluster_name}_{roi}_spatial.pdf",
+            save=module_dir / f"{leiden_key}_{roi}_spatial.pdf",
         )
 
     logger.info(f"  Spatial plots saved to {module_dir}")
@@ -487,11 +484,14 @@ def run_dimension_reduction(
         subsample_strategy=config.subsample_strategy,
     )
 
-    # Compute PCA (single location, consistent parameters)
-    logger.info(f"Computing PCA (n_comps={config.n_pca})...")
-    sc.pp.pca(
-        adata, n_comps=config.n_pca, svd_solver="arpack", use_highly_variable=True
-    )
+    # Ensure PCA is computed (only compute if not already present)
+    if "X_pca" not in adata.obsm:
+        logger.info(f"Computing PCA (n_comps={config.n_pca})...")
+        sc.pp.pca(
+            adata, n_comps=config.n_pca, svd_solver="arpack", use_highly_variable=True
+        )
+    else:
+        logger.info("PCA already computed, skipping...")
 
     # Plot PCA variance
     sc.pl.pca_variance_ratio(
@@ -507,17 +507,19 @@ def run_dimension_reduction(
         adata=adata,
         n_pca=config.n_pca,
         n_neighbors=config.n_neighbors,
-        min_dist=config.min_dist if hasattr(config, "min_dist") else 0.1,
+        min_dist=0.1,
     )
 
-    # Compute clustering at multiple resolutions
-    res_list = config.res_list if hasattr(config, "res_list") else DEFAULT_RESOLUTIONS
-    adata = calculate_clusters(adata=adata, res_list=res_list)
+    # Compute clustering - use single resolution from config
+    adata = calculate_clusters(adata=adata, res_list=[config.resolution])
 
-    # Evaluate and select best resolution
-    metrics_df = evaluate_resolutions(adata, res_list=res_list, n_pcs=config.n_pca)
+    # Evaluate the single resolution
+    metrics_df = evaluate_resolutions(
+        adata, res_list=[config.resolution], n_pcs=config.n_pca
+    )
     metrics_df.to_csv(module_dir / "resolution_metrics.csv", index=False)
 
+    # Set the clustering result as 'leiden_best'
     best_res = metrics_df.loc[metrics_df["silhouette_score"].idxmax(), "resolution"]
     logger.info(f"Setting 'leiden_best' to leiden_res_{best_res}")
     adata.obs["leiden_best"] = adata.obs[f"leiden_res_{best_res}"]
@@ -532,9 +534,8 @@ def run_dimension_reduction(
         adata=adata,
         module_dir=module_dir,
         norm_approach=config.norm_approach,
-        module_name=config.module_name,
+        leiden_key="leiden_best",
         n_neighbors=config.n_neighbors,
-        cluster_name="leiden_best",
         cmap=cmap,
         config=config,
     )
@@ -542,7 +543,7 @@ def run_dimension_reduction(
     plot_spatial_distribution(
         adata=adata,
         module_dir=spatial_plots_dir,
-        cluster_name="leiden_best",
+        leiden_key="leiden_best",
     )
 
     logger.info(f"Dimension reduction module '{config.module_name}' complete.")

@@ -504,14 +504,15 @@ def run_dimension_reduction(
         n_pca=config.n_pca,
         n_neighbors=config.n_neighbors,
         min_dist=0.1,
+        spread=2.0,
     )
 
     # Compute clustering - use single resolution from config
-    adata = calculate_clusters(adata=adata, res_list=[config.resolution])
+    adata = calculate_clusters(adata=adata, res_list=[config.leiden_res])
 
     # Evaluate the single resolution
     metrics_df = evaluate_resolutions(
-        adata, res_list=[config.resolution], n_pcs=config.n_pca
+        adata, res_list=[config.leiden_res], n_pcs=config.n_pca
     )
     metrics_df.to_csv(module_dir / "resolution_metrics.csv", index=False)
 

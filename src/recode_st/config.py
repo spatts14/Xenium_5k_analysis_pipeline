@@ -80,8 +80,8 @@ class DimensionReductionModuleConfig(BaseModuleConfig):
     """number of principal components to compute"""
     n_neighbors: int
     """ number of neighbors for the neighborhood graph"""
-    resolution: list[float]
-    """resolution for leiden clustering"""
+    leiden_res: list[float]
+    """resolution list for leiden clustering"""
     norm_approach: Literal["scanpy_log", "sctransform", "cell_area", "none"] = (
         "cell_area"
     )

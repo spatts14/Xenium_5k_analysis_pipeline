@@ -220,7 +220,7 @@ def calculate_clusters(
 
     for res in res_list:
         key = f"leiden_res_{res}"
-        logger.info(f"  Resolution {res}...")
+        logger.info(f"Resolution {res}...")
 
         try:
             sc.tl.leiden(
@@ -232,7 +232,7 @@ def calculate_clusters(
                 random_state=random_state,
             )
         except Exception as e:
-            logger.warning(f"    {flavor} failed: {e}. Falling back to leidenalg...")
+            logger.warning(f"{flavor} failed: {e}. Falling back to leidenalg...")
             sc.tl.leiden(
                 adata,
                 resolution=res,
@@ -246,7 +246,7 @@ def calculate_clusters(
             raise ValueError(f"Clustering column '{key}' was not created.")
 
         n_clusters = adata.obs[key].nunique()
-        logger.info(f"    → {n_clusters} clusters")
+        logger.info(f"For {key} created {n_clusters} clusters")
 
     return adata
 

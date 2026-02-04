@@ -1,15 +1,18 @@
 """Dimension reduction module."""
 
 import warnings
+from collections import Counter
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Literal
 
 import geosketch
 import numpy as np
+import pandas as pd
 import scanpy as sc
 import seaborn as sns
 import squidpy as sq
+from sklearn.metrics import silhouette_samples, silhouette_score
 
 from recode_st.config import DimensionReductionModuleConfig, IOConfig
 from recode_st.helper_function import configure_scanpy_figures
@@ -181,8 +184,6 @@ def compute_dimensionality_reduction(
     n_pca: int = 30,  # number of PCA components to use to compute neighbors
     n_neighbors: int = 10,  # number of neighbors for graph
     min_dist: float = 0.5,  # minimum distance for UMAP
-    resolution: float = 0.5,  # resolution for Leiden clustering
-    cluster_name: str = "leiden",  # name for cluster annotation
 ) -> sc.AnnData:
     """Compute PCA, neighbors, UMAP, and clustering.
 
@@ -205,62 +206,152 @@ def compute_dimensionality_reduction(
     logger.info("Computing UMAP...")
     sc.tl.umap(adata, min_dist=min_dist, spread=2.0)
 
-    logger.info(f"Clustering with resolution={resolution}...")
+    return adata
 
+
+def calculate_clusters(
+    adata: sc.AnnData,
+    res_list: list[float] = [
+        0.1,
+        0.3,
+        0.5,
+        0.8,
+        1.0,
+    ],
+) -> sc.AnnData:
+    """Compute Leiden clustering.
+
+    Args:
+        adata: Input AnnData object
+        res_list: Resolution for Leiden clustering
+
+    Returns:
+        AnnData with computed clustering.
+    """
     flavor = "igraph"
     logger.info(
         f"Using the '{flavor}' implementation of Leiden for faster performance."
     )
 
-    try:
+    for res in res_list:
+        logger.info(f"Clustering with resolution={res}...")
+
+        # Cluster at this resolution
+        key = f"leiden_res_{res}"
         sc.tl.leiden(
             adata,
-            resolution=resolution,
-            key_added=cluster_name,
+            resolution=res,
+            key_added=key,
             flavor=flavor,  # Faster than default leidenalg
             n_iterations=2,  # Fewer iterations, usually sufficient
         )
         logger.info(
-            f"Leiden clustering completed successfully."
-            f"Added '{cluster_name} to adata.obs."
+            f"Leiden clustering completed successfully.Added '{key} to adata.obs."
         )
 
         # Verify the clustering was added
-        if cluster_name not in adata.obs.columns:
-            raise ValueError(
-                f"Clustering column '{cluster_name}' was not created successfully."
-            )
+        if key not in adata.obs.columns:
+            raise ValueError(f"Clustering column '{key}' was not created successfully.")
 
-        logger.info(
-            f"Number of clusters found: {len(adata.obs[cluster_name].unique())}"
-        )
-
-    except Exception as e:
-        logger.error(f"Leiden clustering failed with error: {e}")
-        logger.info("Falling back to default leidenalg implementation...")
-
-        # Fallback to default implementation
-        sc.tl.leiden(
-            adata,
-            resolution=resolution,
-            key_added=cluster_name,
-            flavor="leidenalg",
-            n_iterations=2,
-        )
-
-        # Verify the fallback worked
-        if cluster_name not in adata.obs.columns:
-            raise ValueError(
-                f"Both igraph and leidenalg implementations failed"
-                f"to create column '{cluster_name}'"
-            )
-
-        logger.info(
-            f"Fallback using leidenalg successful."
-            f"Number of clusters: {len(adata.obs[cluster_name].unique())}"
-        )
-
+        logger.info(f"Number of clusters found: {len(adata.obs[key].unique())}")
     return adata
+
+
+def evaluate_resolutions(
+    adata: sc.AnnData,
+    res_list: list[float] = [
+        0.1,
+        0.3,
+        0.5,
+        0.8,
+        1.0,
+    ],
+    n_pcs: int = 30,
+    use_rep: str = "X_pca",
+) -> pd.DataFrame:
+    """Evaluate pre-computed clustering with silhouette scores.
+
+    Note: This function assumes clustering has already been computed using
+    calculate_clusters(). It does NOT recompute clusters.
+
+    Args:
+        adata: AnnData object with 'leiden_res_{resolution}' columns
+        res_list: List of resolution values to evaluate
+        n_pcs: Number of PCs to use for silhouette calculation
+        use_rep: Representation to use for silhouette score
+
+    Returns:
+        DataFrame with resolution metrics (n_clusters, silhouette scores, cluster sizes)
+    """
+    logger.info(f"Evaluating {len(res_list)} resolutions...")
+
+    # Validate that clustering exists
+    missing = [res for res in res_list if f"leiden_res_{res}" not in adata.obs.columns]
+    if missing:
+        raise ValueError(
+            f"Clustering not found for resolutions: {missing}. "
+            f"Run calculate_clusters() first."
+        )
+
+    # Get PCA representation
+    if use_rep not in adata.obsm:
+        raise ValueError(f"Representation '{use_rep}' not found in adata.obsm.")
+    X = adata.obsm[use_rep][:, :n_pcs]
+
+    results = []
+
+    for res in res_list:
+        key = f"leiden_res_{res}"
+        labels = adata.obs[key].astype(int).values
+        n_clusters = len(np.unique(labels))
+
+        logger.info(f"  Evaluating resolution {res} ({n_clusters} clusters)...")
+
+        # Calculate silhouette scores (skip if only 1 cluster)
+        if n_clusters > 1:
+            sil_score = silhouette_score(X, labels)
+            sil_samples = silhouette_samples(X, labels)
+
+            # Per-cluster silhouette scores
+            cluster_sil_scores = {
+                cid: sil_samples[labels == cid].mean() for cid in np.unique(labels)
+            }
+            min_cluster_sil = min(cluster_sil_scores.values())
+            max_cluster_sil = max(cluster_sil_scores.values())
+        else:
+            sil_score = np.nan
+            min_cluster_sil = np.nan
+            max_cluster_sil = np.nan
+
+        # Cluster sizes
+        cluster_sizes = Counter(labels)
+
+        results.append(
+            {
+                "resolution": res,
+                "n_clusters": n_clusters,
+                "silhouette_score": sil_score,
+                "min_cluster_silhouette": min_cluster_sil,
+                "max_cluster_silhouette": max_cluster_sil,
+                "min_cluster_size": min(cluster_sizes.values()),
+                "max_cluster_size": max(cluster_sizes.values()),
+                "cluster_key": key,
+            }
+        )
+
+        logger.info(f"Silhouette={sil_score:.3f}")
+
+    metrics_df = pd.DataFrame(results)
+
+    # Log summary
+    best_idx = metrics_df["silhouette_score"].idxmax()
+    best = metrics_df.loc[best_idx]
+    logger.info(
+        f"Best resolution by silhouette: {best['resolution']} "
+        f"({best['n_clusters']} clusters, silhouette={best['silhouette_score']:.3f})"
+    )
+
+    return metrics_df
 
 
 def plot_dimensionality_reduction(
@@ -406,9 +497,6 @@ def run_dimension_reduction(
     # Set figure directory for this module (overrides global setting)
     sc.settings.figdir = module_dir
 
-    # Define variables
-    CLUSTER_NAME = config.cluster_name
-
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)
@@ -484,10 +572,22 @@ def run_dimension_reduction(
         adata=adata,
         n_pca=config.n_pca,
         n_neighbors=config.n_neighbors,
-        resolution=config.resolution,
-        cluster_name=CLUSTER_NAME,
         min_dist=0.1,
     )
+
+    # Compute clustering
+    logger.info("Computing clustering...")
+    adata = calculate_clusters(adata=adata, res_list=[config.resolution])
+
+    # Evaluate clustering quality (no re-clustering)
+    metrics_df = evaluate_resolutions(
+        adata, res_list=[config.resolution], n_pcs=config.n_pca
+    )
+
+    # Set best clustering as main cluster annotation
+    best_res = metrics_df.loc[metrics_df["silhouette_score"].idxmax(), "resolution"]
+    logger.info(f"Setting leiden_res_{best_res} as primary cluster annotation...")
+    adata.obs["leiden_best"] = adata.obs[f"leiden_res_{best_res}"]
 
     logger.info("Saving adata with computed dimension reduction...")
     output_path = module_dir / "adata.h5ad"
@@ -499,7 +599,7 @@ def run_dimension_reduction(
     # Plot results
     plot_dimensionality_reduction(
         adata=adata,
-        cluster_name=CLUSTER_NAME,
+        cluster_name="leiden_best",
         norm_approach=config.norm_approach,
         module_name=config.module_name,
         n_neighbors=config.n_neighbors,
@@ -511,8 +611,8 @@ def run_dimension_reduction(
     logger.info("Plotting spatial distribution of clusters...")
     plot_spatial_distribution(
         adata=adata,
-        cluster_name=CLUSTER_NAME,
+        cluster_name="leiden_best",
         module_dir=spatial_plots_dir,
     )
 
-    logger.info(f"\nDimension reduction module '{config.module_name}' complete.\n")
+    logger.info(f"Dimension reduction module '{config.module_name}' complete.")

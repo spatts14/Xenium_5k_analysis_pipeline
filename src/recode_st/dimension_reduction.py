@@ -181,7 +181,7 @@ def compute_dimensionality_reduction(
     n_pca: int = 30,  # number of PCA components to use to compute neighbors
     n_neighbors: int = 10,  # number of neighbors for graph
     min_dist: float = 0.5,  # minimum distance for UMAP
-    resolution: float = 1,  # resolution for Leiden clustering
+    resolution: float = 0.5,  # resolution for Leiden clustering
     cluster_name: str = "leiden",  # name for cluster annotation
 ) -> sc.AnnData:
     """Compute PCA, neighbors, UMAP, and clustering.
@@ -309,7 +309,7 @@ def plot_dimensionality_reduction(
         cmap=cmap,
         wspace=0.4,
         show=False,
-        save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}.pdf",
+        save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}_{config.resolution}.pdf",
         frameon=False,
     )
 
@@ -323,7 +323,7 @@ def plot_dimensionality_reduction(
             cmap=cmap,
             wspace=0.4,
             show=False,
-            save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}_obs_fields.pdf",
+            save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}_{config.resolution}_obs_fields.pdf",
             frameon=False,
         )
     else:
@@ -339,7 +339,7 @@ def plot_dimensionality_reduction(
             ncols=4,
             wspace=0.4,
             show=False,
-            save=f"_{module_name}_cell_markers_{norm_approach}_neighbors_{n_neighbors}.pdf",
+            save=f"_{module_name}_cell_markers_{norm_approach}_neighbors_{n_neighbors}_{config.resolution}.pdf",
             frameon=False,
         )
     else:

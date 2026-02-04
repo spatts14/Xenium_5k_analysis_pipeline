@@ -198,7 +198,6 @@ def calculate_clusters(
         res_list: List of resolution values for clustering
         flavor: Leiden implementation ('igraph' or 'leidenalg')
         n_iterations: Number of Leiden iterations
-        random_state: Random state for reproducibility
 
     Returns:
         AnnData with 'leiden_res_{resolution}' columns added.

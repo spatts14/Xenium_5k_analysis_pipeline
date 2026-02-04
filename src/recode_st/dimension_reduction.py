@@ -190,7 +190,6 @@ def calculate_clusters(
     res_list: list[float] = DEFAULT_RESOLUTIONS,
     flavor: str = "igraph",
     n_iterations: int = 2,
-    random_state: int = 42,
 ) -> sc.AnnData:
     """Compute Leiden clustering at multiple resolutions.
 
@@ -229,7 +228,6 @@ def calculate_clusters(
                 key_added=key,
                 flavor=flavor,
                 n_iterations=n_iterations,
-                random_state=random_state,
             )
         except Exception as e:
             logger.warning(f"{flavor} failed: {e}. Falling back to leidenalg...")
@@ -239,7 +237,6 @@ def calculate_clusters(
                 key_added=key,
                 flavor="leidenalg",
                 n_iterations=n_iterations,
-                random_state=random_state,
             )
 
         if key not in adata.obs.columns:

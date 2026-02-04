@@ -24,6 +24,9 @@ logger = getLogger(__name__)
 
 SubsampleStrategy = Literal["none", "compute", "load"]
 
+# Default resolution list - single source of truth
+DEFAULT_RESOLUTIONS: list[float] = [0.1, 0.3, 0.5, 0.8, 1.0]
+
 
 def create_subsample(
     adata: sc.AnnData,
@@ -64,7 +67,7 @@ def create_subsample(
         n_roi_sketch = max(min_cells_per_roi, n_roi_sketch)
         n_roi_sketch = min(n_roi_sketch, len(roi_data))
 
-        logger.info(f"  ROI {roi}: sketching {n_roi_sketch} from {len(roi_data)} cells")
+        logger.info(f" ROI {roi}: sketching {n_roi_sketch} from {len(roi_data)} cells")
 
         # Sketch or take all
         if n_roi_sketch >= len(roi_data):
@@ -80,12 +83,10 @@ def create_subsample(
     adata_sub = adata[sampled_indices, :].copy()
 
     # Log results
-    logger.info("\nSubsampling Results:")
-    logger.info(f"  Original: {orig_size} cells")
-    logger.info(f"  Subsampled: {len(adata_sub)} cells")
-    logger.info(f"  Reduction: {100 * (1 - len(adata_sub) / orig_size):.1f}%")
-    logger.info("\nCells per ROI:")
-    logger.info(adata_sub.obs["ROI"].value_counts().sort_index())
+    logger.info(" Subsampling Results:")
+    logger.info(f"Original: {orig_size} cells")
+    logger.info(f"Subsampled: {len(adata_sub)} cells")
+    logger.info(f"Reduction: {100 * (1 - len(adata_sub) / orig_size):.1f}%")
 
     return adata_sub
 
@@ -93,16 +94,15 @@ def create_subsample(
 def load_data(
     io_config: IOConfig,
     config: DimensionReductionModuleConfig,
-    norm_approach: str,
-    subsample_strategy: SubsampleStrategy = "none",  # make default "none"
+    subsample_strategy: SubsampleStrategy = "none",
 ) -> sc.AnnData:
-    """Load data - if subsample, load sub-sampled data.
+    """Load data with optional subsampling.
 
     Args:
         io_config: IO configuration
         config: Dimension reduction module configuration
-        norm_approach: Normalization approach label
         subsample_strategy: One of "none", "compute", or "load"
+
     Returns:
         AnnData object ready for analysis
 
@@ -110,7 +110,6 @@ def load_data(
         FileNotFoundError: If load strategy is used but file doesn't exist
         ValueError: If invalid strategy is provided
     """
-    # Validate subsample_strategy
     valid_strategies = {"none", "compute", "load"}
     if subsample_strategy not in valid_strategies:
         raise ValueError(
@@ -120,7 +119,9 @@ def load_data(
 
     # Define file paths
     data_path = (
-        Path(io_config.output_dir) / "quality_control" / f"adata_{norm_approach}.h5ad"
+        Path(io_config.output_dir)
+        / "quality_control"
+        / f"adata_{config.norm_approach}.h5ad"
     )
     module_dir = Path(io_config.output_dir) / config.module_name
     subsample_path = module_dir / f"adata_subsample_{config.norm_approach}.h5ad"
@@ -128,164 +129,154 @@ def load_data(
     if subsample_strategy == "none":
         logger.info("Loading full dataset (no subsampling)...")
         adata = sc.read_h5ad(data_path)
-
-        # Compute PCA if needed
-        if "X_pca" not in adata.obsm:
-            logger.info("Computing PCA...")
-            sc.pp.pca(adata, n_comps=config.n_pca)
-
-        logger.info(f"Loaded {len(adata)} cells")
+        logger.info(f"  Loaded {len(adata)} cells")
         return adata
 
     elif subsample_strategy == "compute":
         logger.info("Creating new subsample...")
-
-        # Load full dataset
         adata = sc.read_h5ad(data_path)
-
-        # Create subsample
         adata_sub = create_subsample(
             adata,
             n_total=config.subsample_n_total,
             min_cells_per_roi=config.subsample_min_cells_per_roi,
             n_pca=config.n_pca,
         )
-        # Save subsample
-        logger.info(f"Saving subsample to {subsample_path}")
+        logger.info(f"  Saving subsample to {subsample_path}")
         adata_sub.write_h5ad(subsample_path)
-
         return adata_sub
 
-    elif subsample_strategy == "load":
+    else:  # "load"
         logger.info("Loading existing subsample...")
-
         if not subsample_path.exists():
             raise FileNotFoundError(
                 f"Subsample file not found: {subsample_path}\n"
                 f"Run with subsample_strategy='compute' first."
             )
-
         adata = sc.read_h5ad(subsample_path)
         logger.info(f"Loaded {len(adata)} cells")
-        logger.info("Cells per ROI:")
-        logger.info(adata.obs["ROI"].value_counts().sort_index())
-
         return adata
-
-    else:
-        raise ValueError(
-            f"Invalid subsample_strategy: '{subsample_strategy}'. "
-            f"Must be one of: 'none', 'compute', 'load'"
-        )
 
 
 def compute_dimensionality_reduction(
     adata: sc.AnnData,
-    n_pca: int = 30,  # number of PCA components to use to compute neighbors
-    n_neighbors: int = 10,  # number of neighbors for graph
-    min_dist: float = 0.5,  # minimum distance for UMAP
+    n_pca: int = 30,
+    n_neighbors: int = 10,
+    min_dist: float = 0.1,
+    spread: float = 2.0,
 ) -> sc.AnnData:
-    """Compute PCA, neighbors, UMAP, and clustering.
+    """Compute PCA, neighbors, and UMAP.
 
     Args:
         adata: Input AnnData object
-        n_pca: Number of PCA components to use
-        n_neighbors: Number of neighbors for graph
-        resolution: Resolution for Leiden clustering
-        cluster_name: Name for cluster annotation
+        n_pca: Number of PCA components to use for neighbors
+        n_neighbors: Number of neighbors for graph construction
         min_dist: Minimum distance for UMAP
+        spread: Spread parameter for UMAP
 
     Returns:
-        Nothing. Saves figures and AnnData with computed dimensionality reduction.
+        AnnData with computed neighbors and UMAP embeddings.
     """
-    logger.info(
-        f"Computing neighbors and UMAP with n_pca={n_pca}, n_neighbors={n_neighbors}..."
-    )
+    logger.info(f"Computing neighbors (n_pcs={n_pca}, n_neighbors={n_neighbors})...")
     sc.pp.neighbors(adata, n_neighbors=n_neighbors, n_pcs=n_pca)
 
-    logger.info("Computing UMAP...")
-    sc.tl.umap(adata, min_dist=min_dist, spread=2.0)
+    logger.info(f"Computing UMAP (min_dist={min_dist}, spread={spread})...")
+    sc.tl.umap(adata, min_dist=min_dist, spread=spread)
 
     return adata
 
 
 def calculate_clusters(
     adata: sc.AnnData,
-    res_list: list[float] = [
-        0.1,
-        0.3,
-        0.5,
-        0.8,
-        1.0,
-    ],
+    res_list: list[float] = DEFAULT_RESOLUTIONS,
+    flavor: str = "igraph",
+    n_iterations: int = 2,
+    random_state: int = 42,
 ) -> sc.AnnData:
-    """Compute Leiden clustering.
+    """Compute Leiden clustering at multiple resolutions.
 
     Args:
-        adata: Input AnnData object
-        res_list: Resolution for Leiden clustering
+        adata: Input AnnData object (must have neighbors computed)
+        res_list: List of resolution values for clustering
+        flavor: Leiden implementation ('igraph' or 'leidenalg')
+        n_iterations: Number of Leiden iterations
+        random_state: Random state for reproducibility
 
     Returns:
-        AnnData with computed clustering.
+        AnnData with 'leiden_res_{resolution}' columns added.
+
+    Raises:
+        ValueError: If neighbors have not been computed.
     """
-    flavor = "igraph"
-    logger.info(
-        f"Using the '{flavor}' implementation of Leiden for faster performance."
-    )
+    if res_list is None:
+        res_list = DEFAULT_RESOLUTIONS
+
+    if "neighbors" not in adata.uns:
+        raise ValueError(
+            "Neighbors not computed. Run compute_dimensionality_reduction() first."
+        )
+
+    logger.info(f"Computing Leiden clustering at {len(res_list)} resolutions...")
+    logger.info(f"  Using '{flavor}' implementation")
 
     for res in res_list:
-        logger.info(f"Clustering with resolution={res}...")
-
-        # Cluster at this resolution
         key = f"leiden_res_{res}"
-        sc.tl.leiden(
-            adata,
-            resolution=res,
-            key_added=key,
-            flavor=flavor,  # Faster than default leidenalg
-            n_iterations=2,  # Fewer iterations, usually sufficient
-        )
-        logger.info(
-            f"Leiden clustering completed successfully.Added '{key} to adata.obs."
-        )
+        logger.info(f"  Resolution {res}...")
 
-        # Verify the clustering was added
+        try:
+            sc.tl.leiden(
+                adata,
+                resolution=res,
+                key_added=key,
+                flavor=flavor,
+                n_iterations=n_iterations,
+                random_state=random_state,
+            )
+        except Exception as e:
+            logger.warning(f"    {flavor} failed: {e}. Falling back to leidenalg...")
+            sc.tl.leiden(
+                adata,
+                resolution=res,
+                key_added=key,
+                flavor="leidenalg",
+                n_iterations=n_iterations,
+                random_state=random_state,
+            )
+
         if key not in adata.obs.columns:
-            raise ValueError(f"Clustering column '{key}' was not created successfully.")
+            raise ValueError(f"Clustering column '{key}' was not created.")
 
-        logger.info(f"Number of clusters found: {len(adata.obs[key].unique())}")
+        n_clusters = adata.obs[key].nunique()
+        logger.info(f"    → {n_clusters} clusters")
+
     return adata
 
 
 def evaluate_resolutions(
     adata: sc.AnnData,
-    res_list: list[float] = [
-        0.1,
-        0.3,
-        0.5,
-        0.8,
-        1.0,
-    ],
+    res_list: list[float] = DEFAULT_RESOLUTIONS,
     n_pcs: int = 30,
     use_rep: str = "X_pca",
 ) -> pd.DataFrame:
     """Evaluate pre-computed clustering with silhouette scores.
 
-    Note: This function assumes clustering has already been computed using
-    calculate_clusters(). It does NOT recompute clusters.
-
     Args:
-        adata: AnnData object with 'leiden_res_{resolution}' columns
+        adata: AnnData with 'leiden_res_{resolution}' columns
         res_list: List of resolution values to evaluate
-        n_pcs: Number of PCs to use for silhouette calculation
+        n_pcs: Number of PCs for silhouette calculation
         use_rep: Representation to use for silhouette score
 
     Returns:
-        DataFrame with resolution metrics (n_clusters, silhouette scores, cluster sizes)
+        DataFrame with metrics: resolution, n_clusters, silhouette scores, cluster sizes
+
+    Raises:
+        ValueError: If clustering columns are missing or representation not found.
     """
+    if res_list is None:
+        res_list = DEFAULT_RESOLUTIONS
+
     logger.info(f"Evaluating {len(res_list)} resolutions...")
 
-    # Validate that clustering exists
+    # Validate clustering exists
     missing = [res for res in res_list if f"leiden_res_{res}" not in adata.obs.columns]
     if missing:
         raise ValueError(
@@ -293,11 +284,11 @@ def evaluate_resolutions(
             f"Run calculate_clusters() first."
         )
 
-    # Get PCA representation
+    # Validate representation exists
     if use_rep not in adata.obsm:
         raise ValueError(f"Representation '{use_rep}' not found in adata.obsm.")
-    X = adata.obsm[use_rep][:, :n_pcs]
 
+    X = adata.obsm[use_rep][:, :n_pcs]
     results = []
 
     for res in res_list:
@@ -305,25 +296,21 @@ def evaluate_resolutions(
         labels = adata.obs[key].astype(int).values
         n_clusters = len(np.unique(labels))
 
-        logger.info(f"  Evaluating resolution {res} ({n_clusters} clusters)...")
+        logger.info(f"  Resolution {res} ({n_clusters} clusters)...")
 
-        # Calculate silhouette scores (skip if only 1 cluster)
         if n_clusters > 1:
             sil_score = silhouette_score(X, labels)
             sil_samples = silhouette_samples(X, labels)
-
-            # Per-cluster silhouette scores
-            cluster_sil_scores = {
+            cluster_sil = {
                 cid: sil_samples[labels == cid].mean() for cid in np.unique(labels)
             }
-            min_cluster_sil = min(cluster_sil_scores.values())
-            max_cluster_sil = max(cluster_sil_scores.values())
+            min_cluster_sil = min(cluster_sil.values())
+            max_cluster_sil = max(cluster_sil.values())
         else:
             sil_score = np.nan
             min_cluster_sil = np.nan
             max_cluster_sil = np.nan
 
-        # Cluster sizes
         cluster_sizes = Counter(labels)
 
         results.append(
@@ -339,15 +326,15 @@ def evaluate_resolutions(
             }
         )
 
-        logger.info(f"Silhouette={sil_score:.3f}")
+        logger.info(f"    → Silhouette: {sil_score:.3f}")
 
     metrics_df = pd.DataFrame(results)
 
-    # Log summary
+    # Log best resolution
     best_idx = metrics_df["silhouette_score"].idxmax()
     best = metrics_df.loc[best_idx]
     logger.info(
-        f"Best resolution by silhouette: {best['resolution']} "
+        f"  Best resolution: {best['resolution']} "
         f"({best['n_clusters']} clusters, silhouette={best['silhouette_score']:.3f})"
     )
 
@@ -356,43 +343,40 @@ def evaluate_resolutions(
 
 def plot_dimensionality_reduction(
     adata: sc.AnnData,
+    module_dir: Path,
     norm_approach: str,
     module_name: str,
     n_neighbors: int,
-    figdir: Path,
-    cmap: Any = sns.color_palette("crest", as_cmap=True),
     cluster_name: str = "leiden_best",
-    config: DimensionReductionModuleConfig = None,
+    cmap: Any = None,
+    config: DimensionReductionModuleConfig | None = None,
 ) -> None:
     """Create and save dimensionality reduction plots.
 
     Args:
         adata: AnnData with computed UMAP and clusters
+        module_dir: Directory to save figures
         norm_approach: Normalization approach label
         module_name: Name of module for file naming
         n_neighbors: Number of neighbors used
-        figdir: Directory to save figures
+        cluster_name: Name of cluster annotation column
         cmap: Colormap for plots
-        cluster_name: Name of cluster annotation
-        config: Configuration object containing visualization settings
+        config: Configuration object with visualization settings
     """
+    if cmap is None:
+        cmap = sns.color_palette("crest", as_cmap=True)
+
     logger.info("Plotting UMAPs...")
 
-    # QC and metadata plots
-    logger.info("Plotting UMAPs with QC meterics...")
-
-    # Check if cluster column exists before plotting
+    # Build color list
     color_list = ["total_counts", "n_genes_by_counts"]
     if cluster_name in adata.obs.columns:
-        color_list.append(cluster_name)  # adding cluster_name to color list
-        logger.info(f"Including '{cluster_name}' in UMAP plots.")
+        color_list.append(cluster_name)
+        logger.info(f"  Including '{cluster_name}' in plots")
     else:
-        logger.warning(
-            f"Cluster column '{cluster_name}' not found in adata.obs."
-            f"Skipping cluster visualization."
-        )
-        logger.info(f"Available columns in adata.obs: {list(adata.obs.columns)}")
+        logger.warning(f"  Cluster column '{cluster_name}' not found, skipping")
 
+    # Main UMAP plot
     sc.pl.umap(
         adata,
         color=color_list,
@@ -400,13 +384,13 @@ def plot_dimensionality_reduction(
         cmap=cmap,
         wspace=0.4,
         show=False,
-        save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}_{cluster_name}.pdf",
+        save=f"_{module_name}_{norm_approach}_n{n_neighbors}_{cluster_name}.pdf",
         frameon=False,
     )
 
-    # Plot observation fields if available
+    # Observation fields
     if config and config.obs_vis_list:
-        logger.info("Plotting UMAPs with observation fields...")
+        logger.info("  Plotting observation fields...")
         sc.pl.umap(
             adata,
             color=config.obs_vis_list,
@@ -414,15 +398,13 @@ def plot_dimensionality_reduction(
             cmap=cmap,
             wspace=0.4,
             show=False,
-            save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}_{cluster_name}_obs_fields.pdf",
+            save=f"_{module_name}_{norm_approach}_obs_fields.pdf",
             frameon=False,
         )
-    else:
-        logger.info("Skipping observation fields plot (obs_vis_list not configured)")
 
-    # Plot marker genes if available
+    # Marker genes
     if config and config.marker_genes:
-        logger.info("Plotting UMAPs with marker genes...")
+        logger.info("  Plotting marker genes...")
         sc.pl.umap(
             adata,
             color=config.marker_genes,
@@ -430,35 +412,36 @@ def plot_dimensionality_reduction(
             ncols=4,
             wspace=0.4,
             show=False,
-            save=f"_{module_name}_cell_markers_{norm_approach}_neighbors_{n_neighbors}_{cluster_name}.pdf",
+            save=f"_{module_name}_markers_{norm_approach}.pdf",
             frameon=False,
         )
-    else:
-        logger.info("Skipping marker genes plot (marker_genes not configured)")
 
-    logger.info(f"UMAP plots saved to {figdir}")
+    logger.info(f"  Plots saved to {module_dir}")
 
 
 def plot_spatial_distribution(
-    module_dir: Path, adata: sc.AnnData, cluster_name: str = "leiden_best"
+    adata: sc.AnnData,
+    module_dir: Path,
+    cluster_name: str = "leiden_best",
 ) -> None:
     """Plot spatial distribution of clusters for each ROI.
 
     Args:
         adata: AnnData with cluster annotations
-        cluster_name: Name of cluster annotation
         module_dir: Directory to save plots
+        cluster_name: Name of cluster annotation column
     """
-    # Check if cluster column exists before plotting
     if cluster_name not in adata.obs.columns:
         logger.warning(
-            f"Cluster column '{cluster_name}' not found in adata.obs."
-            f"Skipping spatial cluster plots."
+            f"Cluster column '{cluster_name}' not found, skipping spatial plots"
         )
-        logger.info(f"Available columns in adata.obs: {list(adata.obs.columns)}")
         return
 
-    logger.info(f"Plotting {cluster_name} spatial distribution...")
+    if "ROI" not in adata.obs.columns:
+        logger.warning("'ROI' column not found, skipping spatial plots")
+        return
+
+    logger.info(f"Plotting spatial distribution of '{cluster_name}'...")
 
     for roi in adata.obs["ROI"].unique():
         subset = adata[adata.obs["ROI"] == roi]
@@ -471,146 +454,96 @@ def plot_spatial_distribution(
             save=module_dir / f"{cluster_name}_{roi}_spatial.pdf",
         )
 
-    logger.info(f"Spatial plots saved to {module_dir}")
+    logger.info(f"  Spatial plots saved to {module_dir}")
 
 
 def run_dimension_reduction(
-    config: DimensionReductionModuleConfig, io_config: IOConfig
+    config: DimensionReductionModuleConfig,
+    io_config: IOConfig,
 ) -> sc.AnnData:
-    """Run dimension reduction on Xenium data.
+    """Run complete dimension reduction pipeline.
 
     Args:
         config: Configuration for dimension reduction
         io_config: IO configuration
 
     Returns:
-        AnnData object with computed dimensionality reduction
+        AnnData with computed dimensionality reduction and clustering
     """
-    # Setup
-    module_dir = io_config.output_dir / config.module_name
+    # Setup directories
+    module_dir = Path(io_config.output_dir) / config.module_name
     module_dir.mkdir(exist_ok=True, parents=True)
     spatial_plots_dir = module_dir / "spatial_plots"
     spatial_plots_dir.mkdir(exist_ok=True, parents=True)
 
-    # Set figure directory for this module (overrides global setting)
     sc.settings.figdir = module_dir
-
-    # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("Spectral", as_cmap=True)
-    palette = sns.color_palette("hls", 16)
 
+    # Load data
     adata = load_data(
         io_config=io_config,
         config=config,
-        norm_approach=config.norm_approach,
         subsample_strategy=config.subsample_strategy,
     )
 
-    # Plot PCA variance
-    logger.info("Computing and plotting PCA variance ratio...")
-    sc.pp.pca(adata, n_comps=80, svd_solver="arpack", use_highly_variable=True)
+    # Compute PCA (single location, consistent parameters)
+    logger.info(f"Computing PCA (n_comps={config.n_pca})...")
+    sc.pp.pca(
+        adata, n_comps=config.n_pca, svd_solver="arpack", use_highly_variable=True
+    )
 
-    logger.info("Plotting PCA variance...")
+    # Plot PCA variance
     sc.pl.pca_variance_ratio(
         adata,
         log=True,
-        n_pcs=80,
+        n_pcs=config.n_pca,
         show=False,
         save=f"_{config.module_name}.pdf",
     )
 
-    logger.info("Plotting PCA scatter plots...")
-    sc.pl.pca(
-        adata,
-        color=["total_counts", "n_genes_by_counts"],
-        cmap=cmap,
-        dimensions=[(0, 1)],
-        ncols=2,
-        size=2,
-        show=False,
-        save=f"_{config.module_name}.pdf",
-    )
-
-    # Plot PCA with observation fields if available
-    if config.obs_vis_list:
-        logger.info("Plotting PCA with observation fields...")
-        for _obs_field in config.obs_vis_list:
-            sc.pl.pca(
-                adata,
-                color=_obs_field,
-                palette=palette,
-                dimensions=[(0, 1)],
-                ncols=3,
-                size=2,
-                alpha=0.5,
-                show=False,
-                save=f"_{config.module_name}_{_obs_field}_PC1_PC2.pdf",
-            )
-        for _obs_field in config.obs_vis_list:
-            sc.pl.pca(
-                adata,
-                color=_obs_field,
-                palette=palette,
-                dimensions=[(2, 3)],
-                ncols=3,
-                size=2,
-                alpha=0.5,
-                show=False,
-                save=f"_{config.module_name}_{_obs_field}_PC3_PC4.pdf",
-            )
-    else:
-        logger.info(
-            "Skipping PCA observation fields plot (obs_vis_list not configured)"
-        )
-
-    # Compute dimensionality reduction
-    logger.info("Computing dimension reduction...")
+    # Compute neighbors and UMAP
     adata = compute_dimensionality_reduction(
         adata=adata,
         n_pca=config.n_pca,
         n_neighbors=config.n_neighbors,
-        min_dist=0.1,
+        min_dist=config.min_dist if hasattr(config, "min_dist") else 0.1,
     )
 
-    # Compute clustering
-    logger.info("Computing clustering...")
-    adata = calculate_clusters(adata=adata, res_list=[config.resolution])
+    # Compute clustering at multiple resolutions
+    res_list = config.res_list if hasattr(config, "res_list") else DEFAULT_RESOLUTIONS
+    adata = calculate_clusters(adata=adata, res_list=res_list)
 
-    # Evaluate clustering quality (no re-clustering)
-    metrics_df = evaluate_resolutions(
-        adata, res_list=[config.resolution], n_pcs=config.n_pca
-    )
+    # Evaluate and select best resolution
+    metrics_df = evaluate_resolutions(adata, res_list=res_list, n_pcs=config.n_pca)
+    metrics_df.to_csv(module_dir / "resolution_metrics.csv", index=False)
 
-    # Set best clustering as main cluster annotation
     best_res = metrics_df.loc[metrics_df["silhouette_score"].idxmax(), "resolution"]
-    logger.info(f"Setting leiden_res_{best_res} as primary cluster annotation...")
+    logger.info(f"Setting 'leiden_best' to leiden_res_{best_res}")
     adata.obs["leiden_best"] = adata.obs[f"leiden_res_{best_res}"]
 
-    logger.info("Saving adata with computed dimension reduction...")
+    # Save results
     output_path = module_dir / "adata.h5ad"
     adata.write_h5ad(output_path)
-    logger.info(f"Final results saved to {output_path}")
-
-    logger.info("Plotting dimension reduction...")
+    logger.info(f"Results saved to {output_path}")
 
     # Plot results
     plot_dimensionality_reduction(
         adata=adata,
-        cluster_name="leiden_best",
+        module_dir=module_dir,
         norm_approach=config.norm_approach,
         module_name=config.module_name,
         n_neighbors=config.n_neighbors,
+        cluster_name="leiden_best",
         cmap=cmap,
-        figdir=module_dir,
         config=config,
     )
 
-    logger.info("Plotting spatial distribution of clusters...")
     plot_spatial_distribution(
         adata=adata,
-        cluster_name="leiden_best",
         module_dir=spatial_plots_dir,
+        cluster_name="leiden_best",
     )
 
     logger.info(f"Dimension reduction module '{config.module_name}' complete.")
+    return adata

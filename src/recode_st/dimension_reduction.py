@@ -361,7 +361,7 @@ def plot_dimensionality_reduction(
     n_neighbors: int,
     figdir: Path,
     cmap: Any = sns.color_palette("crest", as_cmap=True),
-    cluster_name: str = "leiden",
+    cluster_name: str = "leiden_best",
     config: DimensionReductionModuleConfig = None,
 ) -> None:
     """Create and save dimensionality reduction plots.
@@ -400,7 +400,7 @@ def plot_dimensionality_reduction(
         cmap=cmap,
         wspace=0.4,
         show=False,
-        save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}_{config.resolution}.pdf",
+        save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}_{cluster_name}.pdf",
         frameon=False,
     )
 
@@ -414,7 +414,7 @@ def plot_dimensionality_reduction(
             cmap=cmap,
             wspace=0.4,
             show=False,
-            save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}_{config.resolution}_obs_fields.pdf",
+            save=f"_{module_name}_{norm_approach}_neighbors_{n_neighbors}_{cluster_name}_obs_fields.pdf",
             frameon=False,
         )
     else:
@@ -430,7 +430,7 @@ def plot_dimensionality_reduction(
             ncols=4,
             wspace=0.4,
             show=False,
-            save=f"_{module_name}_cell_markers_{norm_approach}_neighbors_{n_neighbors}_{config.resolution}.pdf",
+            save=f"_{module_name}_cell_markers_{norm_approach}_neighbors_{n_neighbors}_{cluster_name}.pdf",
             frameon=False,
         )
     else:
@@ -440,9 +440,7 @@ def plot_dimensionality_reduction(
 
 
 def plot_spatial_distribution(
-    adata: sc.AnnData,
-    cluster_name: str,
-    module_dir: Path,
+    module_dir: Path, adata: sc.AnnData, cluster_name: str = "leiden_best"
 ) -> None:
     """Plot spatial distribution of clusters for each ROI.
 

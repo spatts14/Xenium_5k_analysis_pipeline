@@ -113,9 +113,6 @@ def run_resolvi(
     logger.info(f"Hidden units: {n_hidden}")
     logger.info(f"Layers: {n_layers}")
     logger.info("Training on:")
-    logger.info(
-        f"{'GPU' if use_gpu and scvi.settings.dl_pin_memory_gpu_training else 'CPU'}"
-    )
 
     # Train model
     logger.info(f"Training ResolVI (max {max_epochs} epochs)...")

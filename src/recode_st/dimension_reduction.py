@@ -255,6 +255,7 @@ def evaluate_resolutions(
     res_list: list[float] = DEFAULT_RESOLUTIONS,
     n_pcs: int = 30,
     use_rep: str = "X_pca",
+    max_cells_for_silhouette: int = 10_000,
 ) -> pd.DataFrame:
     """Evaluate pre-computed clustering with silhouette scores.
 
@@ -263,6 +264,7 @@ def evaluate_resolutions(
         res_list: List of resolution values to evaluate
         n_pcs: Number of PCs for silhouette calculation
         use_rep: Representation to use for silhouette score
+        max_cells_for_silhouette: Maximum number of cells to use for silhouette
 
     Returns:
         DataFrame with metrics: resolution, n_clusters, silhouette scores, cluster sizes
@@ -270,6 +272,8 @@ def evaluate_resolutions(
     Raises:
         ValueError: If clustering columns are missing or representation not found.
     """
+    random_state = 1996
+
     if res_list is None:
         res_list = DEFAULT_RESOLUTIONS
 
@@ -288,20 +292,61 @@ def evaluate_resolutions(
         raise ValueError(f"Representation '{use_rep}' not found in adata.obsm.")
 
     X = adata.obsm[use_rep][:, :n_pcs]
+    n_cells = len(adata)
     results = []
 
     for res in res_list:
         key = f"leiden_res_{res}"
         labels = adata.obs[key].astype(int).values
-        n_clusters = len(np.unique(labels))
+        unique_labels = np.unique(labels)
+        n_clusters = len(unique_labels)
 
         logger.info(f"Resolution {res} ({n_clusters} clusters)...")
 
         if n_clusters > 1:
-            sil_score = silhouette_score(X, labels)
-            sil_samples = silhouette_samples(X, labels)
+            # Subsample if dataset is large
+            if n_cells > max_cells_for_silhouette:
+                logger.info(
+                    f"Subsampling {max_cells_for_silhouette} cells "
+                    f"(stratified) for silhouette calculation..."
+                )
+                rng = np.random.default_rng(random_state)
+
+                # Stratified sampling: proportional representation of each cluster
+                subsample_idx = []
+                cluster_sizes = Counter(labels)
+
+                for cluster_id in unique_labels:
+                    cluster_mask = labels == cluster_id
+                    cluster_indices = np.where(cluster_mask)[0]
+                    cluster_size = len(cluster_indices)
+
+                    # Calculate proportional sample size for this cluster
+                    n_sample = int(max_cells_for_silhouette * (cluster_size / n_cells))
+                    # Ensure at least 1 cell per cluster, but not more than cluster size
+                    n_sample = max(1, min(n_sample, cluster_size))
+
+                    sampled = rng.choice(cluster_indices, size=n_sample, replace=False)
+                    subsample_idx.extend(sampled)
+
+                subsample_idx = np.array(subsample_idx)
+                X_sil = X[subsample_idx]
+                labels_sil = labels[subsample_idx]
+                logger.info(
+                    f"  Sampled {len(subsample_idx)} cells across {n_clusters} clusters"
+                )
+            else:
+                X_sil = X
+                labels_sil = labels
+
+            # Compute silhouette scores on (possibly subsampled) data
+            sil_score = silhouette_score(X_sil, labels_sil)
+            sil_samples = silhouette_samples(X_sil, labels_sil)
+
+            # Per-cluster silhouette (on subsampled data)
             cluster_sil = {
-                cid: sil_samples[labels == cid].mean() for cid in np.unique(labels)
+                cid: sil_samples[labels_sil == cid].mean()
+                for cid in np.unique(labels_sil)
             }
             min_cluster_sil = min(cluster_sil.values())
             max_cluster_sil = max(cluster_sil.values())
@@ -310,6 +355,7 @@ def evaluate_resolutions(
             min_cluster_sil = np.nan
             max_cluster_sil = np.nan
 
+        # Cluster sizes from FULL data (not subsampled)
         cluster_sizes = Counter(labels)
 
         results.append(
@@ -333,7 +379,7 @@ def evaluate_resolutions(
     best_idx = metrics_df["silhouette_score"].idxmax()
     best = metrics_df.loc[best_idx]
     logger.info(
-        f" Best resolution: {best['resolution']} "
+        f"Best resolution: {best['resolution']} "
         f"({best['n_clusters']} clusters, silhouette={best['silhouette_score']:.3f})"
     )
 

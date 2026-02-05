@@ -511,11 +511,11 @@ def run_dimension_reduction(
     )
 
     # Compute clustering - use single resolution from config
-    adata = calculate_clusters(adata=adata, res_list=[config.leiden_res])
+    adata = calculate_clusters(adata=adata, res_list=config.leiden_res)
 
     # Evaluate the single resolution
     metrics_df = evaluate_resolutions(
-        adata, res_list=[config.leiden_res], n_pcs=config.n_pca
+        adata, res_list=config.leiden_res, n_pcs=config.n_pca
     )
     metrics_df.to_csv(module_dir / "resolution_metrics.csv", index=False)
 

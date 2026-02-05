@@ -70,7 +70,7 @@ module_name = "dimension_reduction_multiple_res" # Name of the module - will be 
 norm_approach = "cell_area" # Normalization approach to use
 n_pca = 40 # number of principal components to use for neighborhood graph
 n_neighbors = 20 # number of neighbors for the neighborhood graph
-leiden_res = 0.4 # resolution for leiden clustering
+leiden_res = [0.1, 0.3, 0.5, 0.8, 1.0] # resolution for leiden clustering
 obs_vis_list = ["batch", "sample_ID", "condition", "timepoint", "ROI"]
 marker_genes = [
     "PTPRC",

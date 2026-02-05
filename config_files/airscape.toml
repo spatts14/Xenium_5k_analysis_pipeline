@@ -90,19 +90,3 @@ marker_genes = [
 #resolution = "leiden_best"
 #clusters_label = "leiden_best" # haven't done manual annotation
 # cluster_to_cell_type mapping is optional - remove this line if you don't want to rename clusters
-
-# VIEW IMAGE MODULE
-[modules.view_images]
-module_name = "view_images"
-cluster_name = "leiden_best"
-gene_list = [
-    "SPP1",
-    "CD68",
-    "MRC1",
-    "CTHRC1",
-    "COL1A1",
-    "PDGFRA",
-    "CD3E",
-    "CD8A",
-    "CD8B",
-]

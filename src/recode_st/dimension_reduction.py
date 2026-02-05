@@ -205,6 +205,9 @@ def calculate_clusters(
     Raises:
         ValueError: If neighbors have not been computed.
     """
+    # Confirm res_list is a list
+    logger.info(f"Resolution list {res_list} is a {type(res_list).__name__}")
+
     if res_list is None:
         res_list = DEFAULT_RESOLUTIONS
 

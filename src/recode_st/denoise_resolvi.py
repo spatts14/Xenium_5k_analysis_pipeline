@@ -220,7 +220,9 @@ def run_denoise_resolvi(config: DenoiseResolVIModuleConfig, io_config: IOConfig)
     logger.info("Staring module to denoise STx data...")
 
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "quality_control" / "adata.h5ad")
+    adata = sc.read_h5ad(
+        io_config.output_dir / "quality_control" / "adata_cell_area.h5ad"
+    )
 
     logger.info("Run ResolVI model to denoise...")
     model, adata = run_resolvi(

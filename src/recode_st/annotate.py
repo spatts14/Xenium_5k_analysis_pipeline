@@ -56,6 +56,8 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "dimension_reduction" / "adata.h5ad")
 
+    logger.info(f"adata: {adata.obs.columns.tolist()}")
+
     # Ensure categorical
     adata.obs[cluster_name] = adata.obs[cluster_name].astype("category")
     # Create a palette for the clusters

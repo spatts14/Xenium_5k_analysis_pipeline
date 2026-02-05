@@ -87,6 +87,6 @@ marker_genes = [
 # ANNOTATION MODULE
 [modules.annotate]
 module_name = "annotate"
-resolution = "leiden_best"
+cluster_name = "leiden_best"
 clusters_label = "leiden_best" # haven't done manual annotation
 # cluster_to_cell_type mapping is optional - remove this line if you don't want to rename clusters

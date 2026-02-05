@@ -106,8 +106,8 @@ class AnnotateModuleConfig(BaseModuleConfig):
     cluster_name: str
     """Name of the cluster column in adata.obs to use for annotation."""
 
-    leiden_res: str
-    """Name of the leiden cluster column in adata.obs."""
+    clusters_label: str
+    """Name of the new cluster column in adata.obs."""
 
     cluster_to_cell_type: dict[str, str] | None = None
     """Mapping from cluster labels to cell type annotations. Optional."""

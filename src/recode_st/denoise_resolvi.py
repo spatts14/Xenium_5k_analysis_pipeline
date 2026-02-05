@@ -3,6 +3,7 @@
 import warnings
 from logging import getLogger
 
+import numpy as np
 import scanpy as sc
 import scvi
 
@@ -14,6 +15,47 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 logger = getLogger(__name__)
+
+
+def check_layers(adata):
+    """Check that adata has the necessary layers and obsm for ResolVI.
+
+    Args:
+        adata: AnnData object to check.
+
+    Raises:
+        ValueError: If required layers or obsm keys are missing.
+
+    Returns:
+        adata: AnnData object to check.
+    """
+    if "counts" not in adata.layers:
+        logger.info("adata does not have 'counts' layer!")
+        raise ValueError("adata must have raw counts in adata.layers['counts']")
+    if "X_spatial" not in adata.obsm:
+        # Check common alternative keys
+        if "spatial" in adata.obsm:
+            logger.info("Copying 'spatial' to 'X_spatial' for ResolVI...")
+            adata.obsm["X_spatial"] = adata.obsm["spatial"].copy()
+        elif "X_centroid" in adata.obsm:
+            logger.info("Copying 'X_centroid' to 'X_spatial' for ResolVI...")
+            adata.obsm["X_spatial"] = adata.obsm["X_centroid"].copy()
+        elif "x_centroid" in adata.obs and "y_centroid" in adata.obs:
+            # Xenium often stores coordinates in obs
+            logger.info("Creating 'X_spatial' from x_centroid/y_centroid columns...")
+            adata.obsm["X_spatial"] = np.column_stack(
+                [adata.obs["x_centroid"].values, adata.obs["y_centroid"].values]
+            )
+        else:
+            logger.error(f"Available obsm keys: {list(adata.obsm.keys())}")
+            logger.error(f"Available obs columns: {list(adata.obs.columns)}")
+            raise ValueError(
+                "Could not find spatial coordinates. ResolVI requires coordinates in "
+                "adata.obsm['X_spatial']. Please add them manually."
+            )
+    logger.info(f"X_spatial shape: {adata.obsm['X_spatial'].shape}")
+
+    return adata
 
 
 def run_resolvi(
@@ -53,11 +95,6 @@ def run_resolvi(
             AnnData with denoised representations added
     """
     logger.info("Staring ResolVI denoise function...")
-
-    # Check adata has raw counts
-    if "counts" not in adata.layers:
-        logger.info("adata does not have 'counts' layer!")
-        raise ValueError("adata must have raw counts in adata.layers['counts']")
 
     logger.info("Set up adata for ResolVI...")
     scvi.external.RESOLVI.setup_anndata(adata, layer="counts", batch_key="ROI")
@@ -223,6 +260,9 @@ def run_denoise_resolvi(config: DenoiseResolVIModuleConfig, io_config: IOConfig)
     adata = sc.read_h5ad(
         io_config.output_dir / "quality_control" / "adata_cell_area.h5ad"
     )
+
+    logger.info("Checking all needed layers needed for ResolVI are present...")
+    check_layers(adata)
 
     logger.info("Run ResolVI model to denoise...")
     model, adata = run_resolvi(

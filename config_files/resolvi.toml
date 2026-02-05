@@ -43,5 +43,6 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 
 # DENOISE MODULE
 [modules.denoise_resolvi]
+module_name = "denoise_resolvi"
 n_latent = 30
 max_epochs = 100

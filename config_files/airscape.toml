@@ -66,12 +66,11 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 
 # DIMENSION REDUCTION MODULE
 [modules.dimension_reduction]
-module_name = "dimension_reduction" # Name of the module - will be used in the output directory name
+module_name = "dimension_reduction_multiple_res" # Name of the module - will be used in the output directory name
 norm_approach = "cell_area" # Normalization approach to use
 n_pca = 40 # number of principal components to use for neighborhood graph
 n_neighbors = 20 # number of neighbors for the neighborhood graph
-resolution = 0.4 # resolution for leiden clustering
-cluster_name = "leiden" # name of the cluster column in adata.obs
+leiden_res = 0.4 # resolution for leiden clustering
 obs_vis_list = ["batch", "sample_ID", "condition", "timepoint", "ROI"]
 marker_genes = [
     "PTPRC",
@@ -86,10 +85,10 @@ marker_genes = [
 
 
 # ANNOTATION MODULE
-[modules.annotate]
-module_name = "annotate"
-leiden_res = "leiden_best"     # has the igraph annotation
-clusters_label = "leiden_best" # haven't done manual annotation
+#[modules.annotate]
+#module_name = "annotate"
+#resolution = "leiden_best"
+#clusters_label = "leiden_best" # haven't done manual annotation
 # cluster_to_cell_type mapping is optional - remove this line if you don't want to rename clusters
 
 # VIEW IMAGE MODULE

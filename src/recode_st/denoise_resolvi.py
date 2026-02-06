@@ -123,7 +123,6 @@ def run_resolvi(
         early_stopping=early_stopping,
         early_stopping_patience=20,
         check_val_every_n_epoch=5,
-        plan_kwargs={"lr": 1e-3},
     )
 
     logger.info(f"Training completed at epoch {model.history['elbo_train'].shape[0]}")

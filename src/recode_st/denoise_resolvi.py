@@ -120,9 +120,8 @@ def run_resolvi(
     model.train(
         max_epochs=max_epochs,
         batch_size=batch_size,
-        early_stopping=early_stopping,
-        early_stopping_patience=20,
-        check_val_every_n_epoch=5,
+        early_stopping=False,  # Disabled since no validation set is configured
+        check_val_every_n_epoch=None,  # No validation monitoring
     )
 
     logger.info(f"Training completed at epoch {model.history['elbo_train'].shape[0]}")

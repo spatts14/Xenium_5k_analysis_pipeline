@@ -21,15 +21,16 @@ def subset_cell_types(adata, celltype_col="mannual_annotation"):
 
     # Subset the AnnData object
     for celltype in celltype_list:
+        print(f"Subsetting for cell type: {celltype}")
         if celltype not in adata.obs[celltype_col].unique():
             raise ValueError(
                 f"Cell type '{celltype}' not found in adata.obs['{celltype_col}']"
             )
         subset_adata = adata[adata.obs[celltype_col] == celltype].copy()
 
-    # Save the subsetted AnnData object
-    subset_adata.write_h5ad(module_dir / f"adata_subset_{celltype}.h5ad")
-    print(f"Subsetted AnnData object saved to adata_subset_{celltype}.h5ad saved")
+        # Save the subsetted AnnData object
+        subset_adata.write_h5ad(module_dir / f"adata_subset_{celltype}.h5ad")
+        print(f"Subsetted AnnData object saved to adata_subset_{celltype}.h5ad saved")
 
 
 # Set path for output

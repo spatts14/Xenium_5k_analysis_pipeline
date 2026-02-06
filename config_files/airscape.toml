@@ -87,8 +87,8 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 # ANNOTATION MODULE
 [modules.annotate]
 module_name = "annotate"
-leiden_cluster = "leiden_best"
-mannual_annotation = "leiden_best" # haven't done manual annotation
+leiden_cluster = "leiden"
+mannual_annotation = "mannual_annotation" # haven't done manual annotation
 # cluster_to_cell_type mapping is optional - remove this line if you don't want to rename clusters
 [modules.annotate.cluster_to_cell_type]
 "0" = "Airway epithelium"

@@ -11,12 +11,18 @@ module load tools/prod
 module load Biopython/1.84-foss-2024a
 
 # Change to directory
-cd /rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline/src/manual_src
+cd /rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline
 
 # Activate virtual environment
 source xenium_5k_venv/bin/activate
 
+# Verify the Python script exists
+if [ ! -f "src/manual_src/subset_celltype.py" ]; then
+    echo "Error: subset_celltype.py not found in src/manual_src/!"
+    exit 1
+fi
+
 # Run with error logging
 echo "Starting subset_celltype.py at $(date)"
-python subset_celltype.py
+python src/manual_src/subset_celltype.py
 echo "Completed subset_celltype.py at $(date)"

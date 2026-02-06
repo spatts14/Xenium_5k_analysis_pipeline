@@ -54,7 +54,9 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
 
     # Import data
     logger.info("Loading Xenium data...")
-    adata = sc.read_h5ad(io_config.output_dir / "dimension_reduction" / "adata.h5ad")
+    adata = sc.read_h5ad(
+        io_config.output_dir / "dimension_reduction_multiple_res" / "adata.h5ad"
+    )
 
     logger.info(f"adata: {adata.obs.columns.tolist()}")
 

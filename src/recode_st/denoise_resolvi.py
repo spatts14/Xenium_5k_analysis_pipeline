@@ -123,7 +123,6 @@ def run_resolvi(
         early_stopping=early_stopping,
         early_stopping_patience=20,
         check_val_every_n_epoch=5,
-        train_size=0.9,
         plan_kwargs={"lr": 1e-3},
     )
 

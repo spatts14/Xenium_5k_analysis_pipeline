@@ -96,4 +96,4 @@ mannual_annotation = "mannual_annotation" # haven't done manual annotation
 "2" = "Alveolar epithelium"
 "3" = "Blood endothelial cells"
 "4" = "Smooth muscle"
-"5" = "TBC"
+"5" = "Immune"

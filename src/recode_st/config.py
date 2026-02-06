@@ -103,11 +103,11 @@ class IntegrateSCVIModuleConfig(BaseModuleConfig):
 class AnnotateModuleConfig(BaseModuleConfig):
     """Configuration for the Annotate module."""
 
-    cluster_name: str
+    leiden_cluster: str
     """Name of the cluster column in adata.obs to use for annotation."""
 
-    clusters_label: str
-    """Name of the new cluster column in adata.obs."""
+    mannual_annotation: str
+    """Name of the manually annotated column in adata.obs."""
 
     cluster_to_cell_type: dict[str, str] | None = None
     """Mapping from cluster labels to cell type annotations. Optional."""

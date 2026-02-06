@@ -40,8 +40,8 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     """Run annotation on Xenium data."""
     # Set variables
     module_dir = io_config.output_dir / config.module_name
-    cluster_name = config.cluster_name
-    new_clusters = config.clusters_label
+    cluster_name = config.leiden_cluster
+    mannual_annotation = config.mannual_annotation
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -166,52 +166,56 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
 
         logger.info("Renaming clusters based on markers...")
         cluster_to_cell_type_dict = config.cluster_to_cell_type  # import from config
-        adata.obs[new_clusters] = adata.obs[cluster_name].map(cluster_to_cell_type_dict)
+        adata.obs[mannual_annotation] = adata.obs[cluster_name].map(
+            cluster_to_cell_type_dict
+        )
 
         # Ensure categorical
-        adata.obs[new_clusters] = adata.obs[new_clusters].astype("category")
+        adata.obs[mannual_annotation] = adata.obs[mannual_annotation].astype("category")
         # Create a palette for the new clusters
-        color_palette = sns.color_palette("hls", len(adata.obs[new_clusters].unique()))
-        adata.uns[f"{new_clusters}_colors"] = [
+        color_palette = sns.color_palette(
+            "hls", len(adata.obs[mannual_annotation].unique())
+        )
+        adata.uns[f"{mannual_annotation}_colors"] = [
             color for color in color_palette.as_hex()
         ]
         logger.info(
-            f"Saved palette {new_clusters}_colors: {adata.uns[f'{new_clusters}_colors']}"
+            f"Saved palette {mannual_annotation}_colors: {adata.uns[f'{mannual_annotation}_colors']}"
         )
 
         logger.info("Plotting UMAP with new cluster names...")
         sc.pl.umap(
             adata,
-            color=[cluster_name, new_clusters],
+            color=[cluster_name, mannual_annotation],
             legend_loc="right margin",
             legend_fontsize=12,
             frameon=False,
             ncols=2,  # Side by side
             wspace=0.4,  # Space between plots
-            title=new_clusters,
+            title=mannual_annotation,
             show=False,
-            save=f"_{config.module_name}_{new_clusters}_combined_annotation.pdf",
+            save=f"_{config.module_name}_{mannual_annotation}_combined_annotation.pdf",
         )
         logger.info(f"UMAP plot with new cluster names saved to {sc.settings.figdir}")
 
         # Calculate the differentially expressed genes for every cluster,
         # compared to the rest of the cells in our adata
         logger.info(
-            f"Calculating differentially expressed genes for each cluster: {new_clusters}"
+            f"Calculating differentially expressed genes for each cluster: {mannual_annotation}"
         )
-        sc.tl.rank_genes_groups(adata, groupby=new_clusters, method="wilcoxon")
+        sc.tl.rank_genes_groups(adata, groupby=mannual_annotation, method="wilcoxon")
 
         logger.info(
             "Plotting the top differentially expressed genes for each cluster..."
         )
         sc.pl.rank_genes_groups_dotplot(
             adata,
-            groupby=new_clusters,
+            groupby=mannual_annotation,
             standard_scale="var",
             n_genes=5,
             cmap=cmap,
             show=False,
-            save=f"{config.module_name}_{new_clusters}.pdf",
+            save=f"{config.module_name}_{mannual_annotation}.pdf",
         )
         logger.info(f"Dotplot saved to {sc.settings.figdir}")
 
@@ -225,7 +229,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
                 library_id="spatial",
                 shape=None,
                 outline=False,
-                color=new_clusters,
+                color=mannual_annotation,
                 size=0.5,
                 figsize=(15, 15),
                 save=f"clusters_{roi}.pdf",

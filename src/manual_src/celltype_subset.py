@@ -28,9 +28,12 @@ def subset_cell_types(adata, celltype_col="mannual_annotation"):
             )
         subset_adata = adata[adata.obs[celltype_col] == celltype].copy()
 
+        # Make filename safe
+        celltype_safe = celltype.replace(" ", "_").replace("/", "_")
+
         # Save the subsetted AnnData object
-        subset_adata.write_h5ad(module_dir / f"adata_subset_{celltype}.h5ad")
-        print(f"Subsetted AnnData object saved to adata_subset_{celltype}.h5ad saved")
+        subset_adata.write_h5ad(module_dir / f"adata_subset_{celltype_safe}.h5ad")
+        print(f"Subsetted AnnData object saved to adata_subset_{celltype_safe}.h5ad")
 
 
 # Set path for output

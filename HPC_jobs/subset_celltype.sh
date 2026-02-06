@@ -18,5 +18,5 @@ source xenium_5k_venv/bin/activate
 
 # Run with error logging
 echo "Starting subset_celltype.py at $(date)"
-python src/recode_st/subset_celltype.py
+python subset_celltype.py
 echo "Completed subset_celltype.py at $(date)"

@@ -17,6 +17,7 @@ cd /rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline
 source xenium_5k_venv/bin/activate
 
 # Run with error logging
-echo "Starting celltype_subset.py at $(date)"
-python src/manual_src/celltype_subset.py
-echo "Completed celltype_subset.py at $(date)"
+echo "Starting at $(date)"
+# python src/manual_src/celltype_subset.py
+python src/manual_src/celltype_level_1.py
+echo "Completed at $(date)"

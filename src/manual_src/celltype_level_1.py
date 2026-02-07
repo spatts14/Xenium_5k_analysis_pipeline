@@ -190,7 +190,7 @@ cmap_blue = sns.color_palette("ch:start=.2,rot=-.3", as_cmap=True)
 color_palette_level_1 = sns.color_palette("hls", 12)
 
 # Load data
-adata = sc.read_h5ad(dir / "celltype_subset/{h5ad_file}")
+adata = sc.read_h5ad(dir / f"celltype_subset/{h5ad_file}")
 
 # UMAP plot colored by manual annotation
 sc.pl.umap(

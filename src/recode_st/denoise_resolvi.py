@@ -66,7 +66,7 @@ def run_resolvi(
     max_epochs=400,
     batch_size=256,
     early_stopping=True,
-    use_gpu=False,  # change to False for HPC for quicker job scheduling
+    use_gpu=True,
 ):
     """Run ResolVI denoising on QC-filtered Xenium data.
 

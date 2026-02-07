@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -l walltime=12:0:0
-#PBS -lselect=1:ncpus=1:mem=512gb
+#PBS -lselect=1:ncpus=:mem=512gb
 #PBS -N subset_celltype
 #PBS -j oe
 

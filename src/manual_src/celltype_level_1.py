@@ -161,9 +161,10 @@ seed_everything(19960915)
 h5ad_file = "adata_subset_Immune.h5ad"
 subset = "immune"
 mannual_annotation = "mannual_annotation"
-annotation_level_1 = "immune"
 res = 0.5
-subset_key = "immune_" + str(res)
+annotation_level_0 = subset + "_level_0"
+annotation_level_1 = subset + "_level_1"
+subset_key = subset + "_" + str(res)
 
 # Set directories
 dir = Path(
@@ -201,7 +202,7 @@ sc.pl.umap(
     frameon=False,
     ncols=2,
     wspace=0.4,
-    save=f"_{subset}_level_0.pdf",
+    save=f"_{annotation_level_0}.pdf",
 )
 
 
@@ -292,9 +293,11 @@ adata.obs[annotation_level_1] = (
     adata.obs[subset_key].map(annotation_dict).astype("category")
 )
 
-# Set colors for annotation_level_1
+# Set colors for annotation_level_1 - match number of colors to number of categories
+n_categories = len(adata.obs[annotation_level_1].cat.categories)
+color_palette_annotation = sns.color_palette("hls", n_categories)
 adata.uns[f"{annotation_level_1}_colors"] = [
-    color for color in color_palette_level_1.as_hex()
+    color for color in color_palette_annotation.as_hex()
 ]
 
 # Plot UMAP colored by annotation_level_1
@@ -318,7 +321,8 @@ for roi in ROI_list:
     cats = adata_roi.obs[annotation_level_1].cat.categories
     color_map = dict(
         zip(
-            adata.obs[annotation_level_1].cat.categories, color_palette_level_1.as_hex()
+            adata.obs[annotation_level_1].cat.categories,
+            color_palette_annotation.as_hex(),
         )
     )
 

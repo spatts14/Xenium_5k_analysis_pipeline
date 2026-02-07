@@ -1,6 +1,8 @@
 #!/bin/bash
-#PBS -l walltime=8:0:0
-#PBS -lselect=1:ncpus=16:mem=512gb
+#PBS -l walltime=12:0:0
+#PBS -lselect=1:ncpus=8:mem=512gb
+#PBS -N subset_celltype
+#PBS -j oe
 
 # Load production tools
 module load tools/prod
@@ -14,6 +16,7 @@ cd /rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline
 # Activate virtual environment
 source xenium_5k_venv/bin/activate
 
-# Run
-#python /rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline/src/manual_src/hlca_full_filt_process.py
-python /rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline/src/manual_src/umap_hlca.py
+# Run with error logging
+echo "Starting celltype_subset.py at $(date)"
+python src/manual_src/celltype_subset.py
+echo "Completed celltype_subset.py at $(date)"

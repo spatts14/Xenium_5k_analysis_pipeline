@@ -87,6 +87,8 @@ module_name = "annotate"
 cluster_name = "leiden"
 clusters_label = "manual_annotation"
 
+# Optional: Mapping from cluster numbers to cell type names
+# If omitted, clusters will not be renamed to cell types
 [modules.annotate.cluster_to_cell_type]
 "0" = "Epithelial cells"
 "1" = "Fibroblasts"

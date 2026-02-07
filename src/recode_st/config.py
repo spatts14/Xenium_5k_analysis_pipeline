@@ -57,6 +57,16 @@ class DoubletIdentificationModuleConfig(BaseModuleConfig):
     """Configuration for the Doublet Identification module."""
 
 
+class DenoiseResolVIModuleConfig(BaseModuleConfig):
+    """Configuration for the Denoising and Resolution using ResolVI module."""
+
+    n_latent: int
+    """Dimensionality of the latent space."""
+
+    max_epochs: int
+    """Number of training epochs."""
+
+
 class DimensionReductionModuleConfig(BaseModuleConfig):
     """Configuration for the Quality Control module."""
 
@@ -70,8 +80,8 @@ class DimensionReductionModuleConfig(BaseModuleConfig):
     """number of principal components to compute"""
     n_neighbors: int
     """ number of neighbors for the neighborhood graph"""
-    resolution: float
-    """resolution for leiden clustering"""
+    leiden_res: list[float]
+    """resolution list for leiden clustering"""
     norm_approach: Literal["scanpy_log", "sctransform", "cell_area", "none"] = (
         "cell_area"
     )
@@ -93,14 +103,14 @@ class IntegrateSCVIModuleConfig(BaseModuleConfig):
 class AnnotateModuleConfig(BaseModuleConfig):
     """Configuration for the Annotate module."""
 
-    cluster_name: str
+    leiden_cluster: str
     """Name of the cluster column in adata.obs to use for annotation."""
 
-    clusters_label: str
-    """Name of the new cluster column in adata.obs."""
+    mannual_annotation: str
+    """Name of the manually annotated column in adata.obs."""
 
-    cluster_to_cell_type: dict[str, str]
-    """Mapping from cluster labels to cell type annotations."""
+    cluster_to_cell_type: dict[str, str] | None = None
+    """Mapping from cluster labels to cell type annotations. Optional."""
 
 
 class PsuedobulkModuleConfig(BaseModuleConfig):
@@ -115,6 +125,9 @@ class PsuedobulkModuleConfig(BaseModuleConfig):
 
 class ViewImagesModuleConfig(BaseModuleConfig):
     """Configuration for the View Images module."""
+
+    cluster_name: str
+    """Name of the cluster column in adata.obs to use for visualization."""
 
     gene_list: tuple[str, ...]
     """List of genes to visualize on tissue. A tuple of any length."""
@@ -200,6 +213,9 @@ class ModulesConfig(BaseModel):
 
     quality_control: QualityControlModuleConfig | None = None
     """Configuration for the Quality Control module."""
+
+    denoise_resolvi: DenoiseResolVIModuleConfig | None = None
+    """Configuration for the Denoising and Resolution uusing ResolVI module."""
 
     doublet_identification: DoubletIdentificationModuleConfig | None = None
     """Configuration for doublet detection with ovrlypy module."""

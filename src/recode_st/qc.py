@@ -9,7 +9,6 @@ import scanpy as sc
 import scipy.sparse as sp
 import scTransform
 import seaborn as sns
-from zarr.errors import PathNotFoundError
 
 from recode_st.config import IOConfig, QualityControlModuleConfig
 from recode_st.helper_function import configure_scanpy_figures
@@ -20,43 +19,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 logger = getLogger(__name__)
 
 
-def load_data(config: QualityControlModuleConfig, io_config: IOConfig):
-    """Load Xenium data.
-
-    Args:
-        io_config: IO configuration
-        config: Quality control module configuration
-
-    Raises:
-        err: If the data file is not found or is not a valid AnnData file
-    """
-    # Set variables
-    subsample_data = config.subsample_data
-
-    # If using subsampled data, load that
-    if subsample_data is True:
-        logger.info("Loading subsampled Xenium data...")
-        subsample_path = io_config.output_dir / "0.5_subsample_data" / "adata.h5ad"
-        adata = sc.read_h5ad(subsample_path)
-        logger.info(f"Dataset contains {len(adata)} cells.")
-
-    else:
-        try:
-            logger.info("Loading Xenium data...")
-            combined_path = io_config.adata_dir / "_all_samples.h5ad"
-
-            # Import data
-            adata = sc.read_h5ad(combined_path)
-            logger.info(f"Dataset contains {len(adata)} cells.")
-
-        except PathNotFoundError as err:
-            logger.error(
-                f"File not found (or not a valid AnnData file): {combined_path}"
-            )
-            raise err
-
-
-def plot_metrics(module_dir, adata):
+def plot_metrics(module_dir, adata, filter_status):
     """Generates and saves histograms summarizing key cell metrics.
 
     This function creates a 1x4 grid of histograms visualizing:
@@ -74,6 +37,7 @@ def plot_metrics(module_dir, adata):
             - 'n_genes_by_counts'
             - 'cell_area'
             - 'nucleus_area'
+        filter_status (str): Description of the filtering status (e.g. "pre-filtering").
 
     Returns:
         None
@@ -95,15 +59,63 @@ def plot_metrics(module_dir, adata):
         adata.obs["nucleus_area"] / adata.obs["cell_area"], kde=False, ax=axs[3]
     )
 
-    fig.suptitle("QC metrics pre-normalization", fontsize=16)
+    fig.suptitle(f"QC metrics pre-normalization and {filter_status}", fontsize=16)
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
 
     # Save figure
-    output_path = module_dir / "cell_summary_histograms.pdf"
+    filter_status = filter_status.replace("-", "_").lower()
+    output_path = module_dir / f"cell_summary_histograms_{filter_status}.pdf"
     plt.savefig(output_path, dpi=300)
     plt.close()
     logger.info(f"Saved plots to {output_path}")
+
+
+def plot_scatter_genes_v_count(module_dir, adata, filter_status, hue=None):
+    """Generate scatter plot of number of genes vs total counts per cell.
+
+    Args:
+        module_dir: Directory to save the plot
+        adata: AnnData object with cell metrics
+        hue: Column in adata.obs to color points by
+        filter_status: Status of filtering (e.g., "pre-filtering", "post-filtering")
+
+    Returns:
+        None.
+    """
+    filter_status_save = filter_status.replace("-", "_").lower()
+    sns.set_theme(style="white")
+    fig, ax = plt.subplots(figsize=(10, 8))
+    sns.scatterplot(
+        data=adata.obs,
+        x="n_genes_by_counts",
+        y="total_counts",
+        hue=hue,
+        palette="Spectral",
+        s=5,
+        alpha=0.5,
+        ax=ax,
+    )
+    ax.set_xlabel("Number of genes detected per cell")
+    ax.set_ylabel("Total transcripts per cell")
+    ax.set_title(f"Genes vs Total Counts per Cell: {filter_status}")
+    ax.grid(False)
+
+    # Safely remove legend if it exists
+    if ax.get_legend() is not None:
+        ax.get_legend().remove()
+
+    # Adjust layout with padding
+    plt.subplots_adjust(left=0.1, bottom=0.1, right=0.95, top=0.9)
+    fig.savefig(
+        module_dir / f"qc_genes_vs_total_counts_{filter_status_save}.png",
+        dpi=300,
+        bbox_inches="tight",
+        pad_inches=0.2,
+        facecolor="white",
+        edgecolor="none",
+    )
+    plt.close(fig)
 
 
 def normalize_data(adata, norm_approach):
@@ -117,7 +129,6 @@ def normalize_data(adata, norm_approach):
         None (modifies adata in place)
     """
     logger.info(f"Normalize data using {norm_approach}...")
-    adata.layers["counts"] = adata.X.copy()  # make copy of raw data
 
     if norm_approach == "scanpy_log":
         # scRNAseq approach
@@ -183,30 +194,15 @@ def normalize_data(adata, norm_approach):
         raise ValueError(f"Normalization approach {norm_approach} not recognized")
 
 
-def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
-    """Run quality control on Xenium data."""
-    # Set variables
-    module_dir = io_config.output_dir / config.module_name
-    min_cells = config.min_cells
-    min_counts = config.min_counts
-    min_cell_area = config.min_cell_area
-    max_cell_area = config.max_cell_area
-    norm_approach = config.norm_approach
+def calc_qc_meterics(adata):
+    """Perform quality control and filtering on the AnnData object.
 
-    # Create output directories if they do not exist
-    module_dir.mkdir(exist_ok=True)
+    Args:
+        adata: AnnData object to perform QC on
 
-    # Set figure settings to ensure consistency across all modules
-    configure_scanpy_figures(str(io_config.output_dir))
-    # cmap = sns.color_palette("Spectral", as_cmap=True)
-
-    logger.info("Loading data...")
-    # adata = load_data(config, io_config)
-    adata = sc.read_h5ad(
-        io_config.adata_dir / "_COPD_V1_v_IPF.h5ad"
-    )  # TODO remove after testing
-
-    logger.info("Calculating QC metrics...")
+    Returns:
+        Filtered AnnData object.
+    """
     # Calculate quality control metrics
     sc.pp.calculate_qc_metrics(adata, percent_top=(10, 20, 50, 150), inplace=True)
 
@@ -260,25 +256,39 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info(f"Maximum number of genes per cell: {max_genes}")
     logger.info(f"Number of cells with that maximum: {num_cells_with_max_genes}")
 
+    return adata
+
+
+def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
+    """Run quality control on Xenium data."""
+    # Set variables
+    module_dir = io_config.output_dir / config.module_name
+    min_cells = config.min_cells
+    min_counts = config.min_counts
+    min_cell_area = config.min_cell_area
+    max_cell_area = config.max_cell_area
+    norm_approach = config.norm_approach
+
+    # Create output directories if they do not exist
+    module_dir.mkdir(exist_ok=True)
+
+    # Set figure settings to ensure consistency across all modules
+    configure_scanpy_figures(str(io_config.output_dir))
+    # cmap = sns.color_palette("Spectral", as_cmap=True)
+
+    logger.info("Loading data...")
+    combined_path = io_config.adata_dir / "all_samples.h5ad"
+    adata = sc.read_h5ad(combined_path)
+    logger.info(f"Dataset contains {len(adata)} cells.")
+
+    logger.info("Calculating QC metrics...")
+    adata = calc_qc_meterics(adata)
+
     # Scatter plot of number of genes vs total counts
-    sns.set_theme(style="white")
-    plt.figure(figsize=(6, 5))
-    plt.scatter(
-        adata.obs["n_genes_by_counts"],
-        adata.obs["total_counts"],
-        # hue="ROI",
-        s=10,  # size of points
-        alpha=0.5,  # transparency
-    )
-    plt.xlabel("Number of genes detected per cell")
-    plt.ylabel("Total transcripts per cell")
-    plt.title("QC: Genes vs Total Counts per Cell")
-    plt.grid(False)
-    plt.savefig(module_dir / "qc_genes_vs_total_counts_pre_filter.pdf", dpi=300)
-    plt.close()
+    plot_scatter_genes_v_count(module_dir, adata, filter_status="pre-filtering")
 
     # Plot the summary metrics
-    plot_metrics(module_dir, adata)
+    plot_metrics(module_dir, adata, filter_status="pre-filtering")
 
     # Filter cells and genes
     logger.info("Filtering cells and genes...")
@@ -292,7 +302,19 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info(
         f"Removing cells with < {min_counts} counts and genes in < {min_cells} cells"
     )
+    max_count = False
+    if max_count:
+        max_counts = 2000
+        logger.info(f"Removed cells with total counts >{max_counts}")
+    else:
+        percentile = 99
+        max_counts = np.percentile(adata.obs["total_counts"], percentile)
+        logger.info(f"Removing cells above the {100 - percentile}% highest counts")
+        logger.info(f"Max counts threshold (p{percentile}): {max_counts:.0f}")
+
+    # Filter cells and genes in separate calls (scanpy limitation)
     sc.pp.filter_cells(adata, min_counts=min_counts)
+    sc.pp.filter_cells(adata, max_counts=max_counts)
     sc.pp.filter_genes(adata, min_cells=min_cells)
 
     # Number of cells and genes after filtering
@@ -303,8 +325,12 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     cells_removed = n_cells_before - n_cells_after
     genes_removed = n_genes_before - n_genes_after
 
-    print(f"Cells removed: {cells_removed} ({cells_removed / n_cells_before:.1%})")
-    print(f"Genes removed: {genes_removed} ({genes_removed / n_genes_before:.1%})")
+    logger.info(
+        f"Cells removed: {cells_removed} ({cells_removed / n_cells_before:.1%})"
+    )
+    logger.info(
+        f"Genes removed: {genes_removed} ({genes_removed / n_genes_before:.1%})"
+    )
 
     # Remove cells that are too small (< 20-50 μm²) or too large (> 500-1000 μm²)
     # These often represent segmentation errors or debris
@@ -313,7 +339,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         (adata.obs["cell_area"] >= min_cell_area)
         & (adata.obs["cell_area"] <= max_cell_area),
         :,
-    ].copy()
+    ]
 
     # Number of cells and genes after area filtering
     n_cells_after_area = adata.n_obs
@@ -323,33 +349,26 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     cells_removed = n_cells_after - n_cells_after_area
     genes_removed = n_genes_after - n_genes_after_area
 
-    print(f"Cells removed: {cells_removed} ({cells_removed / n_cells_before:.1%})")
-    print(f"Genes removed: {genes_removed} ({genes_removed / n_genes_before:.1%})")
+    logger.info(f"Cells removed: {cells_removed} ({cells_removed / n_cells_after:.1%})")
 
-    # Scatter plot of number of genes vs total counts after filtering
-    sns.set_theme(style="white")
-    plt.figure(figsize=(6, 5))
-    sns.scatterplot(
-        data=adata.obs,
-        x="n_genes_by_counts",
-        y="total_counts",
-        hue="ROI",
-        s=5,  # size of points
-        alpha=0.5,  # transparency
-        palette="Spectral",
+    # Remove cells who have a nucleus ratio = 0 or > 0.99
+    num_cells_nucleus_ratio_zero = (
+        adata.obs["nucleus_area"] / adata.obs["cell_area"] == 0
+    ).sum()
+    num_cells_nucleus_ratio_high = (
+        adata.obs["nucleus_area"] / adata.obs["cell_area"] > 0.99
+    ).sum()
+    logger.info(
+        f"Number of cells with nucleus ratio = 0: {num_cells_nucleus_ratio_zero}"
     )
-    plt.xlabel("Number of genes detected per cell")
-    plt.ylabel("Total transcripts per cell")
-    plt.title("QC: Genes vs Total Counts per Cell")
-    plt.grid(False)
-    plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
-    plt.tight_layout()
-    plt.savefig(
-        module_dir / "qc_genes_vs_total_counts_post_filter.pdf",
-        dpi=300,
-        bbox_inches="tight",
+    logger.info(
+        f"Number of cells with nucleus ratio > 0.99: {num_cells_nucleus_ratio_high}"
     )
-    plt.close()
+    adata = adata[
+        (adata.obs["nucleus_area"] / adata.obs["cell_area"] > 0)
+        & (adata.obs["nucleus_area"] / adata.obs["cell_area"] <= 0.99),
+        :,
+    ]
 
     # TODO: remove specific cells based on QC plots
     logger.info("Removing specific cells based on QC plots...")
@@ -360,14 +379,24 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
             if cell not in adata.obs_names:
                 logger.warning(f"Cell ID {cell} not found in adata.obs_names")
         logger.info(f"Removing specific cells based on QC plots: {remove_cells}")
-        adata = adata[~adata.obs_names.isin(remove_cells), :].copy()
+        adata = adata[~adata.obs_names.isin(remove_cells), :]
     else:
         logger.info("No specific cells to remove based on QC plots.")
+
+    # Scatter plot of number of genes vs total counts after filtering
+    plot_scatter_genes_v_count(module_dir, adata, filter_status="post-filtering")
+
+    # Plot the summary metrics after filtering
+    plot_metrics(module_dir, adata, filter_status="post-filtering")
 
     logger.info(f"adata shape after area filtering: {adata.shape}")
 
     logger.info(f"Final number of cells: {adata.n_obs}")
     logger.info(f"Final number of genes: {adata.n_vars}")
+
+    # Save raw counts
+    logger.info("Save raw data in counts layer...")
+    adata.layers["counts"] = adata.X.copy()  # make copy of raw data
 
     # Normalize data
     logger.info("Starting data normalization...")

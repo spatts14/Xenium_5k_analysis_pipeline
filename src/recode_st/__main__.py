@@ -48,6 +48,15 @@ def main(config: Config):
         logger.info("Running Module - Doublet identification")
         run_doublet_id(config.io, config.modules.doublet_identification)
 
+    if config.modules.denoise_resolvi:
+        from recode_st.denoise_resolvi import run_denoise_resolvi
+
+        logger.info("Running Module - Denoise with ResolVI")
+        run_denoise_resolvi(
+            config.modules.denoise_resolvi,
+            config.io,
+        )
+
     if config.modules.dimension_reduction:
         from recode_st.dimension_reduction import run_dimension_reduction
 

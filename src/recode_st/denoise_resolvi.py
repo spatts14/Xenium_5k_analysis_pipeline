@@ -106,12 +106,8 @@ def run_resolvi(
         n_latent=n_latent,
         n_hidden=n_hidden,
         n_layers=n_layers,
+        downsample_counts=False,
     )
-
-    # Computes downsample_counts_mean and downsample_counts_std
-    # Needed because downsample_counts=True by default, which is recommended for STx
-    logger.info("Computing dataset-dependent priors...")
-    model.compute_dataset_dependent_priors()
 
     logger.info("Model architecture:")
     logger.info(f"Latent dimensions: {n_latent}")

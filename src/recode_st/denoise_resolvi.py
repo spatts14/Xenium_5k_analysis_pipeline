@@ -102,7 +102,7 @@ def run_resolvi(
     logger.info("Initialize model...")
     model = scvi.external.RESOLVI(
         adata,
-        dispersion="gene-batch",  # gene dispersion can differ between different batches
+        dispersion="gene",
         n_latent=n_latent,
         n_hidden=n_hidden,
         n_layers=n_layers,
@@ -255,8 +255,24 @@ def run_denoise_resolvi(config: DenoiseResolVIModuleConfig, io_config: IOConfig)
         io_config.output_dir / "quality_control" / "adata_cell_area.h5ad"
     )
 
+    # DEBUGGING
+    logger.info(adata.obs["ROI"].value_counts())
+    logger.info(adata.obs["ROI"].isna().sum())  # Should be 0
+    logger.info(adata.obs["ROI"].dtype)
+
+    counts = adata.layers["counts"]
+    logger.info(
+        f"Contains NaN: {np.isnan(counts.toarray() if hasattr(counts, 'toarray') else counts).any()}"
+    )
+    logger.info(
+        f"Contains Inf: {np.isinf(counts.toarray() if hasattr(counts, 'toarray') else counts).any()}"
+    )
+    logger.info(f"Min: {counts.min()}, Max: {counts.max()}")
+
     logger.info("Checking all needed layers needed for ResolVI are present...")
     check_layers(adata)
+
+    ### END DEBUGGING
 
     logger.info("Run ResolVI model to denoise...")
     model, adata = run_resolvi(

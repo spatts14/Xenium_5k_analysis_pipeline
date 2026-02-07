@@ -66,7 +66,7 @@ def run_resolvi(
     max_epochs=400,
     batch_size=256,
     early_stopping=True,
-    use_gpu=True,
+    use_gpu=False,  # change to False for HPC for quicker job scheduling
 ):
     """Run ResolVI denoising on QC-filtered Xenium data.
 
@@ -108,11 +108,15 @@ def run_resolvi(
         n_layers=n_layers,
     )
 
+    # Computes downsample_counts_mean and downsample_counts_std
+    # Needed because downsample_counts=True by default, which is recommended for STx
+    logger.info("Computing dataset-dependent priors...")
+    model.compute_dataset_dependent_priors()
+
     logger.info("Model architecture:")
     logger.info(f"Latent dimensions: {n_latent}")
     logger.info(f"Hidden units: {n_hidden}")
     logger.info(f"Layers: {n_layers}")
-    logger.info("Training on:")
 
     # Train model
     logger.info(f"Training ResolVI (max {max_epochs} epochs)...")
@@ -254,25 +258,6 @@ def run_denoise_resolvi(config: DenoiseResolVIModuleConfig, io_config: IOConfig)
     adata = sc.read_h5ad(
         io_config.output_dir / "quality_control" / "adata_cell_area.h5ad"
     )
-
-    # DEBUGGING
-    logger.info(adata.obs["ROI"].value_counts())
-    logger.info(adata.obs["ROI"].isna().sum())  # Should be 0
-    logger.info(adata.obs["ROI"].dtype)
-
-    counts = adata.layers["counts"]
-    logger.info(
-        f"Contains NaN: {np.isnan(counts.toarray() if hasattr(counts, 'toarray') else counts).any()}"
-    )
-    logger.info(
-        f"Contains Inf: {np.isinf(counts.toarray() if hasattr(counts, 'toarray') else counts).any()}"
-    )
-    logger.info(f"Min: {counts.min()}, Max: {counts.max()}")
-
-    logger.info("Checking all needed layers needed for ResolVI are present...")
-    check_layers(adata)
-
-    ### END DEBUGGING
 
     logger.info("Run ResolVI model to denoise...")
     model, adata = run_resolvi(

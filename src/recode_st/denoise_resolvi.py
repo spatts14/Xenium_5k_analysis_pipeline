@@ -259,6 +259,9 @@ def run_denoise_resolvi(config: DenoiseResolVIModuleConfig, io_config: IOConfig)
         io_config.output_dir / "quality_control" / "adata_cell_area.h5ad"
     )
 
+    logger.info("Checking adata layers and obsm for ResolVI compatibility...")
+    check_layers(adata)
+
     logger.info("Run ResolVI model to denoise...")
     model, adata = run_resolvi(
         adata, n_latent=config.n_latent, max_epochs=config.max_epochs

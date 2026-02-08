@@ -5,6 +5,7 @@ from logging import getLogger
 
 import numpy as np
 import scanpy as sc
+import scipy.sparse as sp
 import scvi
 
 from recode_st.config import DenoiseResolVIModuleConfig, IOConfig
@@ -142,6 +143,44 @@ def run_resolvi(
     return model, adata
 
 
+def qc_normalize_data(adata):
+    """Quality control and normalization of data.
+
+    Args:
+        adata: AnnData object to process.
+
+    Returns:
+        adata: Processed AnnData object.
+    """
+    logger.info("Filtering low-quality cells and genes...")
+    sc.pp.filter_cells(adata, min_counts=10)
+    sc.pp.filter_genes(adata, min_cells=5)
+
+    logger.info("Normalizing by cell area...")
+    if "cell_area" in adata.obs.columns:
+        cell_area_inv = 1 / adata.obs["cell_area"].values  # shape (n_cells,)
+
+        if sp.issparse(adata.X):
+            # Sparse-safe multiplication
+            scaling = sp.diags(cell_area_inv)
+            adata.X = scaling.dot(adata.X)
+        else:
+            # Dense case
+            adata.X = adata.X * cell_area_inv[:, None]
+
+        logger.info("Log transforming...")
+        sc.pp.log1p(adata)  # Log transform
+        # Identify highly variable genes
+
+        logger.info("Identifying highly variable genes...")
+        sc.pp.highly_variable_genes(
+            adata, flavor="seurat", n_top_genes=2000, inplace=True
+        )
+
+        logger.info("Scaling data...")
+        sc.pp.scale(adata, max_value=10)
+
+
 def post_resolvi_analysis(adata, resolution=0.5, save_path=None):
     """Perform downstream analysis on ResolVI-denoised data.
 
@@ -170,13 +209,7 @@ def post_resolvi_analysis(adata, resolution=0.5, save_path=None):
         )
 
     logger.info("Computing PCA on ResolVI latent space...")
-    # Store original X matrix
-    X_original = adata.X.copy()
-    # Temporarily set X to ResolVI representation for PCA computation
-    adata.X = adata.obsm["X_resolvi"]
     sc.tl.pca(adata)
-    # Restore original X matrix
-    adata.X = X_original
 
     # Compute neighbors using ResolVI latent space
     logger.info("Computing neighbors from ResolVI latent space...")
@@ -286,6 +319,9 @@ def run_denoise_resolvi(config: DenoiseResolVIModuleConfig, io_config: IOConfig)
     logger.info("Saving intermediate results after ResolVI...")
     adata.write_h5ad(module_dir / "adata_post_resolvi.h5ad")
     logger.info(f"Intermediate results saved to {module_dir}")
+
+    logger.info("Filter, normalize (cell area), log-transform, and scale data...")
+    qc_normalize_data(adata)
 
     logger.info("Visualize post ResolVI...")
     adata = post_resolvi_analysis(adata, resolution=1, save_path=module_dir)

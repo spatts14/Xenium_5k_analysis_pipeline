@@ -162,6 +162,18 @@ h5ad_file = "adata_subset_Alveolar_epithelium.h5ad"
 subset = "alveolar_epithelium"
 mannual_annotation = "mannual_annotation"
 res = 0.3
+
+
+# Annotate clusters based on marker genes and plot UMAP
+annotation_dict = {
+    "0": "Unknown",
+    "1": "AT1 cells",
+    "2": "AT2 cells and Macrophages",
+    "3": "AT2 cells",
+    "4": "Actively dividing AT2 cells",
+}
+
+
 annotation_level_0 = subset + "_level_0"
 annotation_level_1 = subset + "_level_1"
 subset_key = subset + "_" + str(res)
@@ -279,24 +291,6 @@ for cluster in adata.obs[subset_key].unique():
         index=False,
     )
 
-
-# Annotate clusters based on marker genes and plot UMAP
-annotation_dict = {
-    "0": "Smooth muscle cells",
-    "1": "Plasma cells",
-    "2": "Lymphatic endothelial cells",
-    "3": "Fibroblasts",
-    "4": "T cells",
-    "5": "Macrophages",
-    "6": "Macrophages",
-    "7": "Fibroblasts",
-    "8": "Mast cells",
-    "9": "Fibroblasts",
-    "10": "Fibroblasts",
-    "11": "Fibroblasts",
-    "12": "Blood endothelial cells",
-    "13": "Pericytes",
-}
 
 # Map Leiden clusters to annotation_level_1 and save in adata.obs
 adata.obs[annotation_level_1] = (

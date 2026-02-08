@@ -161,7 +161,7 @@ seed_everything(19960915)
 h5ad_file = "adata_subset_Alveolar_epithelium.h5ad"
 subset = "alveolar_epithelium"
 mannual_annotation = "mannual_annotation"
-res = 0.3
+res = 0.2
 
 
 # Annotate clusters based on marker genes and plot UMAP

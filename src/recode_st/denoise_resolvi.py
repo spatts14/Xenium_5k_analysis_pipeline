@@ -126,10 +126,6 @@ def run_resolvi(
 
     logger.info(f"Training completed at epoch {model.history['elbo_train'].shape[0]}")
 
-    # Save trained model
-    logger.info(f"Saving model to resolvi_model_{n_latent}latent...")
-    model.save(f"resolvi_model_{n_latent}_latent", overwrite=True)
-
     logger.info("Extracting denoised representations...")
 
     # 1. Latent representation (for clustering, UMAP, etc.)
@@ -163,8 +159,24 @@ def post_resolvi_analysis(adata, resolution=0.5, save_path=None):
     """
     logger.info("Post ResolVI analysis to visualize results...")
 
+    # Debug: Check if X_resolvi exists
+    if "X_resolvi" in adata.obsm:
+        logger.info(
+            f"X_resolvi found in adata.obsm with shape: {adata.obsm['X_resolvi'].shape}"
+        )
+    else:
+        raise ValueError(
+            "X_resolvi not found in adata.obsm - ResolVI extraction may have failed"
+        )
+
     logger.info("Computing PCA on ResolVI latent space...")
-    sc.tl.pca(adata, use_rep="X_resolvi")
+    # Store original X matrix
+    X_original = adata.X.copy()
+    # Temporarily set X to ResolVI representation for PCA computation
+    adata.X = adata.obsm["X_resolvi"]
+    sc.tl.pca(adata)
+    # Restore original X matrix
+    adata.X = X_original
 
     # Compute neighbors using ResolVI latent space
     logger.info("Computing neighbors from ResolVI latent space...")
@@ -173,8 +185,10 @@ def post_resolvi_analysis(adata, resolution=0.5, save_path=None):
     logger.info("Computing UMAP...")
     sc.tl.umap(
         adata,
+        color=["X_resolvi"],
         # min_dist=0.1,
-        # spread=2.0
+        # spread=2.0,
+        save=f"_resolvi_umap_{resolution}.pdf",
     )
 
     logger.info(f"Clustering (resolution={resolution})...")
@@ -189,7 +203,7 @@ def post_resolvi_analysis(adata, resolution=0.5, save_path=None):
         color="leiden_resolvi",
         show=False,
         title="Clusters (ResolVI)",
-        save="resolVI_cluster.png",
+        save=f"_post_resolVI_cluster_{resolution}.png",
     )
 
     # UMAP colored by total counts
@@ -263,12 +277,21 @@ def run_denoise_resolvi(config: DenoiseResolVIModuleConfig, io_config: IOConfig)
         adata, n_latent=config.n_latent, max_epochs=config.max_epochs
     )
 
+    logger.info(f"Saving model to resolvi_model_{config.n_latent}latent...")
+    model.save(module_dir / f"resolvi_model_{config.n_latent}_latent", overwrite=True)
+    logger.info(
+        f"Model saved to {module_dir / f'resolvi_model_{config.n_latent}_latent'}"
+    )
+
+    logger.info("Saving intermediate results after ResolVI...")
+    adata.write_h5ad(module_dir / "adata_post_resolvi.h5ad")
+    logger.info(f"Intermediate results saved to {module_dir}")
+
     logger.info("Visualize post ResolVI...")
     adata = post_resolvi_analysis(adata, resolution=1, save_path=module_dir)
 
     # Save final results
-    output_path = module_dir / "adata.h5ad"
-    adata.write_h5ad(output_path)
-    logger.info(f"\nFinal results saved to {output_path}")
+    adata.write_h5ad(module_dir / "adata.h5ad")
+    logger.info(f"Final results saved to {module_dir}")
 
-    logger.info(f"\nResolVI module '{config.module_name}' complete.\n")
+    logger.info(f"ResolVI module '{config.module_name}' complete.")

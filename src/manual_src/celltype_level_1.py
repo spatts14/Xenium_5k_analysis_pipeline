@@ -171,8 +171,11 @@ dir = Path(
     "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/airscape_analysis/"
 )
 
+subset_dir = dir / "manual_analysis/celltype_subset"
+subset_dir.mkdir(parents=True, exist_ok=True)
+
 # Save figures
-fig_dir = dir / "manual_analysis" / subset / "figs"
+fig_dir = subset_dir / subset / "figs"
 fig_dir.mkdir(parents=True, exist_ok=True)  # Create directory if it doesn't exist
 sc.settings.figdir = fig_dir  # Assign it to Scanpy figure directory
 
@@ -181,7 +184,7 @@ fig_dir_spatial = fig_dir / "spatial"
 fig_dir_spatial.mkdir(parents=True, exist_ok=True)
 
 # Save files
-file_dir = dir / "manual_analysis/" / subset / "files"
+file_dir = subset_dir / subset / "files"
 file_dir.mkdir(parents=True, exist_ok=True)
 
 

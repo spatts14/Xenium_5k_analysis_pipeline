@@ -161,7 +161,7 @@ seed_everything(19960915)
 h5ad_file = "adata_subset_Alveolar_epithelium.h5ad"
 subset = "alveolar_epithelium"
 mannual_annotation = "mannual_annotation"
-res = 0.2
+res = 0.3
 annotation_level_0 = subset + "_level_0"
 annotation_level_1 = subset + "_level_1"
 subset_key = subset + "_" + str(res)

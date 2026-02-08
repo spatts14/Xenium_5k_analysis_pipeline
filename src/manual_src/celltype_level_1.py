@@ -277,15 +277,20 @@ for cluster in adata.obs[subset_key].unique():
 
 # Annotate clusters based on marker genes and plot UMAP
 annotation_dict = {
-    "0": "Ciliated airway epithelial cells 1",
-    "1": "Mucosal cells MUC5AC+",
-    "2": "Mucosal cells MUC5AC+ MUC5B+ (LCN2+ XBP1+ CD63+)",
-    "3": "Mucosal cells MUC5AC+ MUC5B+ (LCN2+ XBP1+ CD63-)",
-    "4": "Basal epithelial cells 1",
-    "5": "Mucosal cells MUC5B+",
-    "6": "Ciliated airway epithelial cells 2",
-    "7": "Basal epithelial cells 2",
-    "8": "Basal epithelial cells 3 (NR4A1+)",
+    "0": "Smooth muscle cells",
+    "1": "Plasma cells",
+    "2": "Lymphatic endothelial cells",
+    "3": "Fibroblasts",
+    "4": "T cells",
+    "5": "Macrophages",
+    "6": "Macrophages",
+    "7": "Fibroblasts",
+    "8": "Mast cells",
+    "9": "Fibroblasts",
+    "10": "Fibroblasts",
+    "11": "Fibroblasts",
+    "12": "Blood endothelial cells",
+    "13": "Pericytes",
 }
 
 # Map Leiden clusters to annotation_level_1 and save in adata.obs

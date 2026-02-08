@@ -215,8 +215,10 @@ sc.tl.leiden(
     adata, resolution=res, key_added=subset_key, flavor="igraph", n_iterations=2
 )
 
-# Set colors for Leiden clusters and plot UMAP colored by clusters
-adata.uns[f"{subset_key}_colors"] = [color for color in color_palette_level_1.as_hex()]
+# Set colors for Leiden clusters - match number of colors to number of clusters
+n_clusters = len(adata.obs[subset_key].cat.categories)
+color_palette_leiden = sns.color_palette("hls", n_clusters)
+adata.uns[f"{subset_key}_colors"] = [color for color in color_palette_leiden.as_hex()]
 
 # Plot UMAP colored by Leiden clusters
 sc.pl.umap(

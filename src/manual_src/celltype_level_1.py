@@ -158,8 +158,8 @@ def S_score_G2M_score(adata, subset):
 seed_everything(19960915)
 
 # Set variables
-h5ad_file = "adata_subset_Immune.h5ad"
-subset = "immune"
+h5ad_file = "adata_subset_Alveolar_epithelium.h5ad"
+subset = "alveolar_epithelium"
 mannual_annotation = "mannual_annotation"
 res = 0.5
 annotation_level_0 = subset + "_level_0"

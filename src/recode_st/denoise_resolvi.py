@@ -198,45 +198,56 @@ def post_resolvi_analysis(adata, resolution=0.5, save_path=None):
     """
     logger.info("Post ResolVI analysis to visualize results...")
 
-    # Debug: Check if X_resolvi exists
-    if "X_resolvi" in adata.obsm:
-        logger.info(
-            f"X_resolvi found in adata.obsm with shape: {adata.obsm['X_resolvi'].shape}"
-        )
-    else:
-        raise ValueError(
-            "X_resolvi not found in adata.obsm - ResolVI extraction may have failed"
-        )
-
-    logger.info("Computing PCA on ResolVI latent space...")
-    sc.tl.pca(adata)
-
-    # Compute neighbors using ResolVI latent space
-    logger.info("Computing neighbors from ResolVI latent space...")
-    sc.pp.neighbors(adata, use_rep="X_resolvi", n_neighbors=40)
-
-    logger.info("Computing UMAP...")
-    sc.tl.umap(
+    logger.info("Calculating clusters for non-ResolVI data for comparison...")
+    sc.pp.neighbors(adata, use_rep="X_pca", key_added="neighbors_standard")
+    sc.tl.umap(adata, neighbors_key="neighbors_standard")
+    adata.obsm["X_umap_standard"] = adata.obsm["X_umap"].copy()
+    sc.tl.leiden(
         adata,
-        color=["X_resolvi"],
-        # min_dist=0.1,
-        # spread=2.0,
-        save=f"_resolvi_umap_{resolution}.pdf",
+        resolution=resolution,
+        neighbors_key="neighbors_standard",
+        key_added="leiden_standard",
     )
 
-    logger.info(f"Clustering (resolution={resolution})...")
-    sc.tl.leiden(adata, resolution=resolution, key_added="leiden_resolvi")
+    logger.info("Calculating clusters for non-ResolVI data for comparison...")
+    sc.pp.neighbors(
+        adata, use_rep="X_resolvi", n_neighbors=40, key_added="neighbors_resolvi"
+    )
+    sc.tl.umap(adata, neighbors_key="neighbors_resolvi")
+    adata.obsm["X_umap_resolvi"] = adata.obsm["X_umap"].copy()
+    sc.tl.leiden(
+        adata,
+        resolution=resolution,
+        neighbors_key="neighbors_resolvi",
+        key_added="leiden_resolvi",
+    )
 
-    n_clusters = adata.obs["leiden_resolvi"].nunique()
-    print(f"Found {n_clusters} clusters")
+    logger.info("Comparing UMAPs and clusters before and after ResolVI...")
+    # Plot standard UMAP
+    adata.obsm["X_umap"] = adata.obsm["X_umap_standard"]
+    sc.pl.umap(
+        adata,
+        color="leiden_standard",
+        show=False,
+        title="Clusters (Standard - No ResolVI)",
+        save=f"_standard_clusters_{resolution}.png",
+    )
 
-    # UMAP colored by cluster
+    # Plot ResolVI UMAP
+    adata.obsm["X_umap"] = adata.obsm["X_umap_resolvi"]
     sc.pl.umap(
         adata,
         color="leiden_resolvi",
         show=False,
         title="Clusters (ResolVI)",
-        save=f"_post_resolVI_cluster_{resolution}.png",
+        save=f"_resolvi_clusters_{resolution}.png",
+    )
+
+    n_clusters = adata.obs["leiden_resolvi"].nunique()
+    n_clusters_standard = adata.obs["leiden_standard"].nunique()
+    logger.info(f"Found {n_clusters} clusters in leiden_resolvi at {resolution} res")
+    logger.info(
+        f"Found {n_clusters_standard} clusters in leiden_standard at {resolution} res"
     )
 
     # UMAP colored by total counts
@@ -295,6 +306,9 @@ def run_denoise_resolvi(config: DenoiseResolVIModuleConfig, io_config: IOConfig)
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
 
+    # Variables
+    RESOLUTION = 1
+
     logger.info("Staring module to denoise STx data...")
 
     logger.info("Loading Xenium data...")
@@ -324,7 +338,7 @@ def run_denoise_resolvi(config: DenoiseResolVIModuleConfig, io_config: IOConfig)
     qc_normalize_data(adata)
 
     logger.info("Visualize post ResolVI...")
-    adata = post_resolvi_analysis(adata, resolution=1, save_path=module_dir)
+    adata = post_resolvi_analysis(adata, resolution=RESOLUTION, save_path=module_dir)
 
     # Save final results
     adata.write_h5ad(module_dir / "adata.h5ad")

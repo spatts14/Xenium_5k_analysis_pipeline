@@ -172,7 +172,7 @@ dir = Path(
 )
 
 # Save figures
-fig_dir = dir / "manual_analysis/figs" / subset
+fig_dir = dir / "manual_analysis" / subset / "figs"
 fig_dir.mkdir(parents=True, exist_ok=True)  # Create directory if it doesn't exist
 sc.settings.figdir = fig_dir  # Assign it to Scanpy figure directory
 
@@ -181,7 +181,7 @@ fig_dir_spatial = fig_dir / "spatial"
 fig_dir_spatial.mkdir(parents=True, exist_ok=True)
 
 # Save files
-file_dir = dir / "manual_analysis/files" / subset
+file_dir = dir / "manual_analysis/" / subset / "files"
 file_dir.mkdir(parents=True, exist_ok=True)
 
 

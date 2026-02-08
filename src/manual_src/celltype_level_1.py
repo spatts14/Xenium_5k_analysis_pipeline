@@ -359,4 +359,7 @@ celltype_counts_condition.to_csv(
     file_dir / f"{subset}_celltype_counts_per_condition_ROI.csv"
 )
 
+adata.write_h5ad(dir / f"celltype_subset/{h5ad_file}_level_1.h5ad")
+
+
 print("Done!")

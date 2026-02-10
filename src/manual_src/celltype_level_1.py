@@ -158,11 +158,11 @@ def S_score_G2M_score(adata, subset):
 seed_everything(19960915)
 
 # Set variables
-h5ad_file = "adata_subset_Blood_endothelial_cells.h5ad"
-subset = "blood_endothelial_cells"
+# Set variables
+h5ad_file = "adata_subset_Immune.h5ad"
+subset = "immune"
 mannual_annotation = "mannual_annotation"
-res = 0.3
-
+res = 0.5
 
 # Annotate clusters based on marker genes and plot UMAP
 annotation_dict = {
@@ -181,7 +181,6 @@ annotation_dict = {
     "12": "Blood endothelial cells",
     "13": "Pericytes",
 }
-
 
 annotation_level_0 = subset + "_level_0"
 annotation_level_1 = subset + "_level_1"
@@ -205,7 +204,7 @@ fig_dir_spatial = fig_dir / "spatial"
 fig_dir_spatial.mkdir(parents=True, exist_ok=True)
 
 # Save files
-file_dir = subset_dir / subset / "files"
+file_dir = subset_dir / subset / f"files/resolution_{res}"
 file_dir.mkdir(parents=True, exist_ok=True)
 
 

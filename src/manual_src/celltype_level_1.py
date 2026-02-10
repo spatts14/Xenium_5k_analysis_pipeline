@@ -158,21 +158,28 @@ def S_score_G2M_score(adata, subset):
 seed_everything(19960915)
 
 # Set variables
-h5ad_file = "adata.h5ad"
-subset = "full_data"
+# Set variables
+h5ad_file = "adata_subset_Smooth_muscle.h5ad"
+subset = "SMC"
 mannual_annotation = "mannual_annotation"
 res = 0.5
 
-
 # Annotate clusters based on marker genes and plot UMAP
 annotation_dict = {
-    "0": "Unknown 1",
-    "1": "Unknown 2",
-    "2": "Unknown 3",
-    "3": "Unknown 4",
-    "4": "Unknown 5",
-    "5": "Unknown 6",
-    "6": "Unknown 7",
+    # "0": "Smooth muscle cells",
+    # "1": "Plasma cells",
+    # "2": "Lymphatic endothelial cells",
+    # "3": "Fibroblasts",
+    # "4": "T cells",
+    # "5": "Macrophages",
+    # "6": "Macrophages",
+    # "7": "Fibroblasts",
+    # "8": "Mast cells",
+    # "9": "Fibroblasts",
+    # "10": "Fibroblasts",
+    # "11": "Fibroblasts",
+    # "12": "Blood endothelial cells",
+    # "13": "Pericytes",
 }
 
 annotation_level_0 = subset + "_level_0"
@@ -184,8 +191,7 @@ dir = Path(
     "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/airscape_analysis/"
 )
 
-
-subset_dir = dir / "dimension_reduction"
+subset_dir = dir / "manual_analysis/celltype_subset"
 subset_dir.mkdir(parents=True, exist_ok=True)
 
 # Save figures
@@ -240,7 +246,7 @@ adata.uns[f"{subset_key}_colors"] = [color for color in color_palette_leiden.as_
 # Plot UMAP colored by Leiden clusters
 sc.pl.umap(
     adata,
-    color=[subset_key, "16S"],
+    color=[subset_key],
     frameon=False,
     save=f"_{subset_key}.pdf",
 )
@@ -338,7 +344,7 @@ for roi in ROI_list:
         adata_roi,
         library_id="spatial",
         shape=None,
-        color=[annotation_level_1, "16S"],
+        color=annotation_level_1,
         size=2,
         marker=".",
         frameon=False,

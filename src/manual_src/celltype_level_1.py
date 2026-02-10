@@ -158,19 +158,21 @@ def S_score_G2M_score(adata, subset):
 seed_everything(19960915)
 
 # Set variables
-h5ad_file = "adata_subset_Airway_epithelium.h5ad"
-subset = "airway_epithelium"
+h5ad_file = "adata.h5ad"
+subset = "full_data"
 mannual_annotation = "mannual_annotation"
-res = 1
+res = 0.5
 
 
 # Annotate clusters based on marker genes and plot UMAP
 annotation_dict = {
-    "0": "Unknown",
-    "1": "AT1 cells",
-    "2": "Progenitor AT2 cells",
-    "3": "AT2 cells",
-    "4": "Proliferating AT2 cells",
+    "0": "Unknown 1",
+    "1": "Unknown 2",
+    "2": "Unknown 3",
+    "3": "Unknown 4",
+    "4": "Unknown 5",
+    "5": "Unknown 6",
+    "6": "Unknown 7",
 }
 
 annotation_level_0 = subset + "_level_0"
@@ -182,7 +184,8 @@ dir = Path(
     "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/airscape_analysis/"
 )
 
-subset_dir = dir / "manual_analysis/celltype_subset"
+
+subset_dir = dir / "dimension_reduction"
 subset_dir.mkdir(parents=True, exist_ok=True)
 
 # Save figures
@@ -237,7 +240,7 @@ adata.uns[f"{subset_key}_colors"] = [color for color in color_palette_leiden.as_
 # Plot UMAP colored by Leiden clusters
 sc.pl.umap(
     adata,
-    color=[subset_key],
+    color=[subset_key, "16S"],
     frameon=False,
     save=f"_{subset_key}.pdf",
 )
@@ -335,7 +338,7 @@ for roi in ROI_list:
         adata_roi,
         library_id="spatial",
         shape=None,
-        color=annotation_level_1,
+        color=[annotation_level_1, "16S"],
         size=2,
         marker=".",
         frameon=False,

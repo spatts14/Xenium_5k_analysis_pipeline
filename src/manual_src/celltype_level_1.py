@@ -159,27 +159,27 @@ seed_everything(19960915)
 
 # Set variables
 # Set variables
-h5ad_file = "adata_subset_Smooth_muscle.h5ad"
-subset = "SMC"
+h5ad_file = "adata_subset_Airway_epithelium.h5ad"
+subset = "airway_epithelium"
 mannual_annotation = "mannual_annotation"
 res = 0.5
 
 # Annotate clusters based on marker genes and plot UMAP
 annotation_dict = {
-    # "0": "Smooth muscle cells",
-    # "1": "Plasma cells",
-    # "2": "Lymphatic endothelial cells",
-    # "3": "Fibroblasts",
-    # "4": "T cells",
-    # "5": "Macrophages",
-    # "6": "Macrophages",
-    # "7": "Fibroblasts",
-    # "8": "Mast cells",
-    # "9": "Fibroblasts",
-    # "10": "Fibroblasts",
-    # "11": "Fibroblasts",
-    # "12": "Blood endothelial cells",
-    # "13": "Pericytes",
+    "0": "Smooth muscle cells",
+    "1": "Plasma cells",
+    "2": "Lymphatic endothelial cells",
+    "3": "Fibroblasts",
+    "4": "T cells",
+    "5": "Macrophages",
+    "6": "Macrophages",
+    "7": "Fibroblasts",
+    "8": "Mast cells",
+    "9": "Fibroblasts",
+    "10": "Fibroblasts",
+    "11": "Fibroblasts",
+    "12": "Blood endothelial cells",
+    "13": "Pericytes",
 }
 
 annotation_level_0 = subset + "_level_0"

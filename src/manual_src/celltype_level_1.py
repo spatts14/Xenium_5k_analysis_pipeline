@@ -158,28 +158,19 @@ def S_score_G2M_score(adata, subset):
 seed_everything(19960915)
 
 # Set variables
-# Set variables
-h5ad_file = "adata_subset_Immune.h5ad"
-subset = "immune"
+h5ad_file = "adata_subset_Alveolar_epithelium.h5ad"
+subset = "alveolar_epithelium"
 mannual_annotation = "mannual_annotation"
-res = 0.5
+res = 0.2
+
 
 # Annotate clusters based on marker genes and plot UMAP
 annotation_dict = {
-    "0": "Smooth muscle cells",
-    "1": "Plasma cells",
-    "2": "Lymphatic endothelial cells",
-    "3": "Fibroblasts",
-    "4": "T cells",
-    "5": "Macrophages",
-    "6": "Macrophages",
-    "7": "Fibroblasts",
-    "8": "Mast cells",
-    "9": "Fibroblasts",
-    "10": "Fibroblasts",
-    "11": "Fibroblasts",
-    "12": "Blood endothelial cells",
-    "13": "Pericytes",
+    "0": "Unknown",
+    "1": "AT1 cells",
+    "2": "Progenitor AT2 cells",
+    "3": "AT2 cells",
+    "4": "Proliferating AT2 cells",
 }
 
 annotation_level_0 = subset + "_level_0"

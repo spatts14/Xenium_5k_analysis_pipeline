@@ -162,24 +162,19 @@ seed_everything(19960915)
 h5ad_file = "adata_subset_Airway_epithelium.h5ad"
 subset = "airway_epithelium"
 mannual_annotation = "mannual_annotation"
-res = 0.8
+res = 0.5
 
 # Annotate clusters based on marker genes and plot UMAP
 annotation_dict = {
-    "0": "Smooth muscle cells",
-    "1": "Plasma cells",
-    "2": "Lymphatic endothelial cells",
-    "3": "Fibroblasts",
-    "4": "T cells",
-    "5": "Macrophages",
-    "6": "Macrophages",
-    "7": "Fibroblasts",
-    "8": "Mast cells",
-    "9": "Fibroblasts",
-    "10": "Fibroblasts",
-    "11": "Fibroblasts",
-    "12": "Blood endothelial cells",
-    "13": "Pericytes",
+    "0": "Ciliated cells (ALOX15+)",
+    "1": "Ciliated cells (TEKT1+)",
+    "2": "Goblet cells (MUC5AC+MUC5B+)",
+    "3": "Basal cells (KRT5+EEF1G+KRT17+)",
+    "4": "Basal cells (NR4A1+KRT17+KRT5+)",
+    "5": "Goblet cells (MUC5B+)",
+    "6": "Goblet cells (MUC5AC+)",
+    "7": "Basal cells resting (KRT5+EEF1G+S100A2+)",
+    "8": "Submucosal gland (LTF+DMBT1+)",
 }
 
 annotation_level_0 = subset + "_level_0"

@@ -28,7 +28,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
     sc.settings.figdir = module_dir
 
     # Define variables
-    CLUSTER_NAME = config.cluster_name
+    # CLUSTER_NAME = config.cluster_name
 
     # Set figure settings to ensure consistency across all modules
     # cmap = sns.color_palette("Spectral", as_cmap=True)

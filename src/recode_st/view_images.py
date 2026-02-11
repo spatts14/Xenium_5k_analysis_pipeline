@@ -62,7 +62,9 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             color=config.gene_list,
             cmap=cmap_blue,
             shape=None,
-            size=1,
+            linewidths=0,
+            edgecolors="none",
+            size=0.5,
             img=False,
             save=f"gene_expression_{roi}.pdf",
         )

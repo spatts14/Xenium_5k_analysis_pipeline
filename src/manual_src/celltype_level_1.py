@@ -166,15 +166,15 @@ res = 0.5
 
 # Annotate clusters based on marker genes and plot UMAP
 annotation_dict = {
-    "0": "Ciliated cells (ALOX15+)",
-    "1": "Ciliated cells (TEKT1+)",
-    "2": "Goblet cells (MUC5AC+MUC5B+)",
-    "3": "Basal cells (KRT5+EEF1G+KRT17+)",
-    "4": "Basal cells (NR4A1+KRT17+KRT5+)",
-    "5": "Goblet cells (MUC5B+)",
-    "6": "Goblet cells (MUC5AC+)",
-    "7": "Basal cells resting (KRT5+EEF1G+S100A2+)",
-    "8": "Submucosal gland (LTF+DMBT1+)",
+    "0": "Ciliated cells (ANAX2+)",  # done
+    "1": "Ciliated cells (EFHC1+)",  # done
+    "2": "Activated Goblet cells (MUC5AC+MUC5B+)",  # done
+    "3": "Proliferating Basal cells (EEF1G+FGFR3+)",  # done
+    "4": "Activated Basal cells (NR4A1+)",  # done
+    "5": "Undefined - weak goblet cells (MUC5AC+)",  # done
+    "6": "Goblet cells (MUC5AC+)",  # done
+    "7": "Resting/progenitor-like Basal cells (EEF1G+S100A2+)",
+    "8": "Submucosal gland secretory cells (LTF+DMBT1+)",
 }
 
 annotation_level_0 = subset + "_level_0"

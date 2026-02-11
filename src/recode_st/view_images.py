@@ -5,7 +5,6 @@ import warnings
 from logging import getLogger
 
 import scanpy as sc
-import seaborn as sns
 import squidpy as sq
 
 from recode_st.config import IOConfig, ViewImagesModuleConfig
@@ -32,7 +31,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
 
     # Set figure settings to ensure consistency across all modules
     # cmap = sns.color_palette("Spectral", as_cmap=True)
-    cmap_blue = sns.color_palette("ch:start=.2,rot=-.3", as_cmap=True)
+    # cmap_blue = sns.color_palette("ch:start=.2,rot=-.3", as_cmap=True)
 
     # Import data
     logger.info("Loading Xenium data...")
@@ -43,6 +42,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
         adata,
         color=config.gene_list,
         ncols=3,
+        cmap="autumn",
         wspace=0.4,
         show=False,
         save=f"_genelist_{config.gene_list}.pdf",
@@ -60,11 +60,11 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             adata_roi,
             library_id="spatial",
             color=config.gene_list,
-            cmap=cmap_blue,
+            cmap="autumn",
             shape=None,
             linewidths=0,
             edgecolors="none",
-            size=0.5,
+            size=1,
             img=False,
             save=f"gene_expression_{roi}.pdf",
         )

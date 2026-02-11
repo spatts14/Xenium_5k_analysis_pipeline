@@ -38,6 +38,17 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
     logger.info("Loading Xenium data...")
     adata = sc.read_h5ad(io_config.output_dir / "annotate" / "adata.h5ad")
 
+    logger.info(f"Plotting umap of {config.gene_list}")
+    sc.pl.umap(
+        adata,
+        color=config.gene_list,
+        ncols=3,
+        wspace=0.4,
+        show=False,
+        save=f"_genelist_{config.gene_list}.pdf",
+        frameon=False,
+    )
+
     # View specific gene expression
     logger.info("Plotting genes of interest on tissue...")
     ROI_list = adata.obs["ROI"].unique().tolist()
@@ -57,18 +68,18 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
         )
         logger.info(f"Saved gene expression plot for ROI {roi} to {module_dir}")
 
-        # Cluster plots
-        sq.pl.spatial_scatter(
-            adata_roi,
-            library_id="spatial",
-            shape=None,
-            outline=False,
-            color=[CLUSTER_NAME],
-            wspace=0.4,
-            size=1,
-            save=f"clusters_{roi}.pdf",
-            dpi=300,
-        )
+        # # Cluster plots
+        # sq.pl.spatial_scatter(
+        #     adata_roi,
+        #     library_id="spatial",
+        #     shape=None,
+        #     outline=False,
+        #     color=[CLUSTER_NAME],
+        #     wspace=0.4,
+        #     size=1,
+        #     save=f"clusters_{roi}.pdf",
+        #     dpi=300,
+        # )
         logger.info(f"Saved cluster plot for ROI {roi} to {module_dir}")
 
     logger.info("Imaging module completed successfully.")

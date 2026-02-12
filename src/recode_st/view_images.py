@@ -64,6 +64,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             cmap="plasma",
             shape=None,
             linewidths=0,
+            ncols=3,
             edgecolors="none",
             vmax=5,
             size=1,

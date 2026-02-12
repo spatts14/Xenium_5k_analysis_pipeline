@@ -95,4 +95,4 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 [modules.view_images]
 module_name = "view_images"
 cluster_name = "manual_annotation"
-gene_list = ["CD3E", "KRT5", "MRC1", "MYH11", "VWF"]
+gene_list = ["CD3E", "KRT5", "MRC1", "MYH11", "VWF", "16S"]

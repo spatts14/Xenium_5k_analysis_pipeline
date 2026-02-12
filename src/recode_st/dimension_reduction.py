@@ -2,6 +2,7 @@
 
 import warnings
 from collections import Counter
+from collections.abc import Sequence
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Literal
@@ -391,7 +392,7 @@ def plot_dimensionality_reduction(
     module_dir: Path,
     norm_approach: str,
     n_neighbors: int,
-    leiden_key: str = "leiden_best",
+    leiden_keys: str | Sequence[str] = "leiden_best",
     cmap: Any = None,
     config: DimensionReductionModuleConfig | None = None,
 ) -> None:
@@ -402,7 +403,7 @@ def plot_dimensionality_reduction(
         module_dir: Directory to save figures
         norm_approach: Normalization approach label
         n_neighbors: Number of neighbors used
-        leiden_key: Leiden clustering column name
+        leiden_keys: Leiden clustering column name
         cmap: Colormap for continuous variables
         config: Configuration object with visualization settings
     """
@@ -411,50 +412,60 @@ def plot_dimensionality_reduction(
 
     logger.info("Plotting UMAPs...")
 
-    # Build color list
-    color_list = ["total_counts", "n_genes_by_counts"]
-    if leiden_key in adata.obs.columns:
-        color_list.append(leiden_key)
-        logger.info(f"  Including '{leiden_key}' in plots")
-    else:
-        logger.warning(f"  Cluster column '{leiden_key}' not found, skipping")
-    # Main UMAP plot
-    sc.pl.umap(
-        adata,
-        color=color_list,
-        ncols=3,
-        cmap=cmap,
-        wspace=0.4,
-        show=False,
-        save=f"_{leiden_key}_{norm_approach}_n{n_neighbors}.pdf",
-        frameon=False,
-    )
+    for key in leiden_keys:
+        if key not in adata.obs.columns:
+            logger.warning(f"Cluster column '{key}' not found, skipping")
+            continue
 
-    # Observation fields
-    if config and config.obs_vis_list:
-        logger.info("  Plotting observation fields...")
+        logger.info(f"Plotting UMAP for '{key}'")
+
+        color_list = [
+            "total_counts",
+            "n_genes_by_counts",
+            key,
+        ]
+
         sc.pl.umap(
             adata,
-            color=config.obs_vis_list,
+            color=color_list,
             ncols=3,
             cmap=cmap,
             wspace=0.4,
             show=False,
-            save=f"_{leiden_key}_{norm_approach}_obs_fields.pdf",
             frameon=False,
+            save=f"_{key}_{norm_approach}_n{n_neighbors}.pdf",
         )
+
+    # Observation fields
+    if config and config.obs_vis_list:
+        for item in config.obs_vis_list:
+            if item not in adata.obs:
+                logger.warning(f"{item} not found in adata.obs. Skipping {item}")
+                continue
+
+            logger.info(f"Plotting {item} in observation fields...")
+
+            sc.pl.umap(
+                adata,
+                color=item,
+                cmap=cmap,
+                wspace=0.4,
+                show=False,
+                save=f"_{item}_{norm_approach}_obs_fields.pdf",
+                frameon=False,
+            )
 
     # Marker genes
     if config and config.marker_genes:
-        logger.info("  Plotting marker genes...")
+        logger.info("Plotting marker genes...")
         sc.pl.umap(
             adata,
             color=config.marker_genes,
             cmap=cmap,
-            ncols=4,
+            ncols=3,
             wspace=0.4,
             show=False,
-            save=f"_{leiden_key}_markers_{norm_approach}.pdf",
+            save=f"_markers_{norm_approach}.pdf",
             frameon=False,
         )
 
@@ -576,6 +587,24 @@ def run_dimension_reduction(
     logger.info(f"Results saved to {output_path}")
 
     # Plot results
+    # plot UMAP for all resolutions
+    umap_res_list = []
+    res_list = config.leiden_res
+    for res in res_list:
+        key = f"leiden_res_{res}"
+        umap_res_list.append(key)
+
+    plot_dimensionality_reduction(
+        adata=adata,
+        module_dir=module_dir,
+        norm_approach=config.norm_approach,
+        leiden_key=umap_res_list,
+        n_neighbors=config.n_neighbors,
+        cmap=cmap,
+        config=config,
+    )
+
+    # Plot "best" by silhouette score
     plot_dimensionality_reduction(
         adata=adata,
         module_dir=module_dir,

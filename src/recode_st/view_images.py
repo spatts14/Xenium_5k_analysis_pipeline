@@ -27,7 +27,7 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
     sc.settings.figdir = module_dir
 
     # Define variables
-    # CLUSTER_NAME = config.cluster_name
+    CLUSTER_NAME = config.cluster_name
 
     # Set figure settings to ensure consistency across all modules
     # cmap = sns.color_palette("Spectral", as_cmap=True)
@@ -64,8 +64,8 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
             cmap="plasma",
             shape=None,
             linewidths=0,
-            ncols=3,
             edgecolors="none",
+            ncols=3,
             vmax=5,
             size=1,
             img=False,
@@ -73,18 +73,19 @@ def run_view_images(config: ViewImagesModuleConfig, io_config: IOConfig):
         )
         logger.info(f"Saved gene expression plot for ROI {roi} to {module_dir}")
 
-        # # Cluster plots
-        # sq.pl.spatial_scatter(
-        #     adata_roi,
-        #     library_id="spatial",
-        #     shape=None,
-        #     outline=False,
-        #     color=[CLUSTER_NAME],
-        #     wspace=0.4,
-        #     size=1,
-        #     save=f"clusters_{roi}.pdf",
-        #     dpi=300,
-        # )
+        # Cluster plots
+        sq.pl.spatial_scatter(
+            adata_roi,
+            library_id="spatial",
+            shape=None,
+            linewidths=0,
+            edgecolors="none",
+            color=[CLUSTER_NAME],
+            wspace=0.4,
+            size=1,
+            save=f"clusters_{roi}.pdf",
+            dpi=300,
+        )
         logger.info(f"Saved cluster plot for ROI {roi} to {module_dir}")
 
     logger.info("Imaging module completed successfully.")

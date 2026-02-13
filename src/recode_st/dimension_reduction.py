@@ -475,18 +475,18 @@ def plot_dimensionality_reduction(
 def plot_spatial_distribution(
     adata: sc.AnnData,
     module_dir: Path,
-    leiden_key: str = "leiden_best",
+    leiden_keys: str = "leiden_best",
 ) -> None:
     """Plot spatial distribution of clusters for each ROI.
 
     Args:
         adata: AnnData with cluster annotations
         module_dir: Directory to save plots
-        leiden_key: Leiden clustering column name
+        leiden_keys: Leiden clustering column name
     """
-    if leiden_key not in adata.obs.columns:
+    if leiden_keys not in adata.obs.columns:
         logger.warning(
-            f"Cluster column '{leiden_key}' not found, skipping spatial plots"
+            f"Cluster column '{leiden_keys}' not found, skipping spatial plots"
         )
         return
 
@@ -494,7 +494,7 @@ def plot_spatial_distribution(
         logger.warning("'ROI' column not found, skipping spatial plots")
         return
 
-    logger.info(f"Plotting spatial distribution of '{leiden_key}'...")
+    logger.info(f"Plotting spatial distribution of '{leiden_keys}'...")
 
     for roi in adata.obs["ROI"].unique():
         subset = adata[adata.obs["ROI"] == roi]
@@ -502,9 +502,9 @@ def plot_spatial_distribution(
             subset,
             library_id="spatial",
             shape=None,
-            color=[leiden_key],
+            color=[leiden_keys],
             wspace=0.4,
-            save=module_dir / f"{leiden_key}_{roi}_spatial.pdf",
+            save=module_dir / f"{leiden_keys}_{roi}_spatial.pdf",
         )
 
     logger.info(f"  Spatial plots saved to {module_dir}")
@@ -598,7 +598,7 @@ def run_dimension_reduction(
         adata=adata,
         module_dir=module_dir,
         norm_approach=config.norm_approach,
-        leiden_key=umap_res_list,
+        leiden_keys=umap_res_list,
         n_neighbors=config.n_neighbors,
         cmap=cmap,
         config=config,
@@ -609,7 +609,7 @@ def run_dimension_reduction(
         adata=adata,
         module_dir=module_dir,
         norm_approach=config.norm_approach,
-        leiden_key="leiden_best",
+        leiden_keys="leiden_best",
         n_neighbors=config.n_neighbors,
         cmap=cmap,
         config=config,
@@ -618,7 +618,7 @@ def run_dimension_reduction(
     plot_spatial_distribution(
         adata=adata,
         module_dir=spatial_plots_dir,
-        leiden_key="leiden_best",
+        leiden_keys="leiden_best",
     )
 
     logger.info(f"Dimension reduction module '{config.module_name}' complete.")

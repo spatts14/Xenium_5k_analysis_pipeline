@@ -598,7 +598,7 @@ def run_dimension_reduction(
         adata=adata,
         module_dir=module_dir,
         norm_approach=config.norm_approach,
-        leiden_key=umap_res_list,
+        leiden_keys=umap_res_list,
         n_neighbors=config.n_neighbors,
         cmap=cmap,
         config=config,

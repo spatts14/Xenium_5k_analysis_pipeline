@@ -65,7 +65,7 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 
 
 # DIMENSION REDUCTION MODULE
-#[modules.dimension_reduction]
+[modules.dimension_reduction]
 module_name = "dimension_reduction_multiple_res" # Name of the module - will be used in the output directory name
 norm_approach = "cell_area" # Normalization approach to use
 n_pca = 40 # number of principal components to use for neighborhood graph

@@ -87,6 +87,5 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 # ANNOTATION MODULE
 [modules.annotate]
 module_name = "annotate"
-cluster_name = "leiden"
-clusters_label = "leiden" # haven't done manual annotation
-#cluster_to_cell_type mapping is optional - remove this line if you don't want to rename clusters
+leiden_cluster = "leiden_res_0.5"
+mannual_annotation = "mannual_annotation" # haven't done manual annotation

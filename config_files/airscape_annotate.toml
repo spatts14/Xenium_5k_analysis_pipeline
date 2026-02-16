@@ -89,3 +89,24 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 module_name = "annotate"
 leiden_cluster = "leiden_res_0.5"
 mannual_annotation = "mannual_annotation" # haven't done manual annotation
+# cluster_to_cell_type mapping is optional - remove this line if you don't want to rename clusters
+[modules.annotate.cluster_to_cell_type]
+"0" = "Epithelial cells"           # Ciliated cells
+"1" = "Epithelial cells"           # Basal & Epithelial cells
+"2" = "Epithelial cells"           # Basal cells
+"3" = "Stormal cells"              # Fibroblasts
+"4" = "Epithelial cells"           # Secretory epithelial cells
+"5" = "Epithelial cells"           # Goblet cells
+"6" = "Immune cells"               # T cells
+"7" = "Immune cells"               # Plasma cells
+"8" = "Immune cells"               # Macrophages
+"9" = "Endothelial cells"          # Blood endothelial cells
+"10" = "Stormal cells"             # Fibroblasts
+"11" = "Stromal cells"             # SMC
+"12" = "Alveolar epithelial cells"
+"13" = "Stormal cells"             # Fibroblasts
+"14" = "Endothelial cells"         # Blood endothelial cells
+"15" = "Stormal cells"             # Fibroblasts
+"16" = "Endothelial cells"         # Lymphatic endothelial cells
+"17" = "Unknown"
+"18" = "Immune cells"              # Mast cells

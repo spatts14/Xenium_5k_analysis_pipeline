@@ -50,7 +50,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     sc.settings.figdir = module_dir
 
     # Set figure settings to ensure consistency across all modules
-    cmap = sns.color_palette("Spectral", as_cmap=True)
+    cmap = sns.color_palette("crest", as_cmap=True)
 
     # Import data
     logger.info("Loading Xenium data...")

@@ -531,7 +531,7 @@ def run_dimension_reduction(
 
     sc.settings.figdir = module_dir
     configure_scanpy_figures(str(io_config.output_dir))
-    cmap = sns.color_palette("Spectral", as_cmap=True)
+    cmap = sns.color_palette("crest", as_cmap=True)
 
     # Load data
     adata = load_data(

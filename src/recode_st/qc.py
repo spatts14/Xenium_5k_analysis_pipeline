@@ -22,7 +22,11 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 logger = getLogger(__name__)
 
 
-def plot_metrics(adata, filter_status, module_dir):
+def plot_metrics(
+    adata,
+    module_dir,
+    filter_status,
+):
     """Generates and saves histograms summarizing key cell metrics.
 
     This function creates a 1x4 grid of histograms visualizing:
@@ -32,15 +36,14 @@ def plot_metrics(adata, filter_status, module_dir):
         4. Nucleus-to-cell area ratio
 
     Args:
-        adata (anndata.AnnData): Annotated data matrix with cell metrics
-        stored in `adata.obs`.
+        adata (anndata.AnnData): Annotated data matrix with cell metrics stored in `adata.obs`.
             Must contain the columns:
             - 'total_counts'
             - 'n_genes_by_counts'
             - 'cell_area'
             - 'nucleus_area'
-        filter_status (str): Description of the filtering status (e.g. "pre-filtering").
         module_dir (Path or str): Directory path where the output plot will be saved.
+        filter_status (str): Description of the filtering status (e.g. "pre-filtering").
 
     Returns:
         None
@@ -74,7 +77,7 @@ def plot_metrics(adata, filter_status, module_dir):
     logger.info(f"Saved plots to {output_path}")
 
 
-def plot_scatter_genes_v_count(module_dir, adata, filter_status, hue=None):
+def plot_scatter_genes_v_count(adata, module_dir, filter_status, hue=None):
     """Generate scatter plot of number of genes vs total counts per cell.
 
     Args:
@@ -369,7 +372,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     plot_scatter_genes_v_count(module_dir, adata, filter_status="pre-filtering")
 
     # Plot the summary metrics
-    plot_metrics(module_dir, adata, filter_status="pre-filtering")
+    plot_metrics(adata, module_dir, filter_status="pre-filtering")
 
     # Filter cells and genes
     logger.info("Filtering cells and genes...")
@@ -465,10 +468,10 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         logger.info("No specific cells to remove based on QC plots.")
 
     # Scatter plot of number of genes vs total counts after filtering
-    plot_scatter_genes_v_count(module_dir, adata, filter_status="post-filtering")
+    plot_scatter_genes_v_count(adata, module_dir, filter_status="post-filtering")
 
     # Plot the summary metrics after filtering
-    plot_metrics(module_dir, adata, filter_status="post-filtering")
+    plot_metrics(adata, module_dir, filter_status="post-filtering")
 
     logger.info(f"adata shape after area filtering: {adata.shape}")
 

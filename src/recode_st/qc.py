@@ -36,7 +36,7 @@ def plot_metrics(
         4. Nucleus-to-cell area ratio
 
     Args:
-        adata (anndata.AnnData): Annotated data matrix with cell metrics stored in `adata.obs`.
+        adata (anndata.AnnData): Annotated data matrix with cell metrics in adata.obs.
             Must contain the columns:
             - 'total_counts'
             - 'n_genes_by_counts'
@@ -297,8 +297,8 @@ def pseudobulk_PCA(
         None
     """
     # Get raw counts and gene names
-    expr_matrix = adata.raw.X
-    gene_names = adata.raw.var_names
+    expr_matrix = adata.layers["counts"]
+    gene_names = adata.var_names
 
     # Convert to dense if sparse
     if hasattr(expr_matrix, "toarray"):

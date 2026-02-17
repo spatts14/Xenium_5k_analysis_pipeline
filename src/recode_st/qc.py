@@ -256,7 +256,7 @@ def visualize_variance(adata, module_dir):
         None
     """
     # Visualize gene variance
-    variances = adata.var["dispersions"].values
+    variances = adata.var["variances"].values
 
     # Rank genes by variance (highest = rank 1)
     sorted_variances = variances[np.argsort(-variances)]

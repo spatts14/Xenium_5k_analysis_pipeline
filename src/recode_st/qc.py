@@ -240,7 +240,7 @@ def calc_qc_meterics(adata):
     return adata
 
 
-def visualize_varriance(adata, module_dir):
+def visualize_variance(adata, module_dir):
     """Visualize variance of genes after normalization.
 
     Args:
@@ -436,6 +436,9 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         sc.pp.scale(adata, max_value=10)
     else:
         raise ValueError(f"Unsupported normalization approach: {norm_approach}")
+
+    # Plot variance of genes after normalization
+    visualize_variance(adata, module_dir)
 
     # Save data
     logger.info("Saving filtered and normalized data...")

@@ -195,7 +195,7 @@ fig_dir.mkdir(parents=True, exist_ok=True)  # Create directory if it doesn't exi
 sc.settings.figdir = fig_dir  # Assign it to Scanpy figure directory
 
 # Save spatial figures
-fig_dir_spatial = fig_dir / "spatial"
+fig_dir_spatial = fig_dir / f"spatial_{res}"
 fig_dir_spatial.mkdir(parents=True, exist_ok=True)
 
 # Save files

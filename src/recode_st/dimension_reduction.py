@@ -218,7 +218,7 @@ def calculate_clusters(
         )
 
     logger.info(f"Computing Leiden clustering at {len(res_list)} resolutions...")
-    logger.info(f"  Using '{flavor}' implementation")
+    logger.info(f"Using '{flavor}' implementation")
 
     for res in res_list:
         key = f"leiden_res_{res}"

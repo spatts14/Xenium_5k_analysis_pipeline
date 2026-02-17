@@ -247,12 +247,12 @@ def visualize_variance(adata, module_dir):
         None
     """
     # # Visualize gene variance
-    # if "variances" in adata.var.columns:
-    #     logger.info("Using pre-computed variances from adata.var['variances']")
-    #     variances = adata.var["variances"].values
-    # else:
-    logger.info("Calculating variances from adata.layers['counts']")
-    variances = np.var(adata.layers["counts"].toarray(), axis=0)
+    if "variances" in adata.var.columns:
+        logger.info("Using pre-computed variances from adata.var['variances']")
+        variances = adata.var["variances"].values
+    else:
+        logger.info("Calculating variances from adata.layers['counts']")
+        variances = np.var(adata.layers["counts"].toarray(), axis=0)
 
     # Rank genes by variance (highest = rank 1)
     sorted_variances = variances[np.argsort(-variances)]
@@ -265,7 +265,7 @@ def visualize_variance(adata, module_dir):
     # Create the plot
     output_path = module_dir / "gene_variance_rank.png"
     plt.figure(figsize=(8, 5))
-    sns.scatterplot(x="rank", y="variance", data=df, alpha=0.3, s=10)
+    sns.scatterplot(x="rank", y="variance", data=df, alpha=0.5, s=5)
     plt.xlabel("Gene Rank (by variance)")
     plt.ylabel("Variance (Dispersion)")
     plt.title("Gene Variance vs Rank")
@@ -355,7 +355,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     min_cell_area = config.min_cell_area
     max_cell_area = config.max_cell_area
     norm_approach = config.norm_approach
-    HVG = 1000
+    HVG = 500
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)

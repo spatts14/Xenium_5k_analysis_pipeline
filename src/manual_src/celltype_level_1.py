@@ -159,7 +159,7 @@ seed_everything(19960915)
 
 # Set variables
 # Set variables
-h5ad_file = "adata_subset_Airway_epithelium.h5ad"
+h5ad_file = "adata_subset_Airway_epithelial_cells.h5ad"
 subset = "airway_epithelium"
 mannual_annotation = "mannual_annotation"
 res = 0.5

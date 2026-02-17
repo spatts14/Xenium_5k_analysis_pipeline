@@ -10,6 +10,8 @@ import scanpy as sc
 import scipy.sparse as sp
 import scTransform
 import seaborn as sns
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
 from recode_st.config import IOConfig, QualityControlModuleConfig
 from recode_st.helper_function import configure_scanpy_figures
@@ -272,6 +274,71 @@ def visualize_variance(adata, module_dir):
     plt.savefig(output_path, dpi=300)
 
 
+def pseudobulk_PCA(
+    adata, sample_ID: str = "ROI", hue: str = "condition", module_dir=None
+):
+    """Perform pseudobulk PCA analysis.
+
+    Args:
+        adata (anndata.AnnData): Annotated data matrix with cell metrics
+        sample_ID (str): Column in adata.obs that identifies samples for pseudobulk
+        hue (str): Column in adata.obs to color points by
+        module_dir (Path or str): Directory path where the output plot will be saved.
+
+    Returns:
+        None
+    """
+    # Get raw counts and gene names
+    expr_matrix = adata.raw.X
+    gene_names = adata.raw.var_names
+
+    # Convert to dense if sparse
+    if hasattr(expr_matrix, "toarray"):
+        expr_matrix = expr_matrix.toarray()
+
+    # Create dataframe for pseudobulk
+    df = pd.DataFrame(expr_matrix, columns=gene_names, index=adata.obs_names)
+    df[sample_ID] = adata.obs[sample_ID].values
+    df[hue] = adata.obs[hue].values
+
+    # Aggregate by summing counts per sample (pseudobulk)
+    pseudobulk = df.groupby(sample_ID).sum(numeric_only=True)
+
+    print(f"Pseudobulk number of samples: {pseudobulk.shape[0]}")
+    print(f"Pseudobulk number of genes: {pseudobulk.shape[1]}")
+
+    # Log transform and scale for PCA
+    pseudobulk_log = np.log1p(pseudobulk)
+    scaler = StandardScaler()
+    pseudobulk_scaled = scaler.fit_transform(pseudobulk_log)
+
+    # Run PCA
+    pca = PCA(n_components=2)
+    pca_coords = pca.fit_transform(pseudobulk_scaled)
+
+    # Create results dataframe
+    pca_df = pd.DataFrame(
+        {"PC1": pca_coords[:, 0], "PC2": pca_coords[:, 1], sample_ID: pseudobulk.index}
+    )
+
+    # Map sample to hue (condition) - take first value per sample
+    sample_to_hue = df.groupby(sample_ID)[hue].first().to_dict()
+    pca_df[hue] = pca_df[sample_ID].map(sample_to_hue)
+
+    # Plot with seaborn
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sns.scatterplot(data=pca_df, x="PC1", y="PC2", hue=hue, s=100, ax=ax)
+
+    ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0] * 100:.1f}%)")
+    ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1] * 100:.1f}%)")
+    ax.set_title("Pseudobulk PCA")
+    ax.legend(title=hue, bbox_to_anchor=(1.02, 1), loc="upper left")
+    plt.tight_layout()
+
+    fig.savefig(module_dir / "pseudobulk_pca.png", dpi=300, bbox_inches="tight")
+    logger.info(f"Saved plot to {module_dir / 'pseudobulk_pca.png'}")
+
+
 def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     """Run quality control on Xenium data."""
     # Set variables
@@ -439,6 +506,9 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
 
     # Plot variance of genes after normalization
     visualize_variance(adata, module_dir)
+
+    # Perform pseudobulk PCA analysis
+    pseudobulk_PCA(adata, sample_ID="ROI", hue="condition", module_dir=module_dir)
 
     # Save data
     logger.info("Saving filtered and normalized data...")

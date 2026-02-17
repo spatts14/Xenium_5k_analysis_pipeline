@@ -256,7 +256,12 @@ def visualize_variance(adata, module_dir):
         None
     """
     # Visualize gene variance
-    variances = adata.var["variances"].values
+    # variances = adata.var["variances"].values
+    # Direct variance calculation (on normalized data)
+    if hasattr(adata.X, "toarray"):
+        variances = np.var(adata.X.toarray(), axis=0)
+    else:
+        variances = np.var(adata.X, axis=0)
 
     # Rank genes by variance (highest = rank 1)
     sorted_variances = variances[np.argsort(-variances)]

@@ -5,6 +5,7 @@ from logging import getLogger
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import scanpy as sc
 import scipy.sparse as sp
 import scTransform
@@ -19,7 +20,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 logger = getLogger(__name__)
 
 
-def plot_metrics(module_dir, adata, filter_status):
+def plot_metrics(adata, filter_status, module_dir):
     """Generates and saves histograms summarizing key cell metrics.
 
     This function creates a 1x4 grid of histograms visualizing:
@@ -29,7 +30,6 @@ def plot_metrics(module_dir, adata, filter_status):
         4. Nucleus-to-cell area ratio
 
     Args:
-        module_dir (Path or str): Directory path where the output plot will be saved.
         adata (anndata.AnnData): Annotated data matrix with cell metrics
         stored in `adata.obs`.
             Must contain the columns:
@@ -38,6 +38,7 @@ def plot_metrics(module_dir, adata, filter_status):
             - 'cell_area'
             - 'nucleus_area'
         filter_status (str): Description of the filtering status (e.g. "pre-filtering").
+        module_dir (Path or str): Directory path where the output plot will be saved.
 
     Returns:
         None
@@ -133,15 +134,6 @@ def normalize_data(adata, norm_approach):
     if norm_approach == "scanpy_log":
         # scRNAseq approach
         sc.pp.normalize_total(adata, inplace=True)  # normalize data
-        logger.info("Log transforming...")
-        sc.pp.log1p(adata)  # Log transform
-        # Identify highly variable genes
-        logger.info("Identifying highly variable genes...")
-        sc.pp.highly_variable_genes(
-            adata, flavor="seurat", n_top_genes=2000, inplace=True
-        )
-        logger.info("Scaling data...")
-        sc.pp.scale(adata, max_value=10)  # TODO: Scale data; how do I choose max_value?
     elif norm_approach == "sctransform":
         # scTransform approach
         vst_out = scTransform.vst(
@@ -163,17 +155,6 @@ def normalize_data(adata, norm_approach):
             else:
                 # Dense case
                 adata.X = adata.X * cell_area_inv[:, None]
-            logger.info("Log transforming...")
-            sc.pp.log1p(adata)  # Log transform
-            # Identify highly variable genes
-            logger.info("Identifying highly variable genes...")
-            sc.pp.highly_variable_genes(
-                adata, flavor="seurat", n_top_genes=2000, inplace=True
-            )
-            logger.info("Scaling data...")
-            sc.pp.scale(
-                adata, max_value=10
-            )  # TODO: Scale data; how do I choose max_value?
         else:
             logger.warning(
                 "Cell area not found in adata.obs; skipping normalization by cell area"
@@ -259,6 +240,38 @@ def calc_qc_meterics(adata):
     return adata
 
 
+def visualize_varriance(adata, module_dir):
+    """Visualize variance of genes after normalization.
+
+    Args:
+        adata (anndata.AnnData): Annotated data matrix with cell metrics
+        module_dir (Path or str): Directory path where the output plot will be saved.
+
+    Returns:
+        None
+    """
+    # Visualize gene variance
+    variances = adata.var["dispersions"].values
+
+    # Rank genes by variance (highest = rank 1)
+    sorted_variances = variances[np.argsort(-variances)]
+
+    # Create dataframe for plotting
+    df = pd.DataFrame(
+        {"rank": np.arange(1, len(sorted_variances) + 1), "variance": sorted_variances}
+    )
+
+    # Create the plot
+    output_path = module_dir / "gene_variance_rank.png"
+    plt.figure(figsize=(8, 5))
+    sns.scatterplot(x="rank", y="variance", data=df, alpha=0.3, s=10)
+    plt.xlabel("Gene Rank (by variance)")
+    plt.ylabel("Variance (Dispersion)")
+    plt.title("Gene Variance vs Rank")
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300)
+
+
 def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     """Run quality control on Xenium data."""
     # Set variables
@@ -268,6 +281,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     min_cell_area = config.min_cell_area
     max_cell_area = config.max_cell_area
     norm_approach = config.norm_approach
+    HVG = 1000
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -401,6 +415,27 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     # Normalize data
     logger.info("Starting data normalization...")
     normalize_data(adata, norm_approach)
+
+    if norm_approach == "sctransform":
+        logger.info(
+            "Skipping log transform and scaling: Already variance stabilized and scaled"
+        )
+        logger.info(f"Identifying {HVG} highly variable genes...")
+        sc.pp.highly_variable_genes(
+            adata, flavor="seurat_v3", n_top_genes=HVG, inplace=True
+        )
+    elif norm_approach in {"cell_area", "scanpy_log"}:
+        logger.info("Log transforming...")
+        sc.pp.log1p(adata)  # Log transform
+        # Identify highly variable genes
+        logger.info(f"Identifying {HVG} highly variable genes...")
+        sc.pp.highly_variable_genes(
+            adata, flavor="seurat_v3", n_top_genes=HVG, inplace=True
+        )
+        logger.info("Scaling data...")
+        sc.pp.scale(adata, max_value=10)
+    else:
+        raise ValueError(f"Unsupported normalization approach: {norm_approach}")
 
     # Save data
     logger.info("Saving filtered and normalized data...")

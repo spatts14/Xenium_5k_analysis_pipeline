@@ -16,7 +16,7 @@ source xenium_5k_venv/bin/activate
 
 # Run
 echo "Starting at annotation... $(date)"
-python -m recode_st config_files/airscape_annotate.toml
+python -m recode_st config_files/airscape.toml
 
 # echo "Creating adata for each cell type... $(date)"
 # python src/manual_src/celltype_subset.py

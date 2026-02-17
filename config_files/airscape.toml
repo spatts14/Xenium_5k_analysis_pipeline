@@ -65,39 +65,34 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 
 
 # DIMENSION REDUCTION MODULE
-#[modules.dimension_reduction]
-#module_name = "dimension_reduction_multiple_res" # Name of the module - will be used in the output directory #name
-#norm_approach = "cell_area" # Normalization approach to use
-#n_pca = 40 # number of principal components to use for neighborhood graph
-#n_neighbors = 20 # number of neighbors for the neighborhood graph
-#leiden_res = [0.1, 0.3, 0.5, 0.8, 1.0] # resolution for leiden clustering
-#obs_vis_list = ["batch", "sample_ID", "condition", "timepoint", "ROI"]
-#marker_genes = [
-#    "PTPRC",
-#    "CD3E",
-#    "CD68",
-#    "EPCAM",
-#    "KRT5",
-#    "PDGFRA",
-#    "ACTA2",
-#    "VWF",
-#] # Cell type marker plots
+[modules.dimension_reduction]
+module_name = "dimension_reduction" # Name of the module - will be used in the output directory #name
+norm_approach = "cell_area" # Normalization approach to use
+n_pca = 40 # number of principal components to use for neighborhood graph
+n_neighbors = 20 # number of neighbors for the neighborhood graph
+leiden_res = [0.1, 0.3, 0.5, 0.8, 1.0] # resolution for leiden clustering
+obs_vis_list = ["batch", "sample_ID", "condition", "timepoint", "ROI"]
+marker_genes = [
+    "PTPRC",
+    "CD3E",
+    "CD68",
+    "EPCAM",
+    "KRT5",
+    "PDGFRA",
+    "ACTA2",
+    "VWF",
+    "MYH11",
+] # Cell type marker plots
 
 
 # ANNOTATION MODULE
 [modules.annotate]
 module_name = "annotate"
-leiden_cluster = "leiden_best"
+leiden_cluster = "leiden_res_0.5"
 mannual_annotation = "mannual_annotation" # haven't done manual annotation
 # cluster_to_cell_type mapping is optional - remove this line if you don't want to rename clusters
-[modules.annotate.cluster_to_cell_type]
-"0" = "Airway epithelium"
-"1" = "Immune"
-"2" = "Alveolar epithelium"
-"3" = "Blood endothelial cells"
-"4" = "Smooth muscle"
-"5" = "Immune"
-
+#[modules.annotate.cluster_to_cell_type]
+#"0" = "Airway epithelium"
 
 # VIEW IMAGES MODULE
 [modules.view_images]

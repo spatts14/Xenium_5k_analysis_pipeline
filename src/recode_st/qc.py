@@ -369,7 +369,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     adata = calc_qc_meterics(adata)
 
     # Scatter plot of number of genes vs total counts
-    plot_scatter_genes_v_count(module_dir, adata, filter_status="pre-filtering")
+    plot_scatter_genes_v_count(adata, module_dir, filter_status="pre-filtering")
 
     # Plot the summary metrics
     plot_metrics(adata, module_dir, filter_status="pre-filtering")

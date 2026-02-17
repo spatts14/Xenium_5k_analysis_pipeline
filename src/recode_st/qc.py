@@ -167,15 +167,6 @@ def normalize_data(adata, norm_approach):
     elif norm_approach == "none":
         # No normalization
         logger.info("No normalization applied.")
-        logger.info("Log transforming...")
-        sc.pp.log1p(adata)  # Log transform
-        # Identify highly variable genes
-        logger.info("Identifying highly variable genes...")
-        sc.pp.highly_variable_genes(
-            adata, flavor="seurat", n_top_genes=2000, inplace=True
-        )
-        logger.info("Scaling data...")
-        sc.pp.scale(adata, max_value=10)  # TODO: Scale data; how do I choose max_value?
     else:
         raise ValueError(f"Normalization approach {norm_approach} not recognized")
 
@@ -256,12 +247,12 @@ def visualize_variance(adata, module_dir):
         None
     """
     # Visualize gene variance
-    # variances = adata.var["variances"].values
-    # Direct variance calculation (on normalized data)
-    if hasattr(adata.X, "toarray"):
-        variances = np.var(adata.X.toarray(), axis=0)
+    if "variances" in adata.var.columns:
+        logger.info("Using pre-computed variances from adata.var['variances']")
+        variances = adata.var["variances"].values
     else:
-        variances = np.var(adata.X, axis=0)
+        logger.info("Calculating variances from adata.layers['counts']")
+        variances = np.var(adata.layers["counts"].toarray(), axis=0)
 
     # Rank genes by variance (highest = rank 1)
     sorted_variances = variances[np.argsort(-variances)]
@@ -280,6 +271,7 @@ def visualize_variance(adata, module_dir):
     plt.title("Gene Variance vs Rank")
     plt.tight_layout()
     plt.savefig(output_path, dpi=300)
+    plt.close()  # to prevent memory leak
 
 
 def pseudobulk_PCA(
@@ -296,6 +288,12 @@ def pseudobulk_PCA(
     Returns:
         None
     """
+    # Check if sample_ID and hue columns exist
+    if sample_ID not in adata.obs.columns:
+        raise ValueError(f"Column '{sample_ID}' not found in adata.obs")
+    if hue not in adata.obs.columns:
+        raise ValueError(f"Column '{hue}' not found in adata.obs")
+
     # Get raw counts and gene names
     expr_matrix = adata.layers["counts"]
     gene_names = adata.var_names
@@ -344,6 +342,7 @@ def pseudobulk_PCA(
     plt.tight_layout()
 
     fig.savefig(module_dir / "pseudobulk_pca.png", dpi=300, bbox_inches="tight")
+    plt.close()  # to prevent memory leak
     logger.info(f"Saved plot to {module_dir / 'pseudobulk_pca.png'}")
 
 
@@ -497,7 +496,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         )
         logger.info(f"Identifying {HVG} highly variable genes...")
         sc.pp.highly_variable_genes(
-            adata, flavor="seurat_v3", n_top_genes=HVG, inplace=True
+            adata, flavor="seurat_v3", n_top_genes=HVG, inplace=True, layer="counts"
         )
     elif norm_approach in {"cell_area", "scanpy_log"}:
         logger.info("Log transforming...")
@@ -505,7 +504,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         # Identify highly variable genes
         logger.info(f"Identifying {HVG} highly variable genes...")
         sc.pp.highly_variable_genes(
-            adata, flavor="seurat_v3", n_top_genes=HVG, inplace=True
+            adata, flavor="seurat_v3", n_top_genes=HVG, inplace=True, layer="counts"
         )
         logger.info("Scaling data...")
         sc.pp.scale(adata, max_value=10)

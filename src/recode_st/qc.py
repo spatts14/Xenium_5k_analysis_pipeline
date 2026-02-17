@@ -246,13 +246,13 @@ def visualize_variance(adata, module_dir):
     Returns:
         None
     """
-    # Visualize gene variance
-    if "variances" in adata.var.columns:
-        logger.info("Using pre-computed variances from adata.var['variances']")
-        variances = adata.var["variances"].values
-    else:
-        logger.info("Calculating variances from adata.layers['counts']")
-        variances = np.var(adata.layers["counts"].toarray(), axis=0)
+    # # Visualize gene variance
+    # if "variances" in adata.var.columns:
+    #     logger.info("Using pre-computed variances from adata.var['variances']")
+    #     variances = adata.var["variances"].values
+    # else:
+    logger.info("Calculating variances from adata.layers['counts']")
+    variances = np.var(adata.layers["counts"].toarray(), axis=0)
 
     # Rank genes by variance (highest = rank 1)
     sorted_variances = variances[np.argsort(-variances)]

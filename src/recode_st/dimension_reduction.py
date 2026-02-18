@@ -130,7 +130,7 @@ def load_data(
     if subsample_strategy == "none":
         logger.info("Loading full dataset (no subsampling)...")
         adata = sc.read_h5ad(data_path)
-        logger.info(f"  Loaded {len(adata)} cells")
+        logger.info(f"Loaded {len(adata)} cells")
         return adata
 
     elif subsample_strategy == "compute":

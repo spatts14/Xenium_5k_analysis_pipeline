@@ -1,5 +1,6 @@
 """The configuration module for recode_st."""
 
+from datetime import datetime
 from pathlib import Path
 from typing import Literal, Self
 
@@ -313,6 +314,198 @@ class IOConfig(BaseModel):
 
         return self
 
+    def create_timestamped_output_dir(self) -> Path:
+        """Create a unique timestamped output directory."""
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        unique_dir = self.base_dir / "output" / f"{timestamp}_analysis_run"
+        unique_dir.mkdir(parents=True, exist_ok=True)
+        return unique_dir
+
+    def get_figure_path(self, module_dir: Path, filename: str) -> Path:
+        """Get path for saving figures in fig/ subfolder."""
+        fig_extensions = {".png", ".pdf", ".svg", ".eps"}
+        file_path = Path(filename)
+        if file_path.suffix.lower() in fig_extensions:
+            fig_dir = module_dir / "fig"
+            fig_dir.mkdir(exist_ok=True)
+            return fig_dir / filename
+        else:
+            return module_dir / filename
+
+
+class ModuleDependency(BaseModel):
+    """Configuration for a single module dependency."""
+
+    source_module: str
+    """The module that produces the required data."""
+
+    data_type: str
+    """The type of data needed (e.g., 'processed_adata', 'normalized_data')."""
+
+    required: bool = True
+    """Whether this dependency is required for the module to run."""
+
+
+class ModuleDependencies(BaseModel):
+    """Configuration for module dependencies."""
+
+    dimension_reduction: list[ModuleDependency] = Field(
+        default_factory=lambda: [
+            ModuleDependency(
+                source_module="quality_control", data_type="processed_adata"
+            )
+        ]
+    )
+    """Dependencies for dimension reduction module."""
+
+    integrate_ingest: list[ModuleDependency] = Field(
+        default_factory=lambda: [
+            ModuleDependency(
+                source_module="dimension_reduction", data_type="clustered_adata"
+            )
+        ]
+    )
+    """Dependencies for integration ingest module."""
+
+    integrate_scvi: list[ModuleDependency] = Field(
+        default_factory=lambda: [
+            ModuleDependency(
+                source_module="dimension_reduction", data_type="clustered_adata"
+            )
+        ]
+    )
+    """Dependencies for integration scVI module."""
+
+    annotate: list[ModuleDependency] = Field(
+        default_factory=lambda: [
+            ModuleDependency(
+                source_module="integrate_ingest",
+                data_type="integrated_adata",
+                required=False,
+            ),
+            ModuleDependency(
+                source_module="integrate_scvi",
+                data_type="integrated_adata",
+                required=False,
+            ),
+        ]
+    )
+    """Dependencies for annotation module."""
+
+
+class DataFlowManager:
+    """Manages data flow between modules."""
+
+    def __init__(self, config: "Config"):
+        """Initialize the data flow manager.
+
+        Args:
+            config: The configuration object containing module dependencies.
+        """
+        self.config = config
+        self._data_registry: dict[str, Path] = {}
+        self._module_dependencies = config.module_dependencies
+
+    def register_output(
+        self, module_name: str, data_type: str, file_path: Path
+    ) -> None:
+        """Register module output for other modules to find.
+
+        Args:
+            module_name: Name of the module producing the output
+            data_type: Type of data being registered (e.g., 'processed_adata')
+            file_path: Path to the output file
+        """
+        key = f"{module_name}:{data_type}"
+        self._data_registry[key] = file_path
+
+        from logging import getLogger
+
+        logger = getLogger(__name__)
+        logger.info(f"Registered output: {key} -> {file_path}")
+
+    def get_input_path(self, source_module: str, data_type: str) -> Path:
+        """Get path to required input from another module.
+
+        Args:
+            source_module: Module that should have produced the data
+            data_type: Type of data needed
+
+        Returns:
+            Path to the required data file
+
+        Raises:
+            FileNotFoundError: If the required data is not found
+        """
+        key = f"{source_module}:{data_type}"
+        if key not in self._data_registry:
+            # Try to infer path if not registered (fallback for backwards compatibility)
+            inferred_path = self._try_infer_path(source_module, data_type)
+            if inferred_path and inferred_path.exists():
+                self._data_registry[key] = inferred_path
+                return inferred_path
+            raise FileNotFoundError(
+                f"No '{data_type}' output found from module '{source_module}'. "
+                f"Available outputs: {list(self._data_registry.keys())}"
+            )
+        return self._data_registry[key]
+
+    def get_dependencies(self, module_name: str) -> list[ModuleDependency]:
+        """Get list of dependencies for a module.
+
+        Args:
+            module_name: Name of the module
+
+        Returns:
+            List of dependencies for the module
+        """
+        return getattr(self._module_dependencies, module_name, [])
+
+    def check_dependencies(self, module_name: str) -> dict[str, bool]:
+        """Check if all dependencies for a module are satisfied.
+
+        Args:
+            module_name: Name of the module to check
+
+        Returns:
+            Dictionary mapping dependency keys to satisfaction status
+        """
+        dependencies = self.get_dependencies(module_name)
+        status = {}
+
+        for dep in dependencies:
+            key = f"{dep.source_module}:{dep.data_type}"
+            try:
+                path = self.get_input_path(dep.source_module, dep.data_type)
+                status[key] = path.exists()
+            except FileNotFoundError:
+                status[key] = False
+
+        return status
+
+    def _try_infer_path(self, source_module: str, data_type: str) -> Path | None:
+        """Try to infer file path for backwards compatibility."""
+        # Common patterns for different data types
+        if data_type == "processed_adata":
+            # Try common QC output patterns
+            qc_dir = self.config.io.output_dir / source_module
+            for pattern in [
+                "adata_cell_area.h5ad",
+                "adata_scanpy_log.h5ad",
+                "adata_*.h5ad",
+            ]:
+                if "*" in pattern:
+                    # Handle glob patterns
+
+                    matches = list(qc_dir.glob(pattern))
+                    if matches:
+                        return matches[0]  # Return first match
+                else:
+                    candidate = qc_dir / pattern
+                    if candidate.exists():
+                        return candidate
+        return None
+
 
 class Config(BaseModel):
     """The possible configuration options for recode_st."""
@@ -328,6 +521,13 @@ class Config(BaseModel):
 
     modules: ModulesConfig = Field(default_factory=ModulesConfig)
     """Configuration for all modules."""
+
+    module_dependencies: ModuleDependencies = Field(default_factory=ModuleDependencies)
+    """Configuration for module dependencies."""
+
+    def create_data_flow_manager(self) -> DataFlowManager:
+        """Create a data flow manager instance."""
+        return DataFlowManager(self)
 
 
 def load_config(config_file: str | Path) -> Config:
@@ -347,3 +547,16 @@ def load_config(config_file: str | Path) -> Config:
         data = tomllib.load(f)
 
     return Config.model_validate(data)
+
+
+def copy_config_to_output(config_path: Path, output_dir: Path) -> None:
+    """Copy the config file to the output directory.
+
+    Args:
+        config_path: Path to the source config file.
+        output_dir: Path to the output directory.
+    """
+    import shutil
+
+    destination = output_dir / config_path.name
+    shutil.copy2(config_path, destination)

@@ -5,7 +5,7 @@ from collections import Counter
 from collections.abc import Sequence
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import geosketch
 import numpy as np
@@ -17,6 +17,9 @@ from sklearn.metrics import silhouette_samples, silhouette_score
 
 from recode_st.config import DimensionReductionModuleConfig, IOConfig
 from recode_st.helper_function import configure_scanpy_figures
+
+if TYPE_CHECKING:
+    from recode_st.config import DataFlowManager
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -96,6 +99,7 @@ def load_data(
     io_config: IOConfig,
     config: DimensionReductionModuleConfig,
     subsample_strategy: SubsampleStrategy = "none",
+    flow_manager: "DataFlowManager | None" = None,
 ) -> sc.AnnData:
     """Load data with optional subsampling.
 
@@ -103,6 +107,7 @@ def load_data(
         io_config: IO configuration
         config: Dimension reduction module configuration
         subsample_strategy: One of "none", "compute", or "load"
+        flow_manager: Optional data flow manager for tracking module dependencies
 
     Returns:
         AnnData object ready for analysis
@@ -118,12 +123,29 @@ def load_data(
             f"Must be one of {valid_strategies}"
         )
 
-    # Define file paths
-    data_path = (
-        Path(io_config.output_dir)
-        / "quality_control"
-        / f"adata_{config.norm_approach}.h5ad"
-    )
+    # Define file paths - use flow manager if available
+    if flow_manager:
+        try:
+            data_path = flow_manager.get_input_path(
+                "quality_control", "processed_adata"
+            )
+            logger.info(f"Using data flow manager to load from: {data_path}")
+        except FileNotFoundError as e:
+            logger.warning(f"Data flow manager failed: {e}")
+            logger.info("Falling back to hard-coded path")
+            data_path = (
+                Path(io_config.output_dir)
+                / "quality_control"
+                / f"adata_{config.norm_approach}.h5ad"
+            )
+    else:
+        # Fallback to hard-coded path
+        data_path = (
+            Path(io_config.output_dir)
+            / "quality_control"
+            / f"adata_{config.norm_approach}.h5ad"
+        )
+
     module_dir = Path(io_config.output_dir) / config.module_name
     subsample_path = module_dir / f"adata_subsample_{config.norm_approach}.h5ad"
 
@@ -513,12 +535,14 @@ def plot_spatial_distribution(
 def run_dimension_reduction(
     config: DimensionReductionModuleConfig,
     io_config: IOConfig,
+    flow_manager: "DataFlowManager | None" = None,
 ) -> sc.AnnData:
     """Run complete dimension reduction pipeline.
 
     Args:
         config: Configuration for dimension reduction
         io_config: IO configuration
+        flow_manager: Optional data flow manager for tracking module dependencies
 
     Returns:
         AnnData with computed dimensionality reduction and clustering
@@ -526,8 +550,16 @@ def run_dimension_reduction(
     # Setup directories
     module_dir = Path(io_config.output_dir) / config.module_name
     module_dir.mkdir(exist_ok=True, parents=True)
+
+    # Create fig subfolder for figures
+    fig_dir = module_dir / "fig"
+    fig_dir.mkdir(exist_ok=True, parents=True)
+
     spatial_plots_dir = module_dir / "spatial_plots"
     spatial_plots_dir.mkdir(exist_ok=True, parents=True)
+
+    # Configure scanpy to save figures in the fig/ subfolder
+    configure_scanpy_figures(str(fig_dir))
 
     sc.settings.figdir = module_dir
     configure_scanpy_figures(str(io_config.output_dir))
@@ -538,6 +570,7 @@ def run_dimension_reduction(
         io_config=io_config,
         config=config,
         subsample_strategy=config.subsample_strategy,
+        flow_manager=flow_manager,
     )
 
     # Ensure PCA is computed (only compute if not already present)
@@ -583,6 +616,13 @@ def run_dimension_reduction(
     output_path = module_dir / "adata.h5ad"
     adata.write_h5ad(output_path)
     logger.info(f"Results saved to {output_path}")
+
+    # Register output with data flow manager
+    if flow_manager:
+        flow_manager.register_output(
+            "dimension_reduction", "clustered_adata", output_path
+        )
+        flow_manager.register_output("dimension_reduction", "adata", output_path)
 
     # Plot results
     # plot UMAP for all resolutions

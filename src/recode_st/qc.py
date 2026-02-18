@@ -2,6 +2,7 @@
 
 import warnings
 from logging import getLogger
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,6 +17,9 @@ from sklearn.preprocessing import StandardScaler
 from recode_st.config import IOConfig, QualityControlModuleConfig
 from recode_st.helper_function import configure_scanpy_figures
 
+if TYPE_CHECKING:
+    from recode_st.config import DataFlowManager
+
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -26,6 +30,7 @@ def plot_metrics(
     adata,
     module_dir,
     filter_status,
+    io_config=None,
 ):
     """Generates and saves histograms summarizing key cell metrics.
 
@@ -44,6 +49,7 @@ def plot_metrics(
             - 'nucleus_area'
         module_dir (Path or str): Directory path where the output plot will be saved.
         filter_status (str): Description of the filtering status (e.g. "pre-filtering").
+        io_config (IOConfig, optional): IO configuration for managing figure paths.
 
     Returns:
         None
@@ -71,20 +77,25 @@ def plot_metrics(
 
     # Save figure
     filter_status = filter_status.replace("-", "_").lower()
-    output_path = module_dir / f"cell_summary_histograms_{filter_status}.png"
+    output_path = io_config.get_figure_path(
+        module_dir, f"cell_summary_histograms_{filter_status}.pdf"
+    )
     plt.savefig(output_path, dpi=300)
     plt.close()
     logger.info(f"Saved plots to {output_path}")
 
 
-def plot_scatter_genes_v_count(adata, module_dir, filter_status, hue=None):
+def plot_scatter_genes_v_count(
+    adata, module_dir, filter_status, hue=None, io_config=None
+):
     """Generate scatter plot of number of genes vs total counts per cell.
 
     Args:
-        module_dir: Directory to save the plot
         adata: AnnData object with cell metrics
-        hue: Column in adata.obs to color points by
+        module_dir: Directory to save the plot
         filter_status: Status of filtering (e.g., "pre-filtering", "post-filtering")
+        hue: Column in adata.obs to color points by
+        io_config (IOConfig, optional): IO configuration for managing figure paths
 
     Returns:
         None.
@@ -113,8 +124,15 @@ def plot_scatter_genes_v_count(adata, module_dir, filter_status, hue=None):
 
     # Adjust layout with padding
     plt.subplots_adjust(left=0.1, bottom=0.1, right=0.95, top=0.9)
+    output_path = (
+        io_config.get_figure_path(
+            module_dir, f"qc_genes_vs_total_counts_{filter_status_save}.png"
+        )
+        if io_config
+        else module_dir / f"qc_genes_vs_total_counts_{filter_status_save}.png"
+    )
     fig.savefig(
-        module_dir / f"qc_genes_vs_total_counts_{filter_status_save}.png",
+        output_path,
         dpi=300,
         bbox_inches="tight",
         pad_inches=0.2,
@@ -236,12 +254,13 @@ def calc_qc_meterics(adata):
     return adata
 
 
-def visualize_variance(adata, module_dir):
+def visualize_variance(adata, module_dir, io_config=None):
     """Visualize variance of genes after normalization.
 
     Args:
         adata (anndata.AnnData): Annotated data matrix with cell metrics
         module_dir (Path or str): Directory path where the output plot will be saved.
+        io_config (IOConfig, optional): IO configuration for managing figure paths
 
     Returns:
         None
@@ -263,7 +282,11 @@ def visualize_variance(adata, module_dir):
     )
 
     # Create the plot
-    output_path = module_dir / "gene_variance_rank.png"
+    output_path = (
+        io_config.get_figure_path(module_dir, "gene_variance_rank.png")
+        if io_config
+        else module_dir / "gene_variance_rank.png"
+    )
     plt.figure(figsize=(8, 5))
     sns.scatterplot(x="rank", y="variance", data=df, alpha=0.5, s=5)
     plt.xlabel("Gene Rank (by variance)")
@@ -275,7 +298,11 @@ def visualize_variance(adata, module_dir):
 
 
 def pseudobulk_PCA(
-    adata, sample_ID: str = "ROI", hue: str = "condition", module_dir=None
+    adata,
+    sample_ID: str = "ROI",
+    hue: str = "condition",
+    module_dir=None,
+    io_config=None,
 ):
     """Perform pseudobulk PCA analysis.
 
@@ -284,6 +311,7 @@ def pseudobulk_PCA(
         sample_ID (str): Column in adata.obs that identifies samples for pseudobulk
         hue (str): Column in adata.obs to color points by
         module_dir (Path or str): Directory path where the output plot will be saved.
+        io_config (IOConfig, optional): IO configuration for managing figure paths
 
     Returns:
         None
@@ -341,12 +369,27 @@ def pseudobulk_PCA(
     ax.legend(title=hue, bbox_to_anchor=(1.02, 1), loc="upper left")
     plt.tight_layout()
 
-    fig.savefig(module_dir / "pseudobulk_pca.png", dpi=300, bbox_inches="tight")
+    fig.savefig(
+        io_config.get_figure_path(module_dir, "pseudobulk_pca.png")
+        if io_config
+        else module_dir / "pseudobulk_pca.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
     plt.close()  # to prevent memory leak
-    logger.info(f"Saved plot to {module_dir / 'pseudobulk_pca.png'}")
+    save_path = (
+        io_config.get_figure_path(module_dir, "pseudobulk_pca.png")
+        if io_config
+        else module_dir / "pseudobulk_pca.png"
+    )
+    logger.info(f"Saved plot to {save_path}")
 
 
-def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
+def run_qc(
+    config: QualityControlModuleConfig,
+    io_config: IOConfig,
+    flow_manager: "DataFlowManager | None" = None,
+):
     """Run quality control on Xenium data."""
     # Set variables
     module_dir = io_config.output_dir / config.module_name
@@ -373,10 +416,12 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     adata = calc_qc_meterics(adata)
 
     # Scatter plot of number of genes vs total counts
-    plot_scatter_genes_v_count(adata, module_dir, filter_status="pre-filtering")
+    plot_scatter_genes_v_count(
+        adata, module_dir, filter_status="pre-filtering", io_config=io_config
+    )
 
     # Plot the summary metrics
-    plot_metrics(adata, module_dir, filter_status="pre-filtering")
+    plot_metrics(adata, module_dir, filter_status="pre-filtering", io_config=io_config)
 
     # Filter cells and genes
     logger.info("Filtering cells and genes...")
@@ -472,10 +517,12 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         logger.info("No specific cells to remove based on QC plots.")
 
     # Scatter plot of number of genes vs total counts after filtering
-    plot_scatter_genes_v_count(adata, module_dir, filter_status="post-filtering")
+    plot_scatter_genes_v_count(
+        adata, module_dir, filter_status="post-filtering", io_config=io_config
+    )
 
     # Plot the summary metrics after filtering
-    plot_metrics(adata, module_dir, filter_status="post-filtering")
+    plot_metrics(adata, module_dir, filter_status="post-filtering", io_config=io_config)
 
     logger.info(f"adata shape after area filtering: {adata.shape}")
 
@@ -512,13 +559,28 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         raise ValueError(f"Unsupported normalization approach: {norm_approach}")
 
     # Plot variance of genes after normalization
-    visualize_variance(adata, module_dir)
+    visualize_variance(adata, module_dir, io_config)
 
     # Perform pseudobulk PCA analysis
-    pseudobulk_PCA(adata, sample_ID="ROI", hue="condition", module_dir=module_dir)
+    pseudobulk_PCA(
+        adata,
+        sample_ID="ROI",
+        hue="condition",
+        module_dir=module_dir,
+        io_config=io_config,
+    )
 
     # Save data
     logger.info("Saving filtered and normalized data...")
-    adata.write_h5ad(module_dir / f"adata_{norm_approach}.h5ad")
-    logger.info(f"Data saved to {module_dir / f'adata_{norm_approach}.h5ad'}")
+    output_path = module_dir / f"adata_{norm_approach}.h5ad"
+    adata.write_h5ad(output_path)
+    logger.info(f"Data saved to {output_path}")
+
+    # Register output with data flow manager
+    if flow_manager:
+        flow_manager.register_output("quality_control", "processed_adata", output_path)
+        flow_manager.register_output(
+            "quality_control", f"adata_{norm_approach}", output_path
+        )
+
     logger.info("Quality control completed successfully.")

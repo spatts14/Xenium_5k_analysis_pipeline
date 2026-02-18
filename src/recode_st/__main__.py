@@ -9,10 +9,25 @@ from recode_st.config import Config, load_config
 logger = getLogger(__package__)
 
 
-def main(config: Config):
+def main(config: Config, config_file_path: Path | None = None):
     """Main function to run the recode_st package."""
+    from recode_st.config import copy_config_to_output
     from recode_st.helper_function import configure_scanpy_figures, seed_everything
     from recode_st.logging_config import configure_logging
+
+    # Create timestamped output directory
+    unique_output_dir = config.io.create_timestamped_output_dir()
+    logger.info(f"Created unique output directory: {unique_output_dir}")
+
+    # Update config to use the new output directory
+    config.io.output_dir = unique_output_dir
+
+    # Copy config file to output directory
+    if config_file_path and config_file_path.exists():
+        copy_config_to_output(config_file_path, unique_output_dir)
+        logger.info(
+            f"Copied config file to {unique_output_dir / config_file_path.name}"
+        )
 
     configure_logging(config.io.logging_dir, config.log_level)
 
@@ -20,6 +35,10 @@ def main(config: Config):
     configure_scanpy_figures(config.io.output_dir)
 
     logger.info("Starting recode_st pipeline...")
+
+    # Create data flow manager
+    flow_manager = config.create_data_flow_manager()
+    logger.info("Created data flow manager for module dependencies")
 
     logger.info("Seeding everything...")
     seed_everything(config.seed)
@@ -40,7 +59,7 @@ def main(config: Config):
         from recode_st.qc import run_qc
 
         logger.info("Running Module 1 - Quality Control")
-        run_qc(config.modules.quality_control, config.io)
+        run_qc(config.modules.quality_control, config.io, flow_manager)
 
     if config.modules.doublet_identification:
         from recode_st.doublet_identification import run_doublet_id
@@ -61,7 +80,9 @@ def main(config: Config):
         from recode_st.dimension_reduction import run_dimension_reduction
 
         logger.info("Running Module 2 - Dimension Reduction")
-        run_dimension_reduction(config.modules.dimension_reduction, config.io)
+        run_dimension_reduction(
+            config.modules.dimension_reduction, config.io, flow_manager
+        )
 
     if config.modules.integrate_ingest:
         from recode_st.integrate_ingest import run_integration
@@ -126,4 +147,4 @@ if __name__ == "__main__":
 
     config = load_config(config_file)
 
-    main(config)
+    main(config, config_file)

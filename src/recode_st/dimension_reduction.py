@@ -553,7 +553,7 @@ def run_dimension_reduction(
     sc.pl.pca_variance_ratio(
         adata,
         log=True,
-        n_pcs=config.n_pca,
+        n_pcs=80,  # plot 80 components to show elbow
         show=False,
         save=f"_{config.module_name}.pdf",
     )

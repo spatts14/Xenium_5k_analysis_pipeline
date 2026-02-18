@@ -46,16 +46,16 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 # module_name = "format" # Name of the module - will be used in the output directory name
 
 
-# QUALITY CONTROL MODULE
-#[modules.quality_control]
-#module_name = "quality_control" # Name of the module - output directory name
-#subsample_data = false          # Whether to subsample the data for dev
-#min_counts = 15                 # Minimum number of counts required to keep a cell
-#min_cells = 100                 # Minimum number of cells that express the gene
-#min_cell_area = 20              # Minimum cell area to filter cells
-#max_cell_area = 1000            # Maximum cell area to filter cells
-#norm_approach = "cell_area"     # Normalization approach to use
-#remove_cells = []               # List of cell IDs to remove from the dataset
+#QUALITY CONTROL MODULE
+[modules.quality_control]
+module_name = "quality_control" # Name of the module - output directory name
+subsample_data = false          # Whether to subsample the data for dev
+min_counts = 15                 # Minimum number of counts required to keep a cell
+min_cells = 100                 # Minimum number of cells that express the gene
+min_cell_area = 20              # Minimum cell area to filter cells
+max_cell_area = 1000            # Maximum cell area to filter cells
+norm_approach = "cell_area"     # Normalization approach to use
+remove_cells = []               # List of cell IDs to remove from the dataset
 
 # DENOISE MODULE
 # [modules.denoise_resolvi]

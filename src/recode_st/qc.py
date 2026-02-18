@@ -45,6 +45,7 @@ def plot_metrics(
             - 'nucleus_area'
         module_dir (Path or str): Directory path where the output plot will be saved.
         filter_status (str): Description of the filtering status (e.g. "pre-filtering").
+        io_config (IOConfig, optional): IOConfig object for managing file paths.
 
     Returns:
         None
@@ -93,6 +94,7 @@ def plot_scatter_genes_v_count(
         adata: AnnData object with cell metrics
         hue: Column in adata.obs to color points by
         filter_status: Status of filtering (e.g., "pre-filtering", "post-filtering")
+        io_config (IOConfig, optional): IOConfig object for managing file paths.
 
     Returns:
         None.
@@ -256,6 +258,7 @@ def visualize_variance(adata, module_dir, io_config=None):
     Args:
         adata (anndata.AnnData): Annotated data matrix with cell metrics
         module_dir (Path or str): Directory path where the output plot will be saved.
+        io_config (IOConfig, optional): IOConfig object for managing file paths.
 
     Returns:
         None
@@ -305,6 +308,7 @@ def pseudobulk_PCA(
         sample_ID (str): Column in adata.obs that identifies samples for pseudobulk
         hue (str): Column in adata.obs to color points by
         module_dir (Path or str): Directory path where the output plot will be saved.
+        io_config (IOConfig, optional): IOConfig object for managing file paths.
 
     Returns:
         None
@@ -362,9 +366,13 @@ def pseudobulk_PCA(
     ax.legend(title=hue, bbox_to_anchor=(1.02, 1), loc="upper left")
     plt.tight_layout()
 
-    fig.savefig(module_dir / "pseudobulk_pca.png", dpi=300, bbox_inches="tight")
+    if io_config:
+        output_path = io_config.get_figure_path(module_dir, "pseudobulk_pca.png")
+    else:
+        output_path = module_dir / "pseudobulk_pca.png"
+    fig.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()  # to prevent memory leak
-    logger.info(f"Saved plot to {module_dir / 'pseudobulk_pca.png'}")
+    logger.info(f"Saved plot to {output_path}")
 
 
 def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
@@ -376,7 +384,12 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     min_cell_area = config.min_cell_area
     max_cell_area = config.max_cell_area
     norm_approach = config.norm_approach
+
+    # TODO: make configurable
     HVG = 500
+    MAX_COUNT = True
+    MAX_COUNT_NUMBER = 2000
+    PERCENT = 99.5
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -413,12 +426,13 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info(
         f"Removing cells with < {min_counts} counts and genes in < {min_cells} cells"
     )
-    max_count = True
-    if max_count:
-        max_counts = 2000
+
+    # Filter cells with very high transcript counts
+    if MAX_COUNT:
+        max_counts = MAX_COUNT_NUMBER
         logger.info(f"Removed cells with total counts >{max_counts}")
     else:
-        percentile = 99
+        percentile = PERCENT
         max_counts = np.percentile(adata.obs["total_counts"], percentile)
         logger.info(f"Removing cells above the {100 - percentile}% highest counts")
         logger.info(f"Max counts threshold (p{percentile}): {max_counts:.0f}")
@@ -539,7 +553,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     # Plot variance of genes after normalization
     visualize_variance(adata, module_dir, io_config)
 
-    # Perform pseudobulk PCA analysis
+    # Pseudobulk and PCA analysis of samples
     pseudobulk_PCA(
         adata,
         sample_ID="ROI",

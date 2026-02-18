@@ -38,7 +38,7 @@ res = "leiden_res_0.5"
 
 # Set directories
 dir = Path(
-    "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/airscape_analysis/output/2026-02-18_17-40-00_analysis_run/"
+    "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/airscape_analysis/"
 )
 
 fig_dir = dir / "manual_analysis/plots"
@@ -51,6 +51,7 @@ color_palette_level_1 = sns.color_palette("hls", 12)
 
 # Load data
 adata = sc.read_h5ad(dir / "dimension_reduction/adata.h5ad")
+
 
 sc.tl.umap(adata)
 

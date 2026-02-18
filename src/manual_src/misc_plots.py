@@ -50,9 +50,7 @@ cmap = sns.color_palette("ch:start=.2,rot=-.3", as_cmap=True)
 color_palette_level_1 = sns.color_palette("hls", 12)
 
 # Load data
-adata = sc.read_h5ad(
-    dir / "output/2026-02-18_17-40-00_analysis_run/dimension_reduction/adata.h5ad"
-)
+adata = sc.read_h5ad(dir / "dimension_reduction/adata.h5ad")
 
 sc.tl.umap(adata)
 

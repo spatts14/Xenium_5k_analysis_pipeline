@@ -1,4 +1,4 @@
-"""Level 1 cell type annotation for subset of cells in the Xenium data."""
+"""Generate misc plots."""
 
 import os
 import random

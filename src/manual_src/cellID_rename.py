@@ -136,5 +136,17 @@ if unmatched:
 else:
     print("All ROIs renamed cells successfully")
 
+# Remove unmatched cells from adata
+if unmatched:
+    unmatched_obs_names = [u.split(" ")[0] for u in unmatched]
+    adata = adata[~adata.obs_names.isin(unmatched_obs_names)].copy()
+    print(
+        f"Removed {len(unmatched)} unmatched cells from adata. Remaining cells: {adata.n_obs}"
+    )
+
+# Confirm that the correct ROIs are now in adata.obs["ROI"] and obs_names are updated
+print(f"Final ROI counts:\n{adata.obs['ROI'].value_counts()}\n")
+print(f"Sample obs_names after fix:\n{adata.obs_names[:10]}\n")
+
 adata.write_h5ad(ADATA_PATH.with_name("all_samples_fixed.h5ad"))
 print("Saved corrected complete adata.")

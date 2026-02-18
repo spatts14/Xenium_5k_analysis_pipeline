@@ -41,6 +41,7 @@ dir = Path(
     "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/airscape_analysis/"
 )
 
+
 fig_dir = dir / "manual_analysis/plots"
 fig_dir.mkdir(parents=True, exist_ok=True)
 
@@ -50,11 +51,15 @@ cmap = sns.color_palette("ch:start=.2,rot=-.3", as_cmap=True)
 color_palette_level_1 = sns.color_palette("hls", 12)
 
 # Load data
-adata = sc.read_h5ad(dir / "dimension_reduction/adata.h5ad")
+print(f"Loading data from {dir / 'annotate/adata.h5ad'}...")
+adata = sc.read_h5ad(dir / "annotate/adata.h5ad")
 
+print("Data loaded successfully.")
 
+print("Computing UMAP......")
 sc.tl.umap(adata)
 
+print("Plotting UMAP...")
 sc.pl.umap(
     adata,
     color=res,
@@ -64,3 +69,5 @@ sc.pl.umap(
     frameon=False,
     save=fig_dir / f"{res}.pdf",
 )
+
+print("UMAP plotted and saved successfully.")

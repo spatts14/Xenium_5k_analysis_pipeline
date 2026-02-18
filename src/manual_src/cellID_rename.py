@@ -90,36 +90,28 @@ before = adata.obs["ROI"].value_counts()
 print("ROI value counts BEFORE remapping:")
 print(before, "\n")
 
-# Subset to only the RENAME_ROIS combined ROIs
-rename_rois = adata[adata.obs["ROI"].isin(RENAME_ROIS)].copy()
-print(f"Subset of ROIs to rename shape: {rename_rois.shape}")
-print(f"Example obs_names: {rename_rois.obs_names[:5].tolist()}")
 
-# STEP 3: Strip ROI name from cell ID
-new_obs_names = list(adata.obs_names)  # start with full adata obs_names
-new_roi_values = adata.obs["ROI"].tolist()  # start with full adata ROI values
+# STEP 3: Update ROI and obs_names for MICA III cells using cell_id mapping
+new_obs_names = list(adata.obs_names)  # start with current obs_names
+new_roi_values = adata.obs["ROI"].tolist()  # start with current ROI values
 unmatched = []
 
-for i, obs_name in enumerate(adata.obs_names):
+for i, (obs_name, cell_id) in enumerate(zip(adata.obs_names, adata.obs["cell_id"])):
     current_roi = new_roi_values[i]
 
     # Only process MICA III cells
     if current_roi not in RENAME_ROIS:
         continue
 
-    # Strip wrong prefix to recover bare cell ID
-    if obs_name.startswith(current_roi + "_"):
-        bare_cell_id = obs_name[len(current_roi) + 1 :]
-    else:
-        match = re.search(r"([a-z]+-\d+)$", obs_name)
-        bare_cell_id = match.group(1) if match else None
+    # Use the cell_id directly (it's already the bare Xenium cell ID)
+    bare_cell_id = str(cell_id).strip()
 
     if bare_cell_id and bare_cell_id in cell_to_roi:
         correct_roi = cell_to_roi[bare_cell_id]
-        new_obs_names[i] = f"{correct_roi}_{bare_cell_id}"  # update in place
-        new_roi_values[i] = correct_roi  # update in place
+        new_obs_names[i] = f"{correct_roi}_{bare_cell_id}"  # update obs_names
+        new_roi_values[i] = correct_roi  # update ROI
     else:
-        unmatched.append(obs_name)
+        unmatched.append(f"{obs_name} (cell_id: {cell_id})")
 
 # Apply corrections back onto original adata
 adata.obs_names = new_obs_names
@@ -128,13 +120,13 @@ adata.obs["ROI"] = new_roi_values
 
 # STEP 4: Validate and save corrected complete adata
 
-if not adata.obs_names.is_unique:
-    dupes = pd.Series(adata.obs_names)
+if not adata.obs["cell_id"].is_unique:
+    dupes = pd.Series(adata.obs["cell_id"])
     dupes = dupes[dupes.duplicated()]
-    print(f"WARNING: {len(dupes)} duplicate obs_names:")
+    print(f"WARNING: {len(dupes)} duplicate cell_id values:")
     print(dupes.values[:10])
 else:
-    print("obs_names are unique")
+    print("adata.obs['cell_id'] are unique")
 
 print(f"\nROI counts after fix:\n{adata.obs['ROI'].value_counts()}\n")
 

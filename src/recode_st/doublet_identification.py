@@ -225,7 +225,7 @@ def run_doublet_id(io_config: IOConfig, config: DoubletIdentificationModuleConfi
 
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
-    cmap = sns.color_palette("Spectral", as_cmap=True)
+    cmap = sns.color_palette("crest", as_cmap=True)
 
     logger.info("Loading transcripts form each ROI into a df...")
     # Load "transcripts.parquet" for each ROI and make a dict of dfs

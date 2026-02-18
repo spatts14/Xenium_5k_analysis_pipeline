@@ -16,6 +16,12 @@ def configure_logging(logging_dir: Path | None = None, log_level=logging.INFO):
         logging_dir = Path("analysis/logs")
 
     logger = logging.getLogger("recode_st")
+
+    # Clear existing handlers to prevent duplicate logging
+    for handler in logger.handlers.copy():
+        logger.removeHandler(handler)
+        handler.close()
+
     logger.setLevel(log_level)
 
     ch = logging.StreamHandler()
@@ -33,3 +39,7 @@ def configure_logging(logging_dir: Path | None = None, log_level=logging.INFO):
 
     logger.addHandler(ch)
     logger.addHandler(fh)
+
+    logging.getLogger("recode_st").info(
+        f"Logging configured. Log file: {fh.baseFilename}"
+    )

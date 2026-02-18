@@ -365,7 +365,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     # cmap = sns.color_palette("Spectral", as_cmap=True)
 
     logger.info("Loading data...")
-    combined_path = io_config.adata_dir / "all_samples.h5ad"
+    combined_path = io_config.adata_dir / "all_samples_fixed.h5ad"
     adata = sc.read_h5ad(combined_path)
     logger.info(f"Dataset contains {len(adata)} cells.")
 

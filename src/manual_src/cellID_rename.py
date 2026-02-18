@@ -1,3 +1,5 @@
+"""Rename ROIs in adata.obs["ROI"] based on mapping from per-tissue CSV files."""
+
 import glob
 import os
 import re
@@ -11,7 +13,7 @@ output = Path(
 )
 
 # Folder containing the per-tissue cell stats CSVs
-CSV_FOLDER = "docs/xenium_explorer_cell_IDs"
+CSV_FOLDER = output / "docs/xenium_explorer_cell_IDs"
 ADATA_PATH = output / "data/out/adata/all_samples.h5ad"
 RENAME_ROIS = ["MICA_III_319_315_311", "MICA_III_325_337_379"]
 
@@ -32,7 +34,7 @@ print(f"Found {len(csv_files)} CSV file(s) in '{CSV_FOLDER}'. Processing...")
 
 for csv_path in csv_files:
     # Read the Selection name from the comment header (line 1)
-    with open(csv_path, "r") as f:
+    with open(csv_path) as f:
         first_line = f.readline().strip()
 
     # Extract ROI name from "#Selection name: MICA_III_311"
@@ -50,7 +52,7 @@ for csv_path in csv_files:
         else:
             roi_name = basename.replace(".csv", "").replace("_cells_stats", "")
             print(
-                f"WARNING: Could not extract ROI name from '{basename}', using '{roi_name}'"
+                f"WARNING: Could not extract ROI name from '{basename}' using '{roi_name}'"
             )
 
     # Read the cell data (skip comment lines starting with #)

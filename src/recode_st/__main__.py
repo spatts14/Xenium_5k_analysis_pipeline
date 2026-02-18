@@ -22,6 +22,10 @@ def main(config: Config, config_file_path: Path | None = None):
     # Update config to use the new output directory
     config.io.output_dir = unique_output_dir
 
+    # Update logging directory to be within the timestamped output directory
+    config.io.logging_dir = unique_output_dir / "logs"
+    config.io.logging_dir.mkdir(parents=True, exist_ok=True)
+
     # Copy config file to output directory
     if config_file_path and config_file_path.exists():
         copy_config_to_output(config_file_path, unique_output_dir)

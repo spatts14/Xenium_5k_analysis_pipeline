@@ -367,9 +367,9 @@ def pseudobulk_PCA(
     plt.tight_layout()
 
     if io_config:
-        output_path = io_config.get_figure_path(module_dir, "pseudobulk_pca.png")
+        output_path = io_config.get_figure_path(module_dir, f"pseudobulk_pca_{hue}.png")
     else:
-        output_path = module_dir / "pseudobulk_pca.png"
+        output_path = module_dir / f"pseudobulk_pca_{hue}.png"
     fig.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()  # to prevent memory leak
     logger.info(f"Saved plot to {output_path}")
@@ -557,6 +557,22 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         adata,
         sample_ID="ROI",
         hue="condition",
+        module_dir=module_dir,
+        io_config=io_config,
+    )
+
+    pseudobulk_PCA(
+        adata,
+        sample_ID="ROI",
+        hue="timepoint",
+        module_dir=module_dir,
+        io_config=io_config,
+    )
+
+    pseudobulk_PCA(
+        adata,
+        sample_ID="ROI",
+        hue="ROI",
         module_dir=module_dir,
         io_config=io_config,
     )

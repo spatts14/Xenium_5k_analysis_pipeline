@@ -18,6 +18,6 @@ source xenium_5k_venv/bin/activate
 
 # Run with error logging
 echo "Starting at $(date)"
-# python src/manual_src/celltype_subset.py
+#python src/manual_src/celltype_subset.py
 python src/manual_src/celltype_level_1.py
 echo "Completed at $(date)"

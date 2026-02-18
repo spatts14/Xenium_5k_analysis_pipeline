@@ -5,10 +5,13 @@ from logging import getLogger
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import scanpy as sc
 import scipy.sparse as sp
 import scTransform
 import seaborn as sns
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
 from recode_st.config import IOConfig, QualityControlModuleConfig
 from recode_st.helper_function import configure_scanpy_figures
@@ -19,7 +22,11 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 logger = getLogger(__name__)
 
 
-def plot_metrics(module_dir, adata, filter_status):
+def plot_metrics(
+    adata,
+    module_dir,
+    filter_status,
+):
     """Generates and saves histograms summarizing key cell metrics.
 
     This function creates a 1x4 grid of histograms visualizing:
@@ -29,14 +36,13 @@ def plot_metrics(module_dir, adata, filter_status):
         4. Nucleus-to-cell area ratio
 
     Args:
-        module_dir (Path or str): Directory path where the output plot will be saved.
-        adata (anndata.AnnData): Annotated data matrix with cell metrics
-        stored in `adata.obs`.
+        adata (anndata.AnnData): Annotated data matrix with cell metrics in adata.obs.
             Must contain the columns:
             - 'total_counts'
             - 'n_genes_by_counts'
             - 'cell_area'
             - 'nucleus_area'
+        module_dir (Path or str): Directory path where the output plot will be saved.
         filter_status (str): Description of the filtering status (e.g. "pre-filtering").
 
     Returns:
@@ -65,13 +71,13 @@ def plot_metrics(module_dir, adata, filter_status):
 
     # Save figure
     filter_status = filter_status.replace("-", "_").lower()
-    output_path = module_dir / f"cell_summary_histograms_{filter_status}.pdf"
+    output_path = module_dir / f"cell_summary_histograms_{filter_status}.png"
     plt.savefig(output_path, dpi=300)
     plt.close()
     logger.info(f"Saved plots to {output_path}")
 
 
-def plot_scatter_genes_v_count(module_dir, adata, filter_status, hue=None):
+def plot_scatter_genes_v_count(adata, module_dir, filter_status, hue=None):
     """Generate scatter plot of number of genes vs total counts per cell.
 
     Args:
@@ -133,15 +139,6 @@ def normalize_data(adata, norm_approach):
     if norm_approach == "scanpy_log":
         # scRNAseq approach
         sc.pp.normalize_total(adata, inplace=True)  # normalize data
-        logger.info("Log transforming...")
-        sc.pp.log1p(adata)  # Log transform
-        # Identify highly variable genes
-        logger.info("Identifying highly variable genes...")
-        sc.pp.highly_variable_genes(
-            adata, flavor="seurat", n_top_genes=2000, inplace=True
-        )
-        logger.info("Scaling data...")
-        sc.pp.scale(adata, max_value=10)  # TODO: Scale data; how do I choose max_value?
     elif norm_approach == "sctransform":
         # scTransform approach
         vst_out = scTransform.vst(
@@ -163,17 +160,6 @@ def normalize_data(adata, norm_approach):
             else:
                 # Dense case
                 adata.X = adata.X * cell_area_inv[:, None]
-            logger.info("Log transforming...")
-            sc.pp.log1p(adata)  # Log transform
-            # Identify highly variable genes
-            logger.info("Identifying highly variable genes...")
-            sc.pp.highly_variable_genes(
-                adata, flavor="seurat", n_top_genes=2000, inplace=True
-            )
-            logger.info("Scaling data...")
-            sc.pp.scale(
-                adata, max_value=10
-            )  # TODO: Scale data; how do I choose max_value?
         else:
             logger.warning(
                 "Cell area not found in adata.obs; skipping normalization by cell area"
@@ -181,15 +167,6 @@ def normalize_data(adata, norm_approach):
     elif norm_approach == "none":
         # No normalization
         logger.info("No normalization applied.")
-        logger.info("Log transforming...")
-        sc.pp.log1p(adata)  # Log transform
-        # Identify highly variable genes
-        logger.info("Identifying highly variable genes...")
-        sc.pp.highly_variable_genes(
-            adata, flavor="seurat", n_top_genes=2000, inplace=True
-        )
-        logger.info("Scaling data...")
-        sc.pp.scale(adata, max_value=10)  # TODO: Scale data; how do I choose max_value?
     else:
         raise ValueError(f"Normalization approach {norm_approach} not recognized")
 
@@ -259,6 +236,116 @@ def calc_qc_meterics(adata):
     return adata
 
 
+def visualize_variance(adata, module_dir):
+    """Visualize variance of genes after normalization.
+
+    Args:
+        adata (anndata.AnnData): Annotated data matrix with cell metrics
+        module_dir (Path or str): Directory path where the output plot will be saved.
+
+    Returns:
+        None
+    """
+    # # Visualize gene variance
+    if "variances" in adata.var.columns:
+        logger.info("Using pre-computed variances from adata.var['variances']")
+        variances = adata.var["variances"].values
+    else:
+        logger.info("Calculating variances from adata.layers['counts']")
+        variances = np.var(adata.layers["counts"].toarray(), axis=0)
+
+    # Rank genes by variance (highest = rank 1)
+    sorted_variances = variances[np.argsort(-variances)]
+
+    # Create dataframe for plotting
+    df = pd.DataFrame(
+        {"rank": np.arange(1, len(sorted_variances) + 1), "variance": sorted_variances}
+    )
+
+    # Create the plot
+    output_path = module_dir / "gene_variance_rank.png"
+    plt.figure(figsize=(8, 5))
+    sns.scatterplot(x="rank", y="variance", data=df, alpha=0.5, s=5)
+    plt.xlabel("Gene Rank (by variance)")
+    plt.ylabel("Variance (Dispersion)")
+    plt.title("Gene Variance vs Rank")
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300)
+    plt.close()  # to prevent memory leak
+
+
+def pseudobulk_PCA(
+    adata, sample_ID: str = "ROI", hue: str = "condition", module_dir=None
+):
+    """Perform pseudobulk PCA analysis.
+
+    Args:
+        adata (anndata.AnnData): Annotated data matrix with cell metrics
+        sample_ID (str): Column in adata.obs that identifies samples for pseudobulk
+        hue (str): Column in adata.obs to color points by
+        module_dir (Path or str): Directory path where the output plot will be saved.
+
+    Returns:
+        None
+    """
+    # Check if sample_ID and hue columns exist
+    if sample_ID not in adata.obs.columns:
+        raise ValueError(f"Column '{sample_ID}' not found in adata.obs")
+    if hue not in adata.obs.columns:
+        raise ValueError(f"Column '{hue}' not found in adata.obs")
+
+    # Get raw counts and gene names
+    expr_matrix = adata.layers["counts"]
+    gene_names = adata.var_names
+
+    # Convert to dense if sparse
+    if hasattr(expr_matrix, "toarray"):
+        expr_matrix = expr_matrix.toarray()
+
+    # Create dataframe for pseudobulk
+    df = pd.DataFrame(expr_matrix, columns=gene_names, index=adata.obs_names)
+    df[sample_ID] = adata.obs[sample_ID].values
+    df[hue] = adata.obs[hue].values
+
+    # Aggregate by summing counts per sample (pseudobulk)
+    pseudobulk = df.groupby(sample_ID).sum(numeric_only=True)
+
+    print(f"Pseudobulk number of samples: {pseudobulk.shape[0]}")
+    print(f"Pseudobulk number of genes: {pseudobulk.shape[1]}")
+
+    # Log transform and scale for PCA
+    pseudobulk_log = np.log1p(pseudobulk)
+    scaler = StandardScaler()
+    pseudobulk_scaled = scaler.fit_transform(pseudobulk_log)
+
+    # Run PCA
+    pca = PCA(n_components=2)
+    pca_coords = pca.fit_transform(pseudobulk_scaled)
+
+    # Create results dataframe
+    pca_df = pd.DataFrame(
+        {"PC1": pca_coords[:, 0], "PC2": pca_coords[:, 1], sample_ID: pseudobulk.index}
+    )
+
+    # Map sample to hue (condition) - take first value per sample
+    sample_to_hue = df.groupby(sample_ID)[hue].first().to_dict()
+    pca_df[hue] = pca_df[sample_ID].map(sample_to_hue)
+
+    # Plot with seaborn
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sns.scatterplot(data=pca_df, x="PC1", y="PC2", hue=hue, s=100, ax=ax)
+
+    ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0] * 100:.1f}%)")
+    ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1] * 100:.1f}%)")
+    ax.set_title("Pseudobulk PCA")
+    ax.legend(title=hue, bbox_to_anchor=(1.02, 1), loc="upper left")
+    plt.tight_layout()
+
+    fig.savefig(module_dir / "pseudobulk_pca.png", dpi=300, bbox_inches="tight")
+    plt.close()  # to prevent memory leak
+    logger.info(f"Saved plot to {module_dir / 'pseudobulk_pca.png'}")
+
+
 def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     """Run quality control on Xenium data."""
     # Set variables
@@ -268,6 +355,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     min_cell_area = config.min_cell_area
     max_cell_area = config.max_cell_area
     norm_approach = config.norm_approach
+    HVG = 500
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
@@ -285,10 +373,10 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     adata = calc_qc_meterics(adata)
 
     # Scatter plot of number of genes vs total counts
-    plot_scatter_genes_v_count(module_dir, adata, filter_status="pre-filtering")
+    plot_scatter_genes_v_count(adata, module_dir, filter_status="pre-filtering")
 
     # Plot the summary metrics
-    plot_metrics(module_dir, adata, filter_status="pre-filtering")
+    plot_metrics(adata, module_dir, filter_status="pre-filtering")
 
     # Filter cells and genes
     logger.info("Filtering cells and genes...")
@@ -302,7 +390,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info(
         f"Removing cells with < {min_counts} counts and genes in < {min_cells} cells"
     )
-    max_count = False
+    max_count = True
     if max_count:
         max_counts = 2000
         logger.info(f"Removed cells with total counts >{max_counts}")
@@ -384,10 +472,10 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         logger.info("No specific cells to remove based on QC plots.")
 
     # Scatter plot of number of genes vs total counts after filtering
-    plot_scatter_genes_v_count(module_dir, adata, filter_status="post-filtering")
+    plot_scatter_genes_v_count(adata, module_dir, filter_status="post-filtering")
 
     # Plot the summary metrics after filtering
-    plot_metrics(module_dir, adata, filter_status="post-filtering")
+    plot_metrics(adata, module_dir, filter_status="post-filtering")
 
     logger.info(f"adata shape after area filtering: {adata.shape}")
 
@@ -401,6 +489,33 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     # Normalize data
     logger.info("Starting data normalization...")
     normalize_data(adata, norm_approach)
+
+    if norm_approach == "sctransform":
+        logger.info(
+            "Skipping log transform and scaling: Already variance stabilized and scaled"
+        )
+        logger.info(f"Identifying {HVG} highly variable genes...")
+        sc.pp.highly_variable_genes(
+            adata, flavor="seurat_v3", n_top_genes=HVG, inplace=True, layer="counts"
+        )
+    elif norm_approach in {"cell_area", "scanpy_log"}:
+        logger.info("Log transforming...")
+        sc.pp.log1p(adata)  # Log transform
+        # Identify highly variable genes
+        logger.info(f"Identifying {HVG} highly variable genes...")
+        sc.pp.highly_variable_genes(
+            adata, flavor="seurat_v3", n_top_genes=HVG, inplace=True, layer="counts"
+        )
+        logger.info("Scaling data...")
+        sc.pp.scale(adata, max_value=10)
+    else:
+        raise ValueError(f"Unsupported normalization approach: {norm_approach}")
+
+    # Plot variance of genes after normalization
+    visualize_variance(adata, module_dir)
+
+    # Perform pseudobulk PCA analysis
+    pseudobulk_PCA(adata, sample_ID="ROI", hue="condition", module_dir=module_dir)
 
     # Save data
     logger.info("Saving filtered and normalized data...")

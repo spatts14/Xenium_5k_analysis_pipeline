@@ -159,10 +159,10 @@ seed_everything(19960915)
 
 # Set variables
 # Set variables
-h5ad_file = "adata_subset_Airway_epithelium.h5ad"
+h5ad_file = "adata_subset_Airway_epithelial_cells.h5ad"
 subset = "airway_epithelium"
 mannual_annotation = "mannual_annotation"
-res = 0.5
+res = 0.1
 
 # Annotate clusters based on marker genes and plot UMAP
 annotation_dict = {
@@ -195,7 +195,7 @@ fig_dir.mkdir(parents=True, exist_ok=True)  # Create directory if it doesn't exi
 sc.settings.figdir = fig_dir  # Assign it to Scanpy figure directory
 
 # Save spatial figures
-fig_dir_spatial = fig_dir / "spatial"
+fig_dir_spatial = fig_dir / f"spatial_{res}"
 fig_dir_spatial.mkdir(parents=True, exist_ok=True)
 
 # Save files

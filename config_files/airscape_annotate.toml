@@ -47,15 +47,15 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 
 
 # QUALITY CONTROL MODULE
-#[modules.quality_control]
-#module_name = "quality_control" # Name of the module - output directory name
-#subsample_data = false          # Whether to subsample the data for dev
-#min_counts = 15                 # Minimum number of counts required to keep a cell
-#min_cells = 100                 # Minimum number of cells that express the gene
-#min_cell_area = 20              # Minimum cell area to filter cells
-#max_cell_area = 1000            # Maximum cell area to filter cells
-#norm_approach = "cell_area"     # Normalization approach to use
-#remove_cells = []               # List of cell IDs to remove from the dataset
+[modules.quality_control]
+module_name = "quality_control" # Name of the module - output directory name
+subsample_data = false          # Whether to subsample the data for dev
+min_counts = 15                 # Minimum number of counts required to keep a cell
+min_cells = 100                 # Minimum number of cells that express the gene
+min_cell_area = 20              # Minimum cell area to filter cells
+max_cell_area = 1000            # Maximum cell area to filter cells
+norm_approach = "cell_area"     # Normalization approach to use
+remove_cells = []               # List of cell IDs to remove from the dataset
 
 # DENOISE MODULE
 # [modules.denoise_resolvi]
@@ -87,6 +87,26 @@ gene_id_dict_path = "/rds/general/user/sep22/projects/phenotypingsputumasthmatic
 # ANNOTATION MODULE
 [modules.annotate]
 module_name = "annotate"
-cluster_name = "leiden"
-clusters_label = "leiden" # haven't done manual annotation
-#cluster_to_cell_type mapping is optional - remove this line if you don't want to rename clusters
+leiden_cluster = "leiden_res_0.5"
+mannual_annotation = "mannual_annotation" # haven't done manual annotation
+# cluster_to_cell_type mapping is optional - remove this line if you don't want to rename clusters
+[modules.annotate.cluster_to_cell_type]
+"0" = "Airway epithelial cells"    # Ciliated cells
+"1" = "Airway epithelial cells"    # Basal & Epithelial cells
+"2" = "Airway epithelial cells"    # Basal cells
+"3" = "Stromal cells"              # Fibroblasts
+"4" = "Airway epithelial cells"    # Secretory epithelial cells
+"5" = "Airway epithelial cells"    # Goblet cells
+"6" = "Immune cells"               # T cells
+"7" = "Immune cells"               # Plasma cells
+"8" = "Immune cells"               # Macrophages
+"9" = "Endothelial cells"          # Blood endothelial cells
+"10" = "Stromal cells"             # Fibroblasts
+"11" = "Stromal cells"             # SMC
+"12" = "Alveolar epithelial cells"
+"13" = "Stromal cells"             # Fibroblasts
+"14" = "Endothelial cells"         # Blood endothelial cells
+"15" = "Stromal cells"             # Fibroblasts
+"16" = "Endothelial cells"         # Lymphatic endothelial cells
+"17" = "Unknown"
+"18" = "Immune cells"              # Mast cells

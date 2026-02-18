@@ -130,7 +130,7 @@ def load_data(
     if subsample_strategy == "none":
         logger.info("Loading full dataset (no subsampling)...")
         adata = sc.read_h5ad(data_path)
-        logger.info(f"  Loaded {len(adata)} cells")
+        logger.info(f"Loaded {len(adata)} cells")
         return adata
 
     elif subsample_strategy == "compute":
@@ -218,7 +218,7 @@ def calculate_clusters(
         )
 
     logger.info(f"Computing Leiden clustering at {len(res_list)} resolutions...")
-    logger.info(f"  Using '{flavor}' implementation")
+    logger.info(f"Using '{flavor}' implementation")
 
     for res in res_list:
         key = f"leiden_res_{res}"
@@ -531,7 +531,7 @@ def run_dimension_reduction(
 
     sc.settings.figdir = module_dir
     configure_scanpy_figures(str(io_config.output_dir))
-    cmap = sns.color_palette("Spectral", as_cmap=True)
+    cmap = sns.color_palette("crest", as_cmap=True)
 
     # Load data
     adata = load_data(
@@ -542,10 +542,8 @@ def run_dimension_reduction(
 
     # Ensure PCA is computed (only compute if not already present)
     if "X_pca" not in adata.obsm:
-        logger.info(f"Computing PCA (n_comps={config.n_pca})...")
-        sc.pp.pca(
-            adata, n_comps=config.n_pca, svd_solver="arpack", use_highly_variable=True
-        )
+        logger.info(f"Computing PCA (n_comps={60})...")
+        sc.pp.pca(adata, n_comps=60, svd_solver="arpack", use_highly_variable=True)
     else:
         logger.info("PCA already computed, skipping...")
 
@@ -553,7 +551,7 @@ def run_dimension_reduction(
     sc.pl.pca_variance_ratio(
         adata,
         log=True,
-        n_pcs=config.n_pca,
+        n_pcs=60,  # plot 60 components to show elbow
         show=False,
         save=f"_{config.module_name}.pdf",
     )

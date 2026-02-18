@@ -542,10 +542,8 @@ def run_dimension_reduction(
 
     # Ensure PCA is computed (only compute if not already present)
     if "X_pca" not in adata.obsm:
-        logger.info(f"Computing PCA (n_comps={config.n_pca})...")
-        sc.pp.pca(
-            adata, n_comps=config.n_pca, svd_solver="arpack", use_highly_variable=True
-        )
+        logger.info(f"Computing PCA (n_comps={60})...")
+        sc.pp.pca(adata, n_comps=60, svd_solver="arpack", use_highly_variable=True)
     else:
         logger.info("PCA already computed, skipping...")
 
@@ -553,7 +551,7 @@ def run_dimension_reduction(
     sc.pl.pca_variance_ratio(
         adata,
         log=True,
-        n_pcs=80,  # plot 80 components to show elbow
+        n_pcs=60,  # plot 60 components to show elbow
         show=False,
         save=f"_{config.module_name}.pdf",
     )

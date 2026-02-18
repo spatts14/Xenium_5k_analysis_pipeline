@@ -309,8 +309,6 @@ class IOConfig(BaseModel):
             self.data_dir.mkdir(parents=True, exist_ok=True)
         if not Path(self.output_dir).exists():
             self.output_dir.mkdir(parents=True, exist_ok=True)
-        if not Path(self.logging_dir).exists():
-            self.logging_dir.mkdir(parents=True, exist_ok=True)
 
         return self
 

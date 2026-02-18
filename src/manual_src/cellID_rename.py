@@ -37,7 +37,7 @@ for csv_path in csv_files:
     with open(csv_path) as f:
         first_line = f.readline().strip()
 
-    # Extract ROI name from "#Selection name: MICA_III_311"
+    # Extract ROI name
     match = re.search(r"Selection name:\s*(\S+)", first_line)
     if match:
         # Normalise: MICAIII_319 -> MICA_III_319
@@ -91,7 +91,7 @@ print("ROI value counts BEFORE remapping:")
 print(before, "\n")
 
 
-# STEP 3: Update ROI and obs_names for MICA III cells using cell_id mapping
+# STEP 3: Update ROI and obs_names for ROIs that need renaming using cell_id mapping
 new_obs_names = list(adata.obs_names)  # start with current obs_names
 new_roi_values = adata.obs["ROI"].tolist()  # start with current ROI values
 unmatched = []
@@ -99,7 +99,7 @@ unmatched = []
 for i, (obs_name, cell_id) in enumerate(zip(adata.obs_names, adata.obs["cell_id"])):
     current_roi = new_roi_values[i]
 
-    # Only process MICA III cells
+    # Only process ROIs that need renaming cells
     if current_roi not in RENAME_ROIS:
         continue
 
@@ -131,7 +131,7 @@ else:
 print(f"\nROI counts after fix:\n{adata.obs['ROI'].value_counts()}\n")
 
 if unmatched:
-    print(f"WARNING: {len(unmatched)} MICA III cells not matched in any CSV:")
+    print(f"WARNING: {len(unmatched)}cells not matched in any CSV:")
     print(unmatched[:10])
 else:
     print("All ROIs renamed cells successfully")

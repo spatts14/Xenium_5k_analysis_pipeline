@@ -504,10 +504,10 @@ def plot_spatial_distribution(
             shape=None,
             color=[leiden_keys],
             wspace=0.4,
-            save=module_dir / f"{leiden_keys}_{roi}_spatial.pdf",
+            save=fig_dir / f"{leiden_keys}_{roi}_spatial.pdf",
         )
 
-    logger.info(f"  Spatial plots saved to {module_dir}")
+    logger.info(f"  Spatial plots saved to {fig_dir}")
 
 
 def run_dimension_reduction(
@@ -526,10 +526,16 @@ def run_dimension_reduction(
     # Setup directories
     module_dir = Path(io_config.output_dir) / config.module_name
     module_dir.mkdir(exist_ok=True, parents=True)
+
+    # Create fig subdirectory for scanpy figures
+    fig_dir = module_dir / "fig"
+    fig_dir.mkdir(exist_ok=True, parents=True)
+
     spatial_plots_dir = module_dir / "spatial_plots"
     spatial_plots_dir.mkdir(exist_ok=True, parents=True)
 
-    sc.settings.figdir = module_dir
+    # Set scanpy to save figures in the fig/ subdirectory
+    sc.settings.figdir = fig_dir
     configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("crest", as_cmap=True)
 

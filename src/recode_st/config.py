@@ -1,5 +1,6 @@
 """The configuration module for recode_st."""
 
+from datetime import datetime
 from pathlib import Path
 from typing import Literal, Self
 
@@ -313,6 +314,36 @@ class IOConfig(BaseModel):
 
         return self
 
+    def create_timestamped_output_dir(self) -> Path:
+        """Create a unique timestamped output directory.
+
+        Returns:
+            Path to the timestamped output directory
+        """
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        unique_dir = self.base_dir / "output" / f"{timestamp}_analysis_run"
+        unique_dir.mkdir(parents=True, exist_ok=True)
+        return unique_dir
+
+    def get_figure_path(self, module_dir: Path, filename: str) -> Path:
+        """Get path for saving figures in fig/ subfolder.
+
+        Args:
+            module_dir: The module directory path
+            filename: The figure filename
+
+        Returns:
+            Path where the figure should be saved
+        """
+        fig_extensions = {".png", ".pdf", ".svg", ".eps"}
+        file_path = Path(filename)
+        if file_path.suffix.lower() in fig_extensions:
+            fig_dir = module_dir / "fig"
+            fig_dir.mkdir(exist_ok=True)
+            return fig_dir / filename
+        else:
+            return module_dir / filename
+
 
 class Config(BaseModel):
     """The possible configuration options for recode_st."""
@@ -347,3 +378,16 @@ def load_config(config_file: str | Path) -> Config:
         data = tomllib.load(f)
 
     return Config.model_validate(data)
+
+
+def copy_config_to_output(config_path: Path, output_dir: Path) -> None:
+    """Copy the config file to the output directory.
+
+    Args:
+        config_path: Path to the source config file.
+        output_dir: Path to the output directory.
+    """
+    import shutil
+
+    destination = output_dir / config_path.name
+    shutil.copy2(config_path, destination)

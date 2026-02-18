@@ -9,10 +9,25 @@ from recode_st.config import Config, load_config
 logger = getLogger(__package__)
 
 
-def main(config: Config):
+def main(config: Config, config_file_path: Path | None = None):
     """Main function to run the recode_st package."""
+    from recode_st.config import copy_config_to_output
     from recode_st.helper_function import configure_scanpy_figures, seed_everything
     from recode_st.logging_config import configure_logging
+
+    # Create timestamped output directory
+    unique_output_dir = config.io.create_timestamped_output_dir()
+    logger.info(f"Created unique output directory: {unique_output_dir}")
+
+    # Update config to use the new output directory
+    config.io.output_dir = unique_output_dir
+
+    # Copy config file to output directory
+    if config_file_path and config_file_path.exists():
+        copy_config_to_output(config_file_path, unique_output_dir)
+        logger.info(
+            f"Copied config file to {unique_output_dir / config_file_path.name}"
+        )
 
     configure_logging(config.io.logging_dir, config.log_level)
 
@@ -126,4 +141,4 @@ if __name__ == "__main__":
 
     config = load_config(config_file)
 
-    main(config)
+    main(config, config_file)

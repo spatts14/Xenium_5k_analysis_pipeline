@@ -26,6 +26,7 @@ def plot_metrics(
     adata,
     module_dir,
     filter_status,
+    io_config=None,
 ):
     """Generates and saves histograms summarizing key cell metrics.
 
@@ -71,13 +72,20 @@ def plot_metrics(
 
     # Save figure
     filter_status = filter_status.replace("-", "_").lower()
-    output_path = module_dir / f"cell_summary_histograms_{filter_status}.png"
+    if io_config:
+        output_path = io_config.get_figure_path(
+            module_dir, f"cell_summary_histograms_{filter_status}.png"
+        )
+    else:
+        output_path = module_dir / f"cell_summary_histograms_{filter_status}.png"
     plt.savefig(output_path, dpi=300)
     plt.close()
     logger.info(f"Saved plots to {output_path}")
 
 
-def plot_scatter_genes_v_count(adata, module_dir, filter_status, hue=None):
+def plot_scatter_genes_v_count(
+    adata, module_dir, filter_status, hue=None, io_config=None
+):
     """Generate scatter plot of number of genes vs total counts per cell.
 
     Args:
@@ -113,8 +121,14 @@ def plot_scatter_genes_v_count(adata, module_dir, filter_status, hue=None):
 
     # Adjust layout with padding
     plt.subplots_adjust(left=0.1, bottom=0.1, right=0.95, top=0.9)
+    if io_config:
+        output_path = io_config.get_figure_path(
+            module_dir, f"qc_genes_vs_total_counts_{filter_status_save}.png"
+        )
+    else:
+        output_path = module_dir / f"qc_genes_vs_total_counts_{filter_status_save}.png"
     fig.savefig(
-        module_dir / f"qc_genes_vs_total_counts_{filter_status_save}.png",
+        output_path,
         dpi=300,
         bbox_inches="tight",
         pad_inches=0.2,
@@ -236,7 +250,7 @@ def calc_qc_meterics(adata):
     return adata
 
 
-def visualize_variance(adata, module_dir):
+def visualize_variance(adata, module_dir, io_config=None):
     """Visualize variance of genes after normalization.
 
     Args:
@@ -263,7 +277,10 @@ def visualize_variance(adata, module_dir):
     )
 
     # Create the plot
-    output_path = module_dir / "gene_variance_rank.png"
+    if io_config:
+        output_path = io_config.get_figure_path(module_dir, "gene_variance_rank.png")
+    else:
+        output_path = module_dir / "gene_variance_rank.png"
     plt.figure(figsize=(8, 5))
     sns.scatterplot(x="rank", y="variance", data=df, alpha=0.5, s=5)
     plt.xlabel("Gene Rank (by variance)")
@@ -275,7 +292,11 @@ def visualize_variance(adata, module_dir):
 
 
 def pseudobulk_PCA(
-    adata, sample_ID: str = "ROI", hue: str = "condition", module_dir=None
+    adata,
+    sample_ID: str = "ROI",
+    hue: str = "condition",
+    module_dir=None,
+    io_config=None,
 ):
     """Perform pseudobulk PCA analysis.
 
@@ -373,10 +394,12 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     adata = calc_qc_meterics(adata)
 
     # Scatter plot of number of genes vs total counts
-    plot_scatter_genes_v_count(adata, module_dir, filter_status="pre-filtering")
+    plot_scatter_genes_v_count(
+        adata, module_dir, filter_status="pre-filtering", io_config=io_config
+    )
 
     # Plot the summary metrics
-    plot_metrics(adata, module_dir, filter_status="pre-filtering")
+    plot_metrics(adata, module_dir, filter_status="pre-filtering", io_config=io_config)
 
     # Filter cells and genes
     logger.info("Filtering cells and genes...")
@@ -472,10 +495,12 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         logger.info("No specific cells to remove based on QC plots.")
 
     # Scatter plot of number of genes vs total counts after filtering
-    plot_scatter_genes_v_count(adata, module_dir, filter_status="post-filtering")
+    plot_scatter_genes_v_count(
+        adata, module_dir, filter_status="post-filtering", io_config=io_config
+    )
 
     # Plot the summary metrics after filtering
-    plot_metrics(adata, module_dir, filter_status="post-filtering")
+    plot_metrics(adata, module_dir, filter_status="post-filtering", io_config=io_config)
 
     logger.info(f"adata shape after area filtering: {adata.shape}")
 
@@ -512,10 +537,16 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         raise ValueError(f"Unsupported normalization approach: {norm_approach}")
 
     # Plot variance of genes after normalization
-    visualize_variance(adata, module_dir)
+    visualize_variance(adata, module_dir, io_config)
 
     # Perform pseudobulk PCA analysis
-    pseudobulk_PCA(adata, sample_ID="ROI", hue="condition", module_dir=module_dir)
+    pseudobulk_PCA(
+        adata,
+        sample_ID="ROI",
+        hue="condition",
+        module_dir=module_dir,
+        io_config=io_config,
+    )
 
     # Save data
     logger.info("Saving filtered and normalized data...")

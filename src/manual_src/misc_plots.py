@@ -45,6 +45,9 @@ dir = Path(
 fig_dir = dir / "manual_analysis/plots"
 fig_dir.mkdir(parents=True, exist_ok=True)
 
+# Configure scanpy to save figures in our custom directory
+sc.settings.figdir = fig_dir
+
 
 # Set colors
 cmap = sns.color_palette("ch:start=.2,rot=-.3", as_cmap=True)
@@ -67,7 +70,7 @@ sc.pl.umap(
     wspace=0.4,
     show=False,
     frameon=False,
-    save=fig_dir / f"{res}.pdf",
+    save=f"_{res}.pdf",
 )
 
 print("UMAP plotted and saved successfully.")

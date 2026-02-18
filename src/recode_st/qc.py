@@ -358,7 +358,7 @@ def pseudobulk_PCA(
 
     # Plot with seaborn
     fig, ax = plt.subplots(figsize=(8, 6))
-    sns.scatterplot(data=pca_df, x="PC1", y="PC2", hue=hue, s=100, ax=ax)
+    sns.scatterplot(data=pca_df, x="PC1", y="PC2", hue=hue, s=50, ax=ax)
 
     ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0] * 100:.1f}%)")
     ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1] * 100:.1f}%)")
@@ -396,7 +396,6 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
 
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
-    # cmap = sns.color_palette("Spectral", as_cmap=True)
 
     logger.info("Loading data...")
     combined_path = io_config.adata_dir / "all_samples_fixed.h5ad"

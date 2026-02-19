@@ -2,13 +2,16 @@
 
 import os
 import random
+from collections.abc import Sequence
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import scanpy as sc
 import seaborn as sns
 import torch
+from anndata import AnnData
 
 
 def seed_everything(seed: int):
@@ -31,31 +34,48 @@ def seed_everything(seed: int):
         pass
 
 
-def create_df_gene(adata, gene_name):
+def create_df_gene(
+    adata: AnnData,
+    genes: str | Sequence[str],
+) -> pd.DataFrame:
     """Create a dataframe for plotting gene expression.
 
     Args:
-        adata: The AnnData object containing the data.
-        gene_name: The name of the gene to extract expression values for.
+        adata: AnnData object.
+        genes: A gene name or list of gene names.
 
     Returns:
-        A dataframe with columns 'gene_expression' and metadata.
+        DataFrame containing metadata and gene expression columns.
     """
-    # Get gene index
-    gene_idx = adata.var_names.get_loc(gene_name)
+    if isinstance(genes, str):
+        genes = [genes]
 
-    # Extract expression vector
-    expr = adata.X[:, gene_idx]
+    # Check genes exist
+    missing = [g for g in genes if g not in adata.var_names]
+    if missing:
+        raise ValueError(f"Genes not found in adata.var_names: {missing}")
 
-    # Handle sparse matrix
+    # Get gene indices
+    gene_indices = adata.var_names.get_indexer(genes)
+
+    # Extract expression matrix (cells x genes)
+    expr = adata.X[:, gene_indices]
+
+    # Convert sparse → dense only once
     if hasattr(expr, "toarray"):
-        expr = expr.toarray().ravel()
+        expr = expr.toarray()
     else:
-        expr = np.asarray(expr).ravel()
+        expr = np.asarray(expr)
 
-    # Create dataframe
+    # Build dataframe
     df = adata.obs.copy()
-    df[gene_name] = expr
+    expr_df = pd.DataFrame(
+        expr,
+        index=adata.obs_names,
+        columns=genes,
+    )
+
+    df = pd.concat([df, expr_df], axis=1)
 
     return df
 
@@ -93,18 +113,29 @@ adata = sc.read_h5ad(dir / "annotate/adata.h5ad")
 print("Data loaded successfully.")
 
 # Gene name
-gene_name = "16S"
+gene_names = ["16S", "COL1A1"]
 
 # Create dataframe for plotting
-df = create_df_gene(adata, gene_name)
+df = create_df_gene(adata, gene_names)
+print(f"Successfully created dataframe with genes: {gene_names}")
 
-print(f"Visualizing {gene_name}.")
-sns.violinplot(
-    data=df,
-    x="condition",
-    y=gene_name,
-    hue="timepoint",
-    split=False,
-    palette=custom_palette,
-)
-plt.savefig(fig_dir / f"{gene_name}_violin_plot.png", dpi=300, bbox_inches="tight")
+# Generate violin plots
+for gene in gene_names:
+    print(f"Visualizing {gene}.")
+    plt.figure(figsize=(8, 6))
+    sns.violinplot(
+        data=df,
+        x="condition",
+        y=gene,
+        hue="timepoint",
+        split=False,
+        palette=custom_palette,
+    )
+    plt.title(f"{gene} Expression by Condition and Timepoint")
+    plt.tight_layout()
+    output_file = fig_dir / f"{gene}_violin_plot.png"
+    plt.savefig(output_file, dpi=300, bbox_inches="tight")
+    print(f"Saved plot to {output_file}")
+    plt.close()  # Close figure to prevent memory leaks
+
+print("All violin plots generated successfully.")

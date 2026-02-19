@@ -162,7 +162,7 @@ seed_everything(19960915)
 # Set variables
 h5ad_file = "adata_subset_Airway_epithelial_cells.h5ad"
 subset = "airway_epithelium"
-level_0 = "mannual_annotation"
+level_0 = "manual_annotation"
 res = 0.5
 
 # Annotate clusters based on marker genes and plot UMAP
@@ -191,9 +191,20 @@ subset_dir = module_dir / subset
 subset_dir.mkdir(parents=True, exist_ok=True)
 
 # Save figures
-fig_dir = subset_dir / subset / "figs"
-fig_dir.mkdir(parents=True, exist_ok=True)  # Create directory if it doesn't exist
-sc.settings.figdir = fig_dir  # Assign it to Scanpy figure directory
+fig_dir = subset_dir / "figs"
+fig_dir.mkdir(parents=True, exist_ok=True)
+
+# Save spatial figures
+fig_dir_spatial = fig_dir / f"spatial_{res}"
+fig_dir_spatial.mkdir(parents=True, exist_ok=True)
+
+# Save recalculated UMAP figures
+fig_dir_umap_recalc = fig_dir / f"umap_recalc_{res}"
+fig_dir_umap_recalc.mkdir(parents=True, exist_ok=True)
+
+# Save files
+file_dir = subset_dir / f"files/resolution_{res}"
+file_dir.mkdir(parents=True, exist_ok=True)
 
 # Set up logging
 log_file = subset_dir / f"celltype_level_1_{subset}.log"
@@ -208,18 +219,9 @@ logger.info(f"Starting Level 1 cell type annotation for subset: {subset}")
 logger.info(f"Resolution: {res}")
 logger.info(f"Output directory: {subset_dir}")
 
-# Save spatial figures
-fig_dir_spatial = fig_dir / f"spatial_{res}"
-fig_dir_spatial.mkdir(parents=True, exist_ok=True)
 
-# Save recalculated UMAP figures
-fig_dir_umap_recalc = fig_dir / f"umap_recalc_{res}"
-fig_dir_umap_recalc.mkdir(parents=True, exist_ok=True)
-
-# Save files
-file_dir = subset_dir / subset / f"files/resolution_{res}"
-file_dir.mkdir(parents=True, exist_ok=True)
-
+# Set figure directory
+sc.settings.figdir = fig_dir
 
 # Set colors
 cmap = sns.color_palette("Spectral", as_cmap=True)
@@ -227,10 +229,12 @@ cmap_blue = sns.color_palette("ch:start=.2,rot=-.3", as_cmap=True)
 color_palette_level_1 = sns.color_palette("hls", 12)
 
 # Load data
-logger.info(f"Loading data from {dir / f'celltype_subset/{h5ad_file}'}")
-adata = sc.read_h5ad(dir / f"celltype_subset/{h5ad_file}")
+logger.info(f"Loading data from {module_dir / f'{h5ad_file}'}")
+adata = sc.read_h5ad(module_dir / f"{h5ad_file}")
 logger.info(f"Data loaded successfully. Shape: {adata.shape}")
-logger.info(f"Cell types in data: {adata.obs[subset].value_counts().to_dict()}")
+
+# Check available columns and log cell type information
+logger.info(f"Available columns in adata.obs: {list(adata.obs.columns)}")
 
 # UMAP plot colored by manual annotation
 sc.pl.umap(

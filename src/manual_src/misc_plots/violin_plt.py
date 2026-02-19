@@ -82,6 +82,9 @@ sc.settings.figdir = fig_dir
 # Set colors
 cmap = sns.color_palette("ch:start=.2,rot=-.3", as_cmap=True)
 color_palette_level_1 = sns.color_palette("hls", 12)
+custom_palette = sns.color_palette(
+    ["#516a93", "#736da6", "#a06cad", "#cd68a5"], as_cmap=False
+)
 
 # Load data
 print(f"Loading data from {dir / 'annotate/adata.h5ad'}...")
@@ -89,11 +92,19 @@ adata = sc.read_h5ad(dir / "annotate/adata.h5ad")
 
 print("Data loaded successfully.")
 
+# Gene name
 gene_name = "16S"
 
 # Create dataframe for plotting
 df = create_df_gene(adata, gene_name)
 
 print(f"Visualizing {gene_name}.")
-sns.violinplot(data=df, x="condition", y=gene_name, hue="timepoint", split=True)
+sns.violinplot(
+    data=df,
+    x="condition",
+    y=gene_name,
+    hue="timepoint",
+    split=True,
+    palette=custom_palette,
+)
 plt.savefig(fig_dir / f"{gene_name}_violin_plot.png", dpi=300, bbox_inches="tight")

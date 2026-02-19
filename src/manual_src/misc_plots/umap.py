@@ -34,11 +34,12 @@ def seed_everything(seed: int):
 seed_everything(19960915)
 
 # Set variables
-res = "leiden_res_0.5"
+# res = "leiden_res_0.5"
+color = "mannual_annotation"
 
 # Set directories
 dir = Path(
-    "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/airscape_analysis/"
+    "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/2026-02-19_analysis_run/annotate/"
 )
 
 
@@ -65,12 +66,12 @@ sc.tl.umap(adata)
 print("Plotting UMAP...")
 sc.pl.umap(
     adata,
-    color=res,
+    color=color,
     cmap=cmap,
     wspace=0.4,
     show=False,
     frameon=False,
-    save=f"_{res}.pdf",
+    save=f"_{color}.pdf",
 )
 
 print("UMAP plotted and saved successfully.")

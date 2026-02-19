@@ -95,5 +95,5 @@ gene_name = "16S"
 df = create_df_gene(adata, gene_name)
 
 print(f"Visualizing {gene_name}.")
-sns.violinplot(data=df, x=gene_name, y="condition", hue="timepoint", split=True)
+sns.violinplot(data=df, x="condition", y=gene_name, hue="timepoint", split=True)
 plt.savefig(fig_dir / f"{gene_name}_violin_plot.png", dpi=300, bbox_inches="tight")

@@ -1,8 +1,8 @@
 """Module to subset the AnnData object to include only specified cell types."""
 
-from pathlib import Path
-
 import scanpy as sc
+
+from recode_st.config import IOConfig
 
 
 def subset_cell_types(adata, celltype_col="mannual_annotation"):
@@ -36,18 +36,20 @@ def subset_cell_types(adata, celltype_col="mannual_annotation"):
         print(f"Subsetted AnnData object saved to adata_subset_{celltype_safe}.h5ad")
 
 
-# Set path for output
-output = Path(
-    "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/airscape_analysis"
-)
-
-module_dir = output / "celltype_subset"
+# Set directories
+dir = IOConfig.output_dir
+module_dir = dir / "celltype_subset"
 module_dir.mkdir(exist_ok=True)
 
 # Read in adata file
-adata = sc.read_h5ad(output / "annotate/adata.h5ad")
+adata = sc.read_h5ad(dir / "annotate/adata.h5ad")
 
 # Subset and save subsetted adata
 subset_cell_types(adata, celltype_col="mannual_annotation")
 
-print("Done!")
+# List all the saved files in the module directory
+print("\nSaved subsetted AnnData files:")
+for file in module_dir.glob("adata_subset_*.h5ad"):
+    print(file.name)
+
+print("Sub-setting major cell types module completed successfully.")

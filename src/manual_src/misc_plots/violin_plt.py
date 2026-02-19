@@ -108,7 +108,7 @@ adata = sc.read_h5ad(dir / "annotate/adata.h5ad")
 print("Data loaded successfully.")
 
 # Gene name
-gene_names = ["16S", "COL1A1"]
+gene_names = ["16S", "KRT5", "KRT14"]
 
 # Create dataframe for plotting
 df = create_df_gene(adata, gene_names)

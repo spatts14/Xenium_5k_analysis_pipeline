@@ -19,7 +19,7 @@ source xenium_5k_venv/bin/activate
 # Run with error logging
 echo "Starting at $(date)"
 
-#python src/manual_src/misc_plots/violin_plt.py
-python src/manual_src/misc_plots/umap.py
+python src/manual_src/misc_plots/violin_plt.py
+#python src/manual_src/misc_plots/umap.py
 
 echo "Completed at $(date)"

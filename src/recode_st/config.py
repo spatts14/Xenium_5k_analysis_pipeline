@@ -1,9 +1,11 @@
 """The configuration module for recode_st."""
 
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Literal, Self
 
+import numpy as np
 import tomllib
 from pydantic import BaseModel, DirectoryPath, Field, model_validator
 
@@ -318,7 +320,7 @@ class IOConfig(BaseModel):
         Returns:
             Path to the timestamped output directory
         """
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        timestamp = datetime.now().strftime("%Y-%m-%d")
         unique_dir = self.output_dir / f"{timestamp}_analysis_run"
         unique_dir.mkdir(parents=True, exist_ok=True)
         return unique_dir
@@ -384,8 +386,16 @@ def copy_config_to_output(config_path: Path, output_dir: Path) -> None:
     Args:
         config_path: Path to the source config file.
         output_dir: Path to the output directory.
-    """
-    import shutil
 
+    Returns:
+        Unique filename of the copied config file in the output directory.
+    """
     destination = output_dir / config_path.name
+
+    # Add a timestamp to the copied config file
+    timestamp = datetime.now().strftime("%Y%m%d")
+
+    # Add random identifier of letters and numbers
+    unique_identifier = np.random.bytes(4).hex()
+    destination = output_dir / f"{timestamp}_{unique_identifier}_{config_path.name}"
     shutil.copy2(config_path, destination)

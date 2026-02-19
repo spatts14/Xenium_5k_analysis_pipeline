@@ -1,8 +1,8 @@
 """Module to subset the AnnData object to include only specified cell types."""
 
-import scanpy as sc
+from pathlib import Path
 
-from recode_st.config import IOConfig
+import scanpy as sc
 
 
 def subset_cell_types(adata, celltype_col="mannual_annotation"):
@@ -37,7 +37,10 @@ def subset_cell_types(adata, celltype_col="mannual_annotation"):
 
 
 # Set directories
-dir = IOConfig.output_dir
+dir = Path(
+    "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/2026-02-19_analysis_run/"
+)
+
 module_dir = dir / "celltype_subset"
 module_dir.mkdir(exist_ok=True)
 

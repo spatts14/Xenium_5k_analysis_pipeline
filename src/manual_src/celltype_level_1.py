@@ -2,6 +2,7 @@
 
 import os
 import random
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -9,8 +10,6 @@ import scanpy as sc
 import seaborn as sns
 import squidpy as sq
 import torch
-
-from recode_st.config import IOConfig
 
 
 def seed_everything(seed: int):
@@ -183,7 +182,9 @@ annotation_level_1 = subset + "_level_1"
 subset_key = subset + "_" + str(res)
 
 # Set directories
-dir = IOConfig.output_dir
+dir = Path(
+    "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/2026-02-19_analysis_run/"
+)
 module_dir = dir / "celltype_subset"
 subset_dir = module_dir / subset
 subset_dir.mkdir(parents=True, exist_ok=True)

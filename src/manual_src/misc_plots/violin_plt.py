@@ -83,21 +83,16 @@ def create_df_gene(
 # Set random seed for reproducibility
 seed_everything(19960915)
 
-# Set variables
-res = "leiden_res_0.5"
-
 # Set directories
 dir = Path(
     "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/2026-02-19_analysis_run/"
 )
-
 
 fig_dir = dir / "manual_analysis/plots"
 fig_dir.mkdir(parents=True, exist_ok=True)
 
 # Configure scanpy to save figures in our custom directory
 sc.settings.figdir = fig_dir
-
 
 # Set colors
 cmap = sns.color_palette("ch:start=.2,rot=-.3", as_cmap=True)

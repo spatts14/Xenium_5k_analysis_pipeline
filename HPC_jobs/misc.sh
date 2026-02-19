@@ -19,6 +19,6 @@ source xenium_5k_venv/bin/activate
 # Run with error logging
 echo "Starting at $(date)"
 
-python src/manual_src/misc_plots.py
+python src/manual_src/misc_plots/16s.py
 
 echo "Completed at $(date)"

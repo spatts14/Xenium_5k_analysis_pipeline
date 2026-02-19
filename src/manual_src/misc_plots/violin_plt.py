@@ -104,7 +104,7 @@ sns.violinplot(
     x="condition",
     y=gene_name,
     hue="timepoint",
-    split=True,
+    split=False,
     palette=custom_palette,
 )
 plt.savefig(fig_dir / f"{gene_name}_violin_plot.png", dpi=300, bbox_inches="tight")

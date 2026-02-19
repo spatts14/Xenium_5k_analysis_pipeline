@@ -162,7 +162,7 @@ seed_everything(19960915)
 # Set variables
 h5ad_file = "adata_subset_Airway_epithelial_cells.h5ad"
 subset = "airway_epithelium"
-level_0 = "manual_annotation"
+level_0 = "mannual_annotation"
 res = 0.5
 
 # Annotate clusters based on marker genes and plot UMAP

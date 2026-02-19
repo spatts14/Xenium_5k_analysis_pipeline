@@ -20,7 +20,7 @@ source xenium_5k_venv/bin/activate
 echo "Starting at $(date)"
 
 # make new adata for each major cell type
-python src/manual_src/celltype_subset.py
+#python src/manual_src/celltype_subset.py
 
 # high resolution clustering and plotting for each major cell type
 python src/manual_src/celltype_level_1.py

@@ -398,24 +398,30 @@ celltype_counts_condition.to_csv(
     file_dir / f"{subset}_celltype_counts_per_condition_ROI.csv"
 )
 
-# Save the annotated data
-output_file = dir / f"celltype_subset/{subset}_level_1.h5ad"
-logger.info(f"Saving annotated data to {output_file}")
-adata.write_h5ad(output_file)
-logger.info("Main analysis data saved successfully")
-logger.info(f"Final data shape: {adata.shape}")
-
-# Rerun PCA and UMAP on the annotated subsetted data
+logger.info("Re-run PCA and UMAP on the annotated subsetted data")
 
 # Set figure directory for recalculated UMAP
 sc.settings.figdir = fig_dir_umap_recalc
 
-
 # Calculate PCA, neighbors, and UMAP on the annotated subsetted data
-sc.pp.pca(adata)
-sc.pp.neighbors(adata)
+logger.info("Calculating PCA...")
+sc.pp.pca(adata, n_comps=50, svd_solver="arpack")
+
+sc.pl.pca_variance_ratio(
+    adata,
+    log=True,
+    n_pcs=50,
+    show=False,
+    save="_pca_variance_ratio.pdf",
+)
+
+logger.info("Calculating neighbors...")
+sc.pp.neighbors(adata, n_neighbors=20, n_pcs=30)
+
+logger.info("Calculating UMAP...")
 sc.tl.umap(adata)
 
+logger.info("Clustering using leiden clusters...")
 res_list = [0.1, 0.3, 0.5, 0.8, 1.0]
 for res in res_list:
     sc.tl.leiden(
@@ -431,6 +437,14 @@ for res in res_list:
         frameon=False,
         save=f"_recalc_{res}_umap.pdf",
     )
+
+# Save the annotated data
+output_file = dir / f"celltype_subset/{subset}_level_1.h5ad"
+logger.info(f"Saving annotated data to {output_file}")
+adata.write_h5ad(output_file)
+logger.info("Main analysis data saved successfully")
+logger.info(f"Final data shape: {adata.shape}")
+
 
 logger.info(f"Analysis completed successfully for {subset}")
 print("Done!")

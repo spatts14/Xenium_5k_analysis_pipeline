@@ -1,11 +1,10 @@
 """The configuration module for recode_st."""
 
-import shutil
+import secrets
 from datetime import datetime
 from pathlib import Path
 from typing import Literal, Self
 
-import numpy as np
 import tomllib
 from pydantic import BaseModel, DirectoryPath, Field, model_validator
 
@@ -388,14 +387,17 @@ def copy_config_to_output(config_path: Path, output_dir: Path) -> None:
         output_dir: Path to the output directory.
 
     Returns:
-        Unique filename of the copied config file in the output directory.
+        None
     """
-    destination = output_dir / config_path.name
-
     # Add a timestamp to the copied config file
     timestamp = datetime.now().strftime("%Y%m%d")
 
     # Add random identifier of letters and numbers
-    unique_identifier = np.random.bytes(4).hex()
-    destination = output_dir / f"{timestamp}_{unique_identifier}_{config_path.name}"
-    shutil.copy2(config_path, destination)
+    unique_identifier = secrets.token_hex(4)
+
+    # Save as .txt file instead of preserving original extension
+    config_name = config_path.stem  # Get filename without extension
+    destination = output_dir / f"{timestamp}_{config_name}_{unique_identifier}.txt"
+
+    # Save as .txt file
+    destination.write_text(config_path.read_text())

@@ -162,7 +162,7 @@ seed_everything(19960915)
 # Set variables
 h5ad_file = "adata_subset_Airway_epithelial_cells.h5ad"
 subset = "airway_epithelium"
-mannual_annotation = "mannual_annotation"
+level_0 = "mannual_annotation"
 res = 0.5
 
 # Annotate clusters based on marker genes and plot UMAP
@@ -235,7 +235,7 @@ logger.info(f"Cell types in data: {adata.obs[subset].value_counts().to_dict()}")
 # UMAP plot colored by manual annotation
 sc.pl.umap(
     adata,
-    color=mannual_annotation,
+    color=level_0,
     legend_loc="right margin",
     legend_fontsize=14,
     frameon=False,

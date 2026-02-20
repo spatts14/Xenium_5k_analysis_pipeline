@@ -211,7 +211,7 @@ def subcluster_leiden_analysis(
         file_dir = res_dir / f"files_{res}"
         file_dir.mkdir(parents=True, exist_ok=True)
 
-        fig_dir = res_dir / fig_dir_name + f"_{res}"
+        fig_dir = res_dir / f"{fig_dir_name}_{res}"
         fig_dir.mkdir(parents=True, exist_ok=True)
 
         # Set figure directory
@@ -414,7 +414,7 @@ def map_clusters_to_annotations(
         )
 
 
-def ensure_recalc_graph(
+def recalc_umap(
     adata,
     n_pca_comps: int = 50,
     use_highly_variable: bool = True,
@@ -488,10 +488,10 @@ seed_everything(19960915)
 
 # Set variables
 # Set variables
-h5ad_file = "adata_subset_Airway_epithelial_cells.h5ad"
-subset = "airway_epithelium"
+h5ad_file = "adata_subset_Unknown.h5ad"
+subset = "unknown"
 level_0 = "mannual_annotation"
-res_list = [0.1, 0.3, 0.5, 0.8, 1.0]
+res_list = [0.1, 0.3]
 
 # Resolution to use for mapping clusters to annotations
 chosen_resolution_name = ""
@@ -503,8 +503,12 @@ annotation_level_1 = subset + "_level_1"
 
 
 # Set directories
+# dir = Path(
+#     "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/2026-02-19_analysis_run/"
+# )
+
 dir = Path(
-    "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/2026-02-19_analysis_run/"
+    "/Volumes/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/2026-02-19_analysis_run/"
 )
 module_dir = dir / "celltype_subset"
 subset_dir = module_dir / subset
@@ -554,7 +558,7 @@ sc.pl.umap(
     save=f"_{annotation_level_0}.pdf",
 )
 
-# Look at proliferative score (S and G2M) to check if any clusters are driven by cell cycle
+# Look at proliferative score (S and G2M)
 S_score_G2M_score(adata, subset)
 
 logger.info(f"Starting Level 1 cell type annotation for subset: {subset}")
@@ -575,11 +579,18 @@ subcluster_leiden_analysis(
 )
 
 
-# STEP 2: Recalculate UMAP using top 2000 variable genes for better visualization of clusters
-logger.info("Recalculating UMAP...")
-sc.pp.pca(adata, n_comps=50, use_highly_variable=True)
-sc.pp.neighbors(adata, n_neighbors=15, n_pcs=20, key_added="neighbors_umap_recalc")
-sc.tl.umap(adata, neighbors_key="neighbors_umap_recalc", key_added="umap_recalc")
+# STEP 2: Recalculate UMAP using top 2000 variable genes for better
+recalc_umap(
+    adata,
+    n_pca_comps=50,
+    use_highly_variable=True,
+    n_neighbors=15,
+    n_pcs=20,
+    neighbors_key="neighbors_umap_recalc",
+    umap_key="umap_recalc",
+)
+
+# Re-run Leiden clustering and marker gene analysis using the recalculated UMAP graph
 subcluster_leiden_analysis(
     adata=adata,
     subset=subset,
@@ -588,25 +599,14 @@ subcluster_leiden_analysis(
     res_list=res_list,
     neighbors_key="neighbors_umap_recalc",
     umap_key="umap_recalc",
-    n_dotplot_genes=45,
+    n_dotplot_genes=5,
     n_top_genes_export=10,
     cmap_dotplot=cmap_blue,
     logger=logger,
 )
 
-ensure_recalc_graph(
-    adata,
-    n_pca_comps=50,
-    use_highly_variable=True,
-    n_neighbors=15,
-    n_pcs=20,
-    neighbors_key="neighbors_umap_recalc",
-    umap_key="umap_recalc",
-    validate_params=True,
-)
-
-# STEP 3: Map Leiden clusters to annotation_level_1 based on marker genes and save in adata.obs
-# Map Leiden clusters to annotation_level_1 and save in adata.obs
+# STEP 3: Map Leiden clusters to annotation_level_1 based on marker genes
+# and save in adata.obs
 
 map_clusters_to_annotations(
     adata,

@@ -35,7 +35,7 @@ seed_everything(19960915)
 
 # Set variables
 # res = "leiden_res_0.5"
-color = "mannual_annotation"
+color = "manual_annotation"
 
 # Set directories
 dir = Path(

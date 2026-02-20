@@ -111,7 +111,7 @@ class AnnotateModuleConfig(BaseModuleConfig):
     leiden_cluster: str
     """Name of the cluster column in adata.obs to use for annotation."""
 
-    mannual_annotation: str
+    manual_annotation: str
     """Name of the manually annotated column in adata.obs."""
 
     cluster_to_cell_type: dict[str, str] | None = None

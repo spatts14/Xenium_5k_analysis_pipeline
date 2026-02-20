@@ -5,7 +5,7 @@ from pathlib import Path
 import scanpy as sc
 
 
-def subset_cell_types(adata, celltype_col="mannual_annotation"):
+def subset_cell_types(adata, celltype_col: str):
     """Subset the AnnData object to include only specified cell types.
 
     Args:
@@ -36,6 +36,8 @@ def subset_cell_types(adata, celltype_col="mannual_annotation"):
         print(f"Subsetted AnnData object saved to adata_subset_{celltype_safe}.h5ad")
 
 
+manual_annotation = "level_0_annotation"
+
 # Set directories
 dir = Path(
     "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/2026-02-19_analysis_run/"
@@ -48,7 +50,7 @@ module_dir.mkdir(exist_ok=True)
 adata = sc.read_h5ad(dir / "annotate/adata.h5ad")
 
 # Subset and save subsetted adata
-subset_cell_types(adata, celltype_col="mannual_annotation")
+subset_cell_types(adata, celltype_col=manual_annotation)
 
 # List all the saved files in the module directory
 print("\nSaved subsetted AnnData files:")

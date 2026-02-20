@@ -20,7 +20,7 @@ source xenium_5k_venv/bin/activate
 echo "Starting at $(date)"
 
 # make new adata for each major cell type
-#python src/manual_src/celltype_subset.py
+python src/manual_src/celltype_subset.py
 
 # Defaults can be overridden when submitting the job
 : "${H5AD_FILE:=adata_subset_Stromal_cells.h5ad}"

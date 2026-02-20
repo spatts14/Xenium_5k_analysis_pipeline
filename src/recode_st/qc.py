@@ -384,9 +384,7 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     min_cell_area = config.min_cell_area
     max_cell_area = config.max_cell_area
     norm_approach = config.norm_approach
-
-    # TODO: make configurable
-    HVG = 500
+    hvg = config.hvg
     MAX_COUNT = True
     MAX_COUNT_NUMBER = 2000
     PERCENT = 99.5
@@ -532,17 +530,17 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         logger.info(
             "Skipping log transform and scaling: Already variance stabilized and scaled"
         )
-        logger.info(f"Identifying {HVG} highly variable genes...")
+        logger.info(f"Identifying {hvg} highly variable genes...")
         sc.pp.highly_variable_genes(
-            adata, flavor="seurat_v3", n_top_genes=HVG, inplace=True, layer="counts"
+            adata, flavor="seurat_v3", n_top_genes=hvg, inplace=True, layer="counts"
         )
     elif norm_approach in {"cell_area", "scanpy_log"}:
         logger.info("Log transforming...")
         sc.pp.log1p(adata)  # Log transform
         # Identify highly variable genes
-        logger.info(f"Identifying {HVG} highly variable genes...")
+        logger.info(f"Identifying {hvg} highly variable genes...")
         sc.pp.highly_variable_genes(
-            adata, flavor="seurat_v3", n_top_genes=HVG, inplace=True, layer="counts"
+            adata, flavor="seurat_v3", n_top_genes=hvg, inplace=True, layer="counts"
         )
         logger.info("Scaling data...")
         sc.pp.scale(adata, max_value=10)

@@ -54,6 +54,9 @@ class QualityControlModuleConfig(BaseModuleConfig):
     'sctransform' for SCTransform normalization, or
     'cell_area' for normalization by cell area."""
 
+    hvg: int
+    """Number of highly variable genes to identify after normalization."""
+
 
 class DoubletIdentificationModuleConfig(BaseModuleConfig):
     """Configuration for the Doublet Identification module."""

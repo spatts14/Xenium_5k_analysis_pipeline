@@ -503,13 +503,10 @@ annotation_level_1 = subset + "_level_1"
 
 
 # Set directories
-# dir = Path(
-#     "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/2026-02-19_analysis_run/"
-# )
-
 dir = Path(
-    "/Volumes/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/2026-02-19_analysis_run/"
+    "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/2026-02-19_analysis_run/"
 )
+
 module_dir = dir / "celltype_subset"
 subset_dir = module_dir / subset
 subset_dir.mkdir(parents=True, exist_ok=True)

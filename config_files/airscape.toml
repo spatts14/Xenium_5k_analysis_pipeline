@@ -90,7 +90,7 @@ marker_genes = [
 [modules.annotate]
 module_name = "annotate"
 leiden_cluster = "leiden_res_0.3"
-mannual_annotation = "mannual_annotation"
+manual_annotation = "level_0_annotation"
 #cluster_to_cell_type mapping is optional - remove this line if you don't want to rename clusters
 [modules.annotate.cluster_to_cell_type]
 "0" = "Airway epithelial cells"

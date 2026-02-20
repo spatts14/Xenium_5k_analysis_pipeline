@@ -489,7 +489,7 @@ seed_everything(19960915)
 # Set variables
 h5ad_file = os.getenv("H5AD_FILE", "adata_subset_Stromal_cells.h5ad")
 subset = os.getenv("SUBSET", "stromal")
-level_0 = "mannual_annotation"
+level_0 = "level_0_annotation"
 res_list = [0.1, 0.3, 0.5, 0.8, 1.0]
 
 # Resolution to use for mapping clusters to annotations

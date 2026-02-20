@@ -517,6 +517,7 @@ subset_dir.mkdir(parents=True, exist_ok=True)
 # Save figures
 fig_dir = subset_dir / "figs"
 fig_dir.mkdir(parents=True, exist_ok=True)
+sc.settings.figdir = fig_dir
 
 # Save files
 file_dir = subset_dir / "files"

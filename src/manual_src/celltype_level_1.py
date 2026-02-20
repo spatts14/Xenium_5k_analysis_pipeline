@@ -617,19 +617,31 @@ map_clusters_to_annotations(
     logger=logger,
 )
 
-# Visualize mapped annotation on UMAP
+# Check if annotation column was created
+if annotation_level_1 in adata.obs:
+    logger.info(f"Annotation column '{annotation_level_1}' created successfully")
 
-# Calculate number of cells per annotated cell type and save as csv
-celltype_counts = pd.DataFrame(adata.obs[annotation_level_1].value_counts())
-celltype_counts.to_csv(file_dir / f"{subset}_celltype_counts.csv")
+    # Visualize mapped annotation on UMAP
+    # (Add visualization code here if needed)
 
-# Number of cells per annotated cell type per condition and ROI
-celltype_counts_condition = pd.crosstab(
-    adata.obs[annotation_level_1], [adata.obs["condition"], adata.obs["ROI"]]
-)
-celltype_counts_condition.to_csv(
-    file_dir / f"{subset}_celltype_counts_per_condition_ROI.csv"
-)
+    # Calculate number of cells per annotated cell type and save as csv
+    celltype_counts = pd.DataFrame(adata.obs[annotation_level_1].value_counts())
+    celltype_counts.to_csv(file_dir / f"{subset}_celltype_counts.csv")
+
+    # Number of cells per annotated cell type per condition and ROI
+    celltype_counts_condition = pd.crosstab(
+        adata.obs[annotation_level_1], [adata.obs["condition"], adata.obs["ROI"]]
+    )
+    celltype_counts_condition.to_csv(
+        file_dir / f"{subset}_celltype_counts_per_condition_ROI.csv"
+    )
+else:
+    logger.warning(
+        f"Annotation column '{annotation_level_1}' was not created. "
+        f"Skipping annotation-dependent outputs. "
+        f"Please set 'chosen_resolution_name' and 'annotation_dict' to enable "
+        f"cell type annotation."
+    )
 
 # Save the annotated data
 output_file = dir / f"celltype_subset/{subset}_level_1.h5ad"

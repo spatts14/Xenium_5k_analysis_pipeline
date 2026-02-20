@@ -55,7 +55,7 @@ min_cells = 100                 # Minimum number of cells that express #the gene
 min_cell_area = 20              # Minimum cell area to filter cells
 max_cell_area = 1000            # Maximum cell area to filter cells
 norm_approach = "cell_area"     # Normalization approach to use
-hvg = 2000                      # Number of highly variable genes
+hvg = 500                       # Number of highly variable genes
 remove_cells = []               # List of cell IDs to remove from the dataset
 
 # DENOISE MODULE
@@ -115,5 +115,5 @@ manual_annotation = "level_0_annotation"
 # VIEW IMAGES MODULE
 [modules.view_images]
 module_name = "view_images"
-cluster_name = "mannual_annotation"
+cluster_name = "level_0_annotation"
 gene_list = ["CD3E", "KRT5", "MRC1", "MYH11", "VWF", "16S"]

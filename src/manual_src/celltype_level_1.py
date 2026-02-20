@@ -487,11 +487,10 @@ def recalc_umap(
 seed_everything(19960915)
 
 # Set variables
-# Set variables
-h5ad_file = "adata_subset_Stromal_cells.h5ad"
-subset = "stromal"
+h5ad_file = os.getenv("H5AD_FILE", "adata_subset_Stromal_cells.h5ad")
+subset = os.getenv("SUBSET", "stromal")
 level_0 = "manual_annotation"
-res_list = [0.1, 0.3]
+res_list = [0.1, 0.3, 0.5, 0.8, 1.0]
 
 # Resolution to use for mapping clusters to annotations
 chosen_resolution_name = ""

@@ -488,9 +488,9 @@ seed_everything(19960915)
 
 # Set variables
 # Set variables
-h5ad_file = "adata_subset_Unknown.h5ad"
-subset = "unknown"
-level_0 = "mannual_annotation"
+h5ad_file = "adata_subset_Stromal_cells.h5ad"
+subset = "stromal"
+level_0 = "manual_annotation"
 res_list = [0.1, 0.3]
 
 # Resolution to use for mapping clusters to annotations

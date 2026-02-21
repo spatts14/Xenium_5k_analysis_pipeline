@@ -504,10 +504,10 @@ def plot_spatial_distribution(
             shape=None,
             color=[leiden_keys],
             wspace=0.4,
-            save=fig_dir / f"{leiden_keys}_{roi}_spatial.pdf",
+            save=module_dir / f"{leiden_keys}_{roi}_spatial.pdf",
         )
 
-    logger.info(f"  Spatial plots saved to {fig_dir}")
+    logger.info(f"  Spatial plots saved to {module_dir}")
 
 
 def run_dimension_reduction(

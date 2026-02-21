@@ -507,7 +507,7 @@ def plot_spatial_distribution(
             save=module_dir / f"{leiden_keys}_{roi}_spatial.pdf",
         )
 
-    logger.info(f"  Spatial plots saved to {module_dir}")
+    logger.info(f"Spatial plots saved to {module_dir}")
 
 
 def run_dimension_reduction(

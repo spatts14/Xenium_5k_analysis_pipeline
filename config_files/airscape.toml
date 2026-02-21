@@ -55,7 +55,7 @@ min_cells = 100                 # Minimum number of cells that express #the gene
 min_cell_area = 20              # Minimum cell area to filter cells
 max_cell_area = 1000            # Maximum cell area to filter cells
 norm_approach = "cell_area"     # Normalization approach to use
-hvg = 500                       # Number of highly variable genes
+hvg = 2000                      # Number of highly variable genes
 remove_cells = []               # List of cell IDs to remove from the dataset
 
 # DENOISE MODULE

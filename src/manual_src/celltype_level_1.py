@@ -506,7 +506,7 @@ module_dir = (
     Path(
         "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/ephemeral"
     )
-    / "celltype_subset_HVG2000"
+    / "celltype_subset_HVG500"
 )
 
 subset_dir = module_dir / subset

@@ -41,14 +41,14 @@ manual_annotation = "level_0_annotation"
 
 # Set directories
 dir = Path(
-    "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/2026-02-21_analysis_run_HVG2000/"
+    "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/2026-02-21_analysis_run_HVG500/"
 )
 
 output_dir = (
     Path(
         "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/ephemeral"
     )
-    / "celltype_subset_HVG2000"
+    / "celltype_subset_HVG500"
 )
 output_dir.mkdir(parents=True, exist_ok=True)
 

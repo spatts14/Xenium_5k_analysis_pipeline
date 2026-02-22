@@ -323,7 +323,7 @@ class IOConfig(BaseModel):
             Path to the timestamped output directory
         """
         timestamp = datetime.now().strftime("%Y-%m-%d")
-        unique_dir = self.output_dir / f"{timestamp}_analysis_run_HVG500"
+        unique_dir = self.output_dir / f"{timestamp}_analysis_run_HVG2000"
         unique_dir.mkdir(parents=True, exist_ok=True)
         return unique_dir
 

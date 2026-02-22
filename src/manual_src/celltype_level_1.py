@@ -502,14 +502,13 @@ annotation_level_1 = subset + "_level_1"
 
 
 # Set directories
-dir = (
+module_dir = (
     Path(
         "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/ephemeral"
     )
     / "celltype_subset"
 )
 
-module_dir = dir / "celltype_subset"
 subset_dir = module_dir / subset
 subset_dir.mkdir(parents=True, exist_ok=True)
 
@@ -644,7 +643,7 @@ else:
     )
 
 # Save the annotated data
-output_file = dir / f"celltype_subset/{subset}_level_1.h5ad"
+output_file = module_dir / f"{subset}_level_1.h5ad"
 logger.info(f"Saving annotated data to {output_file}")
 adata.write_h5ad(output_file)
 logger.info("Main analysis data saved successfully")

@@ -502,8 +502,11 @@ annotation_level_1 = subset + "_level_1"
 
 
 # Set directories
-dir = Path(
-    "/Volumes/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/2026-02-21_analysis_run_HVG500/annotate/adata.h5ad"
+dir = (
+    Path(
+        "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/ephemeral"
+    )
+    / "celltype_subset"
 )
 
 module_dir = dir / "celltype_subset"

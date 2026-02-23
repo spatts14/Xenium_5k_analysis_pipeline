@@ -501,13 +501,11 @@ annotation_level_0 = subset + "_level_0"
 annotation_level_1 = subset + "_level_1"
 
 
-# Set directories
-module_dir = (
-    Path(
-        "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/ephemeral"
-    )
-    / "celltype_subset_HVG2000"
-)
+# Read directory from environment variable
+celltype_subset_dir = os.getenv("CELLTYPE_SUBSET_DIR")
+if not celltype_subset_dir:
+    raise ValueError("CELLTYPE_SUBSET_DIR environment variable must be set")
+module_dir = Path(celltype_subset_dir)
 
 subset_dir = module_dir / subset
 subset_dir.mkdir(parents=True, exist_ok=True)

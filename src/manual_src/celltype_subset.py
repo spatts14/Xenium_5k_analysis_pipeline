@@ -1,5 +1,6 @@
 """Module to subset the AnnData object to include only specified cell types."""
 
+import os
 from pathlib import Path
 
 import scanpy as sc
@@ -39,17 +40,16 @@ def subset_cell_types(adata, celltype_col: str, output_dir: Path):
 
 manual_annotation = "level_0_annotation"
 
-# Set directories
-dir = Path(
-    "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/2026-02-22_analysis_run_HVG2000/"
-)
+# Read directories from environment variables
+annotate_dir = os.getenv("ANNOTATE_DIR")
+if not annotate_dir:
+    raise ValueError("ANNOTATE_DIR environment variable must be set")
+dir = Path(annotate_dir)
 
-output_dir = (
-    Path(
-        "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/ephemeral"
-    )
-    / "celltype_subset_HVG2000"
-)
+celltype_subset_dir = os.getenv("CELLTYPE_SUBSET_DIR")
+if not celltype_subset_dir:
+    raise ValueError("CELLTYPE_SUBSET_DIR environment variable must be set")
+output_dir = Path(celltype_subset_dir)
 output_dir.mkdir(parents=True, exist_ok=True)
 
 

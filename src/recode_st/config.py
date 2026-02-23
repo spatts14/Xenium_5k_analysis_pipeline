@@ -1,5 +1,7 @@
 """The configuration module for recode_st."""
 
+import secrets
+from datetime import datetime
 from pathlib import Path
 from typing import Literal, Self
 
@@ -51,6 +53,9 @@ class QualityControlModuleConfig(BaseModuleConfig):
     """Normalization approach to use: 'scanpy_log' for Scanpy log normalization,
     'sctransform' for SCTransform normalization, or
     'cell_area' for normalization by cell area."""
+
+    hvg: int
+    """Number of highly variable genes to identify after normalization."""
 
 
 class DoubletIdentificationModuleConfig(BaseModuleConfig):
@@ -106,7 +111,7 @@ class AnnotateModuleConfig(BaseModuleConfig):
     leiden_cluster: str
     """Name of the cluster column in adata.obs to use for annotation."""
 
-    mannual_annotation: str
+    manual_annotation: str
     """Name of the manually annotated column in adata.obs."""
 
     cluster_to_cell_type: dict[str, str] | None = None
@@ -308,10 +313,38 @@ class IOConfig(BaseModel):
             self.data_dir.mkdir(parents=True, exist_ok=True)
         if not Path(self.output_dir).exists():
             self.output_dir.mkdir(parents=True, exist_ok=True)
-        if not Path(self.logging_dir).exists():
-            self.logging_dir.mkdir(parents=True, exist_ok=True)
 
         return self
+
+    def create_timestamped_output_dir(self) -> Path:
+        """Create a unique timestamped output directory.
+
+        Returns:
+            Path to the timestamped output directory
+        """
+        timestamp = datetime.now().strftime("%Y-%m-%d")
+        unique_dir = self.output_dir / f"{timestamp}_analysis_run"
+        unique_dir.mkdir(parents=True, exist_ok=True)
+        return unique_dir
+
+    def get_figure_path(self, module_dir: Path, filename: str) -> Path:
+        """Get path for saving figures in fig/ subfolder.
+
+        Args:
+            module_dir: The module directory path
+            filename: The figure filename
+
+        Returns:
+            Path where the figure should be saved
+        """
+        fig_extensions = {".png", ".pdf", ".svg", ".eps"}
+        file_path = Path(filename)
+        if file_path.suffix.lower() in fig_extensions:
+            fig_dir = module_dir / "fig"
+            fig_dir.mkdir(exist_ok=True)
+            return fig_dir / filename
+        else:
+            return module_dir / filename
 
 
 class Config(BaseModel):
@@ -347,3 +380,27 @@ def load_config(config_file: str | Path) -> Config:
         data = tomllib.load(f)
 
     return Config.model_validate(data)
+
+
+def copy_config_to_output(config_path: Path, output_dir: Path) -> None:
+    """Copy the config file to the output directory.
+
+    Args:
+        config_path: Path to the source config file.
+        output_dir: Path to the output directory.
+
+    Returns:
+        None
+    """
+    # Add a timestamp to the copied config file
+    timestamp = datetime.now().strftime("%Y%m%d")
+
+    # Add random identifier of letters and numbers
+    unique_identifier = secrets.token_hex(4)
+
+    # Save as .txt file instead of preserving original extension
+    config_name = config_path.stem  # Get filename without extension
+    destination = output_dir / f"{timestamp}_{config_name}_{unique_identifier}.txt"
+
+    # Save as .txt file
+    destination.write_text(config_path.read_text())

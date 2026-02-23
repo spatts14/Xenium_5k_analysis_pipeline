@@ -1,6 +1,8 @@
 #!/bin/bash
-#PBS -l walltime=16:00:00
-#PBS -lselect=1:ncpus=16:mem=512gb
+#PBS -l walltime=12:0:0
+#PBS -lselect=1:ncpus=1:mem=128gb
+#PBS -N subset_celltype
+#PBS -j oe
 
 # Load production tools
 module load tools/prod
@@ -14,5 +16,10 @@ cd /rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline
 # Activate virtual environment
 source xenium_5k_venv/bin/activate
 
-# Run
-python -m recode_st config_files/config_HPC_qc.toml
+# Run with error logging
+echo "Starting at $(date)"
+
+python src/manual_src/misc_plots/violin_plt.py
+python src/manual_src/misc_plots/umap.py
+
+echo "Completed at $(date)"

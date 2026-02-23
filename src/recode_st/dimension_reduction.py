@@ -507,7 +507,7 @@ def plot_spatial_distribution(
             save=module_dir / f"{leiden_keys}_{roi}_spatial.pdf",
         )
 
-    logger.info(f"  Spatial plots saved to {module_dir}")
+    logger.info(f"Spatial plots saved to {module_dir}")
 
 
 def run_dimension_reduction(
@@ -526,12 +526,19 @@ def run_dimension_reduction(
     # Setup directories
     module_dir = Path(io_config.output_dir) / config.module_name
     module_dir.mkdir(exist_ok=True, parents=True)
+
+    # Create fig subdirectory for scanpy figures
+    fig_dir = module_dir / "fig"
+    fig_dir.mkdir(exist_ok=True, parents=True)
+
     spatial_plots_dir = module_dir / "spatial_plots"
     spatial_plots_dir.mkdir(exist_ok=True, parents=True)
 
-    sc.settings.figdir = module_dir
+    # Set scanpy to save figures in the fig/ subdirectory
+    sc.settings.figdir = fig_dir
     configure_scanpy_figures(str(io_config.output_dir))
     cmap = sns.color_palette("crest", as_cmap=True)
+    palette = sns.color_palette("hls", 12)
 
     # Load data
     adata = load_data(
@@ -555,6 +562,51 @@ def run_dimension_reduction(
         show=False,
         save=f"_{config.module_name}.pdf",
     )
+
+    # Visualize PC1 vs PC2 colored by total_counts and n_genes_by_counts
+    logger.info("Plotting PCA scatter plots...")
+    sc.pl.pca(
+        adata,
+        color=["total_counts", "n_genes_by_counts"],
+        cmap=cmap,
+        dimensions=[(0, 1)],
+        ncols=2,
+        size=2,
+        show=False,
+        save=f"_{config.module_name}.pdf",
+    )
+
+    # Plot PCA with observation fields if available
+    if config.obs_vis_list:
+        logger.info("Plotting PCA with observation fields...")
+        for _obs_field in config.obs_vis_list:
+            sc.pl.pca(
+                adata,
+                color=_obs_field,
+                palette=palette,
+                dimensions=[(0, 1)],
+                ncols=3,
+                size=2,
+                alpha=0.5,
+                show=False,
+                save=f"_{config.module_name}_{_obs_field}_PC1_PC2.pdf",
+            )
+        for _obs_field in config.obs_vis_list:
+            sc.pl.pca(
+                adata,
+                color=_obs_field,
+                palette=palette,
+                dimensions=[(2, 3)],
+                ncols=3,
+                size=2,
+                alpha=0.5,
+                show=False,
+                save=f"_{config.module_name}_{_obs_field}_PC3_PC4.pdf",
+            )
+    else:
+        logger.info(
+            "Skipping PCA observation fields plot (obs_vis_list not configured)"
+        )
 
     # Compute neighbors and UMAP
     adata = compute_dimensionality_reduction(

@@ -26,6 +26,7 @@ def plot_metrics(
     adata,
     module_dir,
     filter_status,
+    io_config=None,
 ):
     """Generates and saves histograms summarizing key cell metrics.
 
@@ -44,6 +45,7 @@ def plot_metrics(
             - 'nucleus_area'
         module_dir (Path or str): Directory path where the output plot will be saved.
         filter_status (str): Description of the filtering status (e.g. "pre-filtering").
+        io_config (IOConfig, optional): IOConfig object for managing file paths.
 
     Returns:
         None
@@ -71,13 +73,20 @@ def plot_metrics(
 
     # Save figure
     filter_status = filter_status.replace("-", "_").lower()
-    output_path = module_dir / f"cell_summary_histograms_{filter_status}.png"
+    if io_config:
+        output_path = io_config.get_figure_path(
+            module_dir, f"cell_summary_histograms_{filter_status}.png"
+        )
+    else:
+        output_path = module_dir / f"cell_summary_histograms_{filter_status}.png"
     plt.savefig(output_path, dpi=300)
     plt.close()
     logger.info(f"Saved plots to {output_path}")
 
 
-def plot_scatter_genes_v_count(adata, module_dir, filter_status, hue=None):
+def plot_scatter_genes_v_count(
+    adata, module_dir, filter_status, hue=None, io_config=None
+):
     """Generate scatter plot of number of genes vs total counts per cell.
 
     Args:
@@ -85,6 +94,7 @@ def plot_scatter_genes_v_count(adata, module_dir, filter_status, hue=None):
         adata: AnnData object with cell metrics
         hue: Column in adata.obs to color points by
         filter_status: Status of filtering (e.g., "pre-filtering", "post-filtering")
+        io_config (IOConfig, optional): IOConfig object for managing file paths.
 
     Returns:
         None.
@@ -113,8 +123,14 @@ def plot_scatter_genes_v_count(adata, module_dir, filter_status, hue=None):
 
     # Adjust layout with padding
     plt.subplots_adjust(left=0.1, bottom=0.1, right=0.95, top=0.9)
+    if io_config:
+        output_path = io_config.get_figure_path(
+            module_dir, f"qc_genes_vs_total_counts_{filter_status_save}.png"
+        )
+    else:
+        output_path = module_dir / f"qc_genes_vs_total_counts_{filter_status_save}.png"
     fig.savefig(
-        module_dir / f"qc_genes_vs_total_counts_{filter_status_save}.png",
+        output_path,
         dpi=300,
         bbox_inches="tight",
         pad_inches=0.2,
@@ -236,12 +252,13 @@ def calc_qc_meterics(adata):
     return adata
 
 
-def visualize_variance(adata, module_dir):
+def visualize_variance(adata, module_dir, io_config=None):
     """Visualize variance of genes after normalization.
 
     Args:
         adata (anndata.AnnData): Annotated data matrix with cell metrics
         module_dir (Path or str): Directory path where the output plot will be saved.
+        io_config (IOConfig, optional): IOConfig object for managing file paths.
 
     Returns:
         None
@@ -263,7 +280,10 @@ def visualize_variance(adata, module_dir):
     )
 
     # Create the plot
-    output_path = module_dir / "gene_variance_rank.png"
+    if io_config:
+        output_path = io_config.get_figure_path(module_dir, "gene_variance_rank.png")
+    else:
+        output_path = module_dir / "gene_variance_rank.png"
     plt.figure(figsize=(8, 5))
     sns.scatterplot(x="rank", y="variance", data=df, alpha=0.5, s=5)
     plt.xlabel("Gene Rank (by variance)")
@@ -275,7 +295,11 @@ def visualize_variance(adata, module_dir):
 
 
 def pseudobulk_PCA(
-    adata, sample_ID: str = "ROI", hue: str = "condition", module_dir=None
+    adata,
+    sample_ID: str = "ROI",
+    hue: str = "condition",
+    module_dir=None,
+    io_config=None,
 ):
     """Perform pseudobulk PCA analysis.
 
@@ -284,6 +308,7 @@ def pseudobulk_PCA(
         sample_ID (str): Column in adata.obs that identifies samples for pseudobulk
         hue (str): Column in adata.obs to color points by
         module_dir (Path or str): Directory path where the output plot will be saved.
+        io_config (IOConfig, optional): IOConfig object for managing file paths.
 
     Returns:
         None
@@ -333,7 +358,7 @@ def pseudobulk_PCA(
 
     # Plot with seaborn
     fig, ax = plt.subplots(figsize=(8, 6))
-    sns.scatterplot(data=pca_df, x="PC1", y="PC2", hue=hue, s=100, ax=ax)
+    sns.scatterplot(data=pca_df, x="PC1", y="PC2", hue=hue, s=50, ax=ax)
 
     ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0] * 100:.1f}%)")
     ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1] * 100:.1f}%)")
@@ -341,9 +366,13 @@ def pseudobulk_PCA(
     ax.legend(title=hue, bbox_to_anchor=(1.02, 1), loc="upper left")
     plt.tight_layout()
 
-    fig.savefig(module_dir / "pseudobulk_pca.png", dpi=300, bbox_inches="tight")
+    if io_config:
+        output_path = io_config.get_figure_path(module_dir, f"pseudobulk_pca_{hue}.png")
+    else:
+        output_path = module_dir / f"pseudobulk_pca_{hue}.png"
+    fig.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()  # to prevent memory leak
-    logger.info(f"Saved plot to {module_dir / 'pseudobulk_pca.png'}")
+    logger.info(f"Saved plot to {output_path}")
 
 
 def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
@@ -355,17 +384,19 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     min_cell_area = config.min_cell_area
     max_cell_area = config.max_cell_area
     norm_approach = config.norm_approach
-    HVG = 500
+    hvg = config.hvg
+    MAX_COUNT = True
+    MAX_COUNT_NUMBER = 2000
+    PERCENT = 99.5
 
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
     # Set figure settings to ensure consistency across all modules
     configure_scanpy_figures(str(io_config.output_dir))
-    # cmap = sns.color_palette("Spectral", as_cmap=True)
 
     logger.info("Loading data...")
-    combined_path = io_config.adata_dir / "all_samples.h5ad"
+    combined_path = io_config.adata_dir / "all_samples_fixed.h5ad"
     adata = sc.read_h5ad(combined_path)
     logger.info(f"Dataset contains {len(adata)} cells.")
 
@@ -373,10 +404,12 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     adata = calc_qc_meterics(adata)
 
     # Scatter plot of number of genes vs total counts
-    plot_scatter_genes_v_count(adata, module_dir, filter_status="pre-filtering")
+    plot_scatter_genes_v_count(
+        adata, module_dir, filter_status="pre-filtering", io_config=io_config
+    )
 
     # Plot the summary metrics
-    plot_metrics(adata, module_dir, filter_status="pre-filtering")
+    plot_metrics(adata, module_dir, filter_status="pre-filtering", io_config=io_config)
 
     # Filter cells and genes
     logger.info("Filtering cells and genes...")
@@ -390,12 +423,13 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
     logger.info(
         f"Removing cells with < {min_counts} counts and genes in < {min_cells} cells"
     )
-    max_count = True
-    if max_count:
-        max_counts = 2000
+
+    # Filter cells with very high transcript counts
+    if MAX_COUNT:
+        max_counts = MAX_COUNT_NUMBER
         logger.info(f"Removed cells with total counts >{max_counts}")
     else:
-        percentile = 99
+        percentile = PERCENT
         max_counts = np.percentile(adata.obs["total_counts"], percentile)
         logger.info(f"Removing cells above the {100 - percentile}% highest counts")
         logger.info(f"Max counts threshold (p{percentile}): {max_counts:.0f}")
@@ -472,10 +506,12 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         logger.info("No specific cells to remove based on QC plots.")
 
     # Scatter plot of number of genes vs total counts after filtering
-    plot_scatter_genes_v_count(adata, module_dir, filter_status="post-filtering")
+    plot_scatter_genes_v_count(
+        adata, module_dir, filter_status="post-filtering", io_config=io_config
+    )
 
     # Plot the summary metrics after filtering
-    plot_metrics(adata, module_dir, filter_status="post-filtering")
+    plot_metrics(adata, module_dir, filter_status="post-filtering", io_config=io_config)
 
     logger.info(f"adata shape after area filtering: {adata.shape}")
 
@@ -494,17 +530,17 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         logger.info(
             "Skipping log transform and scaling: Already variance stabilized and scaled"
         )
-        logger.info(f"Identifying {HVG} highly variable genes...")
+        logger.info(f"Identifying {hvg} highly variable genes...")
         sc.pp.highly_variable_genes(
-            adata, flavor="seurat_v3", n_top_genes=HVG, inplace=True, layer="counts"
+            adata, flavor="seurat_v3", n_top_genes=hvg, inplace=True, layer="counts"
         )
     elif norm_approach in {"cell_area", "scanpy_log"}:
         logger.info("Log transforming...")
         sc.pp.log1p(adata)  # Log transform
         # Identify highly variable genes
-        logger.info(f"Identifying {HVG} highly variable genes...")
+        logger.info(f"Identifying {hvg} highly variable genes...")
         sc.pp.highly_variable_genes(
-            adata, flavor="seurat_v3", n_top_genes=HVG, inplace=True, layer="counts"
+            adata, flavor="seurat_v3", n_top_genes=hvg, inplace=True, layer="counts"
         )
         logger.info("Scaling data...")
         sc.pp.scale(adata, max_value=10)
@@ -512,10 +548,32 @@ def run_qc(config: QualityControlModuleConfig, io_config: IOConfig):
         raise ValueError(f"Unsupported normalization approach: {norm_approach}")
 
     # Plot variance of genes after normalization
-    visualize_variance(adata, module_dir)
+    visualize_variance(adata, module_dir, io_config)
 
-    # Perform pseudobulk PCA analysis
-    pseudobulk_PCA(adata, sample_ID="ROI", hue="condition", module_dir=module_dir)
+    # Pseudobulk and PCA analysis of samples
+    pseudobulk_PCA(
+        adata,
+        sample_ID="ROI",
+        hue="condition",
+        module_dir=module_dir,
+        io_config=io_config,
+    )
+
+    pseudobulk_PCA(
+        adata,
+        sample_ID="ROI",
+        hue="timepoint",
+        module_dir=module_dir,
+        io_config=io_config,
+    )
+
+    pseudobulk_PCA(
+        adata,
+        sample_ID="ROI",
+        hue="ROI",
+        module_dir=module_dir,
+        io_config=io_config,
+    )
 
     # Save data
     logger.info("Saving filtered and normalized data...")

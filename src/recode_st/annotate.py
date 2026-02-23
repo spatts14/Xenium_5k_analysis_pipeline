@@ -46,6 +46,10 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
     # Create output directories if they do not exist
     module_dir.mkdir(exist_ok=True)
 
+    # Create directory to save spatial plots of clusters
+    spatial_plot_dir = module_dir / f"spatial_plots_{cluster_name}"
+    spatial_plot_dir.mkdir(exist_ok=True)
+
     # Set figure directory for this module (overrides global setting)
     sc.settings.figdir = module_dir
 
@@ -223,6 +227,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
 
         # View specific gene expression
         logger.info("Plotting genes of interest on tissue...")
+        sc.settings.figdir = spatial_plot_dir
         ROI_list = adata.obs["ROI"].unique().tolist()
         for roi in ROI_list:
             adata_roi = adata[adata.obs["ROI"] == roi]
@@ -237,7 +242,7 @@ def run_annotate(config: AnnotateModuleConfig, io_config: IOConfig):
                 save=f"clusters_{roi}.pdf",
                 dpi=300,
             )
-            logger.info(f"Saved cluster plot for ROI {roi} to {module_dir}")
+            logger.info(f"Saved cluster plot for ROI {roi} to {spatial_plot_dir}")
     else:
         logger.info(
             "No cluster to cell type mapping provided. Skipping renaming of clusters."

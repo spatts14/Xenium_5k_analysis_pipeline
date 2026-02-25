@@ -14,7 +14,7 @@ BASE_DIR = Path(
 # BASE_DIR = Path("/Volumes/phenotypingsputumasthmaticsaurorawellcomea1/")
 
 XENIUM_DIR = BASE_DIR / "live/Sara_Patti/009_ST_Xenium/data/xenium_raw"
-OUTPATH_DIR = BASE_DIR / ("live/Sara_Patti/009_ST_Xenium/data/out/transcripts/")
+OUTPATH_DIR = BASE_DIR / "live/Sara_Patti/009_ST_Xenium/data/out/transcripts/"
 
 dfs = []
 

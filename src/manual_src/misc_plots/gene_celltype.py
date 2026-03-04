@@ -139,7 +139,7 @@ vmin = mean_expr.min().min()
 vmax = mean_expr.max().max()
 
 fig, axes = plt.subplots(
-    1, n_genes, figsize=(4.5 * n_genes, max(4, len(cell_types) * 0.5 + 2)), sharey=True
+    1, n_genes, figsize=(10, max(4, len(cell_types) * 0.5 + 2)), sharey=True
 )
 if n_genes == 1:
     axes = [axes]

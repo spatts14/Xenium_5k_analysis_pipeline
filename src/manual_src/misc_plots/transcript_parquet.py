@@ -16,6 +16,8 @@ BASE_DIR = Path(
 XENIUM_DIR = BASE_DIR / "live/Sara_Patti/009_ST_Xenium/data/xenium_raw"
 OUTPATH_DIR = BASE_DIR / "live/Sara_Patti/009_ST_Xenium/data/out/transcripts/"
 
+GENE_LIST = ["16S", "MRC1", "KRT5"]
+
 dfs = []
 
 # Iterate through top-level directories in xenium/
@@ -51,17 +53,30 @@ for batch_dir in os.listdir(XENIUM_DIR):
         df = pd.read_parquet(parquet_path)
         df["Batch"] = batch
         df["ROI"] = roi
+
+        # Filter to only keep transcripts in GENE_LIST
+        n_before = len(df)
+        df = df[df["feature_name"].isin(GENE_LIST)]
+        n_after = len(df)
+        print(
+            f"  Transcripts: {n_before:,} → {n_after:,} (kept {n_after / n_before * 100:.1f}% matching gene list)"
+        )
+
+        if n_after == 0:
+            print(f"  WARNING: No transcripts matched GENE_LIST in {sub_path}")
+            continue
+
         dfs.append(df)
 
 # Combine all dataframes
 combined = pd.concat(dfs, ignore_index=True)
 
 print(f"\nCombined shape: {combined.shape}")
-print(f"Batches found:  {combined['Batch'].unique().tolist()}")
-print(f"ROIs found:     {combined['ROI'].unique().tolist()}")
+print(f"Genes found: {combined['feature_name'].unique().tolist()}")
+print(f"Batches found: {combined['Batch'].unique().tolist()}")
+print(f"ROIs found: {combined['ROI'].unique().tolist()}")
 
 # Save to CSV
-
-output_path = OUTPATH_DIR / "xenium_transcripts_combined.csv"
+output_path = OUTPATH_DIR / "xenium_transcripts_combined_gene_list.csv"
 combined.to_csv(output_path, index=False)
 print(f"\nSaved to: {output_path}")

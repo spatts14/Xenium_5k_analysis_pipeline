@@ -96,7 +96,8 @@ sc.settings.figdir = fig_dir
 
 # Set colors
 sns.set_theme(style="ticks", font_scale=1.0)
-cmap = sns.color_palette("ch:start=.2,rot=-.3", as_cmap=True)
+# cmap = sns.color_palette("ch:start=.2,rot=-.3", as_cmap=True)
+cmap = sns.color_palette("coolwarm", as_cmap=True)
 color_palette_level_1 = sns.color_palette("hls", 12)
 custom_palette = sns.color_palette(
     ["#516a93", "#736da6", "#a06cad", "#cd68a5"], as_cmap=False

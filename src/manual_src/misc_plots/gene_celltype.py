@@ -181,11 +181,16 @@ print(f"Saved: {out_png}")
 
 
 # Plot for each gene
+# One figure per gene, scaled independently
 for gene in genes_found:
-    fig, ax = plt.subplots(figsize=(10, max(4, len(cell_types) * 0.5 + 2)))
+    fig, ax = plt.subplots(figsize=(6, max(4, len(cell_types) * 0.5 + 2)))
 
     # Pivot: rows = cell_type, columns = condition
     pivot = mean_expr[gene].unstack("condition")
+
+    # Per-gene scaling
+    vmin = pivot.min().min()
+    vmax = pivot.max().max()
 
     sns.heatmap(
         pivot,
@@ -199,7 +204,7 @@ for gene in genes_found:
         fmt=".2f",
         annot_kws={"size": 9},
         cbar=True,
-        cbar_kws={"label": "Mean expression", "shrink": 0.8},
+        cbar_kws={"label": "Mean expression (scaled per gene)", "shrink": 0.8},
         square=False,
     )
 
@@ -209,16 +214,10 @@ for gene in genes_found:
     ax.tick_params(axis="x", rotation=45)
     ax.tick_params(axis="y", rotation=0)
 
-    fig.suptitle(
-        "Mean gene expression per cell type and condition",
-        fontsize=13,
-        y=1.02,
-    )
-
     plt.tight_layout()
 
     out_png = fig_dir / f"gene_expression_heatmap_{gene}.png"
     plt.savefig(out_png, dpi=150, bbox_inches="tight")
-    plt.close(fig)  # Important when looping over many genes
+    plt.close(fig)
 
     print(f"Saved: {out_png}")

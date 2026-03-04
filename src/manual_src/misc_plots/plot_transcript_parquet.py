@@ -1,7 +1,6 @@
 """Plot transcripts.parquet outcomes."""
 
 from pathlib import Path
-from typing import Tuple
 
 import matplotlib.patheffects as pe
 import matplotlib.pyplot as plt
@@ -40,7 +39,7 @@ def plot_transcript_ranking(
     qv_threshold: float = 20,
     out_dir: [Path] = None,
     donor_name: [str] = None,
-    figsize: Tuple[float, float] = (8, 5),
+    figsize: tuple[float, float] = (8, 5),
 ) -> pd.DataFrame:
     """Filter transcripts by quality and generate a ranking scatter plot.
 

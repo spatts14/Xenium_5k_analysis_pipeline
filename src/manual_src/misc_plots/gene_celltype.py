@@ -109,7 +109,7 @@ adata = sc.read_h5ad(dir / "annotate/adata.h5ad")
 print("Data loaded successfully.")
 
 # Gene name
-gene_names = ["16S", "KRT5", "MRC1"]
+gene_names = ["16S"]
 
 # Ensure genes are in adata.var_names and warn about missing ones
 genes_found = [g for g in gene_names if g in adata.var_names]
@@ -172,7 +172,7 @@ for ax, gene in zip(axes, genes_found):
 fig.suptitle("Mean gene expression per cell type and condition", fontsize=13, y=1.02)
 plt.tight_layout()
 
-out_png = dir / "gene_expression_heatmap.png"
+out_png = fig_dir / "gene_expression_heatmap_16S.png"
 
 plt.savefig(out_png, dpi=150, bbox_inches="tight")
 plt.show()

@@ -490,7 +490,7 @@ seed_everything(19960915)
 h5ad_file = os.getenv("H5AD_FILE")
 subset = os.getenv("SUBSET")
 level_0 = "level_0_annotation"
-res_list = [0.5]
+res_list = [0.3, 0.5, 0.8]
 
 # Resolution to use for mapping clusters to annotations
 chosen_resolution_name = ""
@@ -632,22 +632,17 @@ if annotation_level_1 in adata.obs:
     celltype_counts_condition.to_csv(
         file_dir / f"{subset}_celltype_counts_per_condition_ROI.csv"
     )
+
+    # Export cell ID and annotation for each cell as csv
+    cell_annotations = adata.obs[[annotation_level_1]].copy()
+    cell_annotations["cell_id"] = adata.obs_names
+    cell_annotations.to_csv(file_dir / f"{subset}_cell_annotations.csv", index=False)
 else:
     logger.warning(
         f"Annotation column '{annotation_level_1}' was not created. "
         f"Skipping annotation-dependent outputs. "
         f"Please set 'chosen_resolution_name' and 'annotation_dict' to enable "
         f"cell type annotation."
-    )
-
-# Export cell ID and annotation for each cell to csv
-if annotation_level_1 in adata.obs:
-    cell_annotations = adata.obs[[annotation_level_1]].copy()
-    cell_annotations["cell_id"] = adata.obs_names
-    cell_annotations.to_csv(file_dir / f"{subset}_cell_annotations.csv", index=False)
-else:
-    logger.warning(
-        f"Annotation column '{annotation_level_1}' not found. Cannot export annotations"
     )
 
 

@@ -23,33 +23,32 @@ export CELLTYPE_SUBSET_DIR="/rds/general/user/sep22/projects/phenotypingsputumas
 # Run with error logging
 echo "Starting at $(date)"
 
-# make new adata for each major cell type
-python src/manual_src/celltype_subset.py
+# # make new adata for each major cell type
+# python src/manual_src/celltype_subset.py
 
-
-# high resolution clustering and plotting for each major cell type
-export H5AD_FILE="adata_subset_Immune_cells.h5ad"
-export SUBSET="immune"
-python src/manual_src/celltype_level_1.py
+# # high resolution clustering and plotting for each major cell type
+# export H5AD_FILE="adata_subset_Immune_cells.h5ad"
+# export SUBSET="Immune_cells"
+# python src/manual_src/celltype_level_1.py
 
 # high resolution clustering and plotting for each major cell type
 export H5AD_FILE="adata_subset_Airway_epithelial_cells.h5ad"
-export SUBSET="airway_epithelial"
+export SUBSET="Airway_epithelial_cells"
 python src/manual_src/celltype_level_1.py
 
-# high resolution clustering and plotting for each major cell type
-export H5AD_FILE="adata_subset_Endothelial_cells.h5ad"
-export SUBSET="endothelial"
-python src/manual_src/celltype_level_1.py
+# # high resolution clustering and plotting for each major cell type
+# export H5AD_FILE="adata_subset_Endothelial_cells.h5ad"
+# export SUBSET="Endothelial_cells"
+# python src/manual_src/celltype_level_1.py
 
-# high resolution clustering and plotting for each major cell type
-export H5AD_FILE="adata_subset_Stromal_cells.h5ad"
-export SUBSET="stromal"
-python src/manual_src/celltype_level_1.py
+# # high resolution clustering and plotting for each major cell type
+# export H5AD_FILE="adata_subset_Stromal_cells.h5ad"
+# export SUBSET="Stromal_cells"
+# python src/manual_src/celltype_level_1.py
 
-# high resolution clustering and plotting for each major cell type
-export H5AD_FILE="adata_subset_Alveolar_epithelial_cells.h5ad"
-export SUBSET="alveolar_epithelial"
-python src/manual_src/celltype_level_1.py
+# # high resolution clustering and plotting for each major cell type
+# export H5AD_FILE="adata_subset_Alveolar_epithelial_cells.h5ad"
+# export SUBSET="Alveolar_epithelial_cells"
+# python src/manual_src/celltype_level_1.py
 
 echo "Completed at $(date)"

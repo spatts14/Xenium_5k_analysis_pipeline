@@ -490,12 +490,25 @@ seed_everything(19960915)
 h5ad_file = os.getenv("H5AD_FILE")
 subset = os.getenv("SUBSET")
 level_0 = "level_0_annotation"
-res_list = [0.3, 0.5, 0.8]
+res_list = [0.5]
 
 # Resolution to use for mapping clusters to annotations
-chosen_resolution_name = ""
+chosen_resolution_name = "airway_epithelial_0.5"
 # Annotate clusters based on marker genes and plot UMAP
-annotation_dict = {}
+annotation_dict = {
+    "0": "Ciliated cells 1",
+    "1": "Ciliated cells 2",
+    "2": "Goblet cells 1",
+    "3": "Goblet cells 2",
+    "4": "Goblet cells 3",
+    "5": "Stromal?",
+    "6": "Ciliated cells 3",
+    "7": "Basal cells 1",
+    "8": "Basal cells 2",
+    "9": "Basal cells 3",
+    "10": "Secretory epithelial cells",
+    "11": "Proliferating Basal cells",
+}
 
 annotation_level_0 = subset + "_level_0"
 annotation_level_1 = subset + "_level_1"
@@ -576,31 +589,31 @@ subcluster_leiden_analysis(
 )
 
 
-# STEP 2: Recalculate UMAP using top 2000 variable genes for better
-recalc_umap(
-    adata,
-    n_pca_comps=50,
-    use_highly_variable=True,
-    n_neighbors=15,
-    n_pcs=20,
-    neighbors_key="neighbors_umap_recalc",
-    umap_key="umap_recalc",
-)
+# # STEP 2: Recalculate UMAP using top 2000 variable genes for better
+# recalc_umap(
+#     adata,
+#     n_pca_comps=50,
+#     use_highly_variable=True,
+#     n_neighbors=15,
+#     n_pcs=20,
+#     neighbors_key="neighbors_umap_recalc",
+#     umap_key="umap_recalc",
+# )
 
-# Re-run Leiden clustering and marker gene analysis using the recalculated UMAP graph
-subcluster_leiden_analysis(
-    adata=adata,
-    subset=subset,
-    subset_dir=subset_dir,
-    fig_dir_name="figs_recalc",
-    res_list=res_list,
-    neighbors_key="neighbors_umap_recalc",
-    umap_key="umap_recalc",
-    n_dotplot_genes=5,
-    n_top_genes_export=10,
-    cmap_dotplot=cmap_blue,
-    logger=logger,
-)
+# # Re-run Leiden clustering and marker gene analysis using the recalculated UMAP graph
+# subcluster_leiden_analysis(
+#     adata=adata,
+#     subset=subset,
+#     subset_dir=subset_dir,
+#     fig_dir_name="figs_recalc",
+#     res_list=res_list,
+#     neighbors_key="neighbors_umap_recalc",
+#     umap_key="umap_recalc",
+#     n_dotplot_genes=5,
+#     n_top_genes_export=10,
+#     cmap_dotplot=cmap_blue,
+#     logger=logger,
+# )
 
 # STEP 3: Map Leiden clusters to annotation_level_1 based on marker genes
 # and save in adata.obs
@@ -640,8 +653,19 @@ else:
         f"cell type annotation."
     )
 
+# Export cell ID and annotation for each cell to csv
+if annotation_level_1 in adata.obs:
+    cell_annotations = adata.obs[[annotation_level_1]].copy()
+    cell_annotations["cell_id"] = adata.obs_names
+    cell_annotations.to_csv(file_dir / f"{subset}_cell_annotations.csv", index=False)
+else:
+    logger.warning(
+        f"Annotation column '{annotation_level_1}' not found. Cannot export annotations"
+    )
+
+
 # Save the annotated data
-output_file = module_dir / f"{subset}_level_1.h5ad"
+output_file = module_dir / f"adata_subset_{subset}_cells.h5ad"
 logger.info(f"Saving annotated data to {output_file}")
 adata.write_h5ad(output_file)
 logger.info("Main analysis data saved successfully")

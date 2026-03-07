@@ -647,7 +647,7 @@ else:
 
 
 # Save the annotated data
-output_file = module_dir / f"adata_subset_{subset}_cells.h5ad"
+output_file = module_dir / f"adata_subset_{subset}.h5ad"
 logger.info(f"Saving annotated data to {output_file}")
 adata.write_h5ad(output_file)
 logger.info("Main analysis data saved successfully")

@@ -490,7 +490,7 @@ seed_everything(19960915)
 h5ad_file = os.getenv("H5AD_FILE")
 subset = os.getenv("SUBSET")
 level_0 = "level_0_annotation"
-res_list = [0.3, 0.5, 0.8]
+res_list = [0.8, 1.0, 1.2, 1.5]
 
 # Resolution to use for mapping clusters to annotations
 chosen_resolution_name = ""

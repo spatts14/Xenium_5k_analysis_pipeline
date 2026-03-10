@@ -492,14 +492,17 @@ subset = os.getenv("SUBSET")
 level_0 = "level_0_annotation"
 res_list = [0.8, 1.0, 1.2, 1.5]
 
-# Resolution to use for mapping clusters to annotations
-chosen_resolution_name = ""
-# Annotate clusters based on marker genes and plot UMAP
-annotation_dict = {}
 
+# Resolution to use for mapping clusters to annotations
+resolution = 1.5
+chosen_resolution_name = f"Immune_cells_{resolution}"
+# Annotate clusters based on marker genes and plot UMAP
+annotation_dict = {"0": "Mast cells 1"}
+
+
+# Define annotation column names
 annotation_level_0 = subset + "_level_0"
 annotation_level_1 = subset + "_level_1"
-
 
 # Read directory from environment variable
 celltype_subset_dir = os.getenv("CELLTYPE_SUBSET_DIR")

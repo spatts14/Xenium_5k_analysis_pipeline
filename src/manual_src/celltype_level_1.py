@@ -502,20 +502,20 @@ annotation_dict = {
     "1": "Monocytes",  # not confident - could be monocytes or neutrophils
     "2": "Unknown",  #
     "3": "Unknown - megakaryocyte",  # low number of cells, 36
-    "4": "Alveolar macrophages 1",  # APOC1, GPNMB, APOE, C1QB
+    "4": "Lipid-associated macrophages",  # APOC1, GPNMB, APOE, C1QB
     "5": "Dendritic cells 1",  # low expression of markers
     "6": "Mast cells 2",  # higher expression of markers
     "7": "CD4+ T cells 1",  #
     "8": "Dendritic cells 2",  #
     "9": "Plasma cells 1",  #
-    "10": "Macrophages - LYVE1hi?",  # Possibly next to LECs
+    "10": "Macrophages",  # LYVE1hi, Possibly next to LECs
     "11": "Macrophages",  #
     "12": "T cells",  # UNSURE IF CD4+ OR CD8+ - EXPRESS SOME CD4 MARKERS BUT ALSO NKG7
     "13": "Unknown - Stromal cells",  #
     "14": "Macrophages",  #
     "15": "Unknown - Profilerating cells",  #
     "16": "Plasma cells 2",  #
-    "17": "Alveolar macrophages 2 - VIMhi CD52hi",  # APOC1, VIM, CD52, C1QB
+    "17": "Airway/Alveolar macrophages 2 - VIMhi CD52hi",  # APOC1, VIM, CD52, C1QB
     "18": "CD8+ T cells",  # NKG7 lo
     "19": "CD8+ T cells - cytotoxic",  # NKG7 hi
     "20": "B cells",  #
@@ -525,7 +525,7 @@ annotation_dict = {
     "24": "CD4+ T cells 2",  #
     "25": "Macrophages - CD163hi",  #
     "26": "Macrophages - SLCO2B1",  #
-    "27": "Macrophages - LAMP1",  #
+    "27": "Airway/Alveolar macrophages 2",  #
     "28": "Unknown - 16S",  #
 }
 

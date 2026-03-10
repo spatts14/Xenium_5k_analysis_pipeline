@@ -498,14 +498,14 @@ resolution = 1.5
 chosen_resolution_name = f"Immune_cells_{resolution}"
 # Annotate clusters based on marker genes and plot UMAP
 annotation_dict = {
-    "0": "Mast cells 1",  #
-    "1": "Monocytes",  #
-    "2": "Unknown - Stromal cells",  #
+    "0": "Mast cells 1",
+    "1": "Monocytes",  # not confident - could be monocytes or neutrophils
+    "2": "Unknown",  #
     "3": "Unknown - megakaryocyte",  # low number of cells, 36
     "4": "Alveolar macrophages 1",  # APOC1, GPNMB, APOE, C1QB
-    "5": "Dendritic cells 1",  #
-    "6": "Mast cells 2 - IL1RL1hi",  #
-    "7": "CD4+ T cells",  #
+    "5": "Dendritic cells 1",  # low expression of markers
+    "6": "Mast cells 2",  # higher expression of markers
+    "7": "CD4+ T cells 1",  #
     "8": "Dendritic cells 2",  #
     "9": "Plasma cells 1",  #
     "10": "Macrophages - LYVE1hi?",  # Possibly next to LECs
@@ -513,16 +513,16 @@ annotation_dict = {
     "12": "T cells",  # UNSURE IF CD4+ OR CD8+ - EXPRESS SOME CD4 MARKERS BUT ALSO NKG7
     "13": "Unknown - Stromal cells",  #
     "14": "Macrophages",  #
-    "15": "Profilerating cell",  #
+    "15": "Unknown - Profilerating cells",  #
     "16": "Plasma cells 2",  #
     "17": "Alveolar macrophages 2 - VIMhi CD52hi",  # APOC1, VIM, CD52, C1QB
-    "18": "CD8+ T cells",  #
-    "19": "NK cells",  #
+    "18": "CD8+ T cells",  # NKG7 lo
+    "19": "CD8+ T cells - cytotoxic",  # NKG7 hi
     "20": "B cells",  #
     "21": "Plasma cells 3",  #
-    "22": "Neutrophils",  #
-    "23": "UNKNOWN - CD8+ T cells NKG7hi OR NK cells",  #
-    "24": "CD4+ T cells",  #
+    "22": "Neutrophils",  # not confident - could be monocytes or neutrophils
+    "23": "NK cells",  # lowest expression of CD3, maybe NKT
+    "24": "CD4+ T cells 2",  #
     "25": "Macrophages - CD163hi",  #
     "26": "Macrophages - SLCO2B1",  #
     "27": "Macrophages - LAMP1",  #

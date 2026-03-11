@@ -651,8 +651,30 @@ map_clusters_to_annotations(
 if annotation_level_1 in adata.obs:
     logger.info(f"Annotation column '{annotation_level_1}' created successfully")
 
+    # Confirm fig dir is correct
+    sc.settings.figdir = fig_dir
+
     # Visualize mapped annotation on UMAP
-    # (Add visualization code here if needed)
+    sc.pl.umap(
+        adata,
+        color=annotation_level_1,
+        legend_loc="right margin",
+        legend_fontsize=14,
+        frameon=False,
+        ncols=2,
+        wspace=0.4,
+        save=f"_{annotation_level_1}.pdf",
+    )
+
+    sc.pl.rank_genes_groups_dotplot(
+        adata,
+        groupby=annotation_level_1,
+        standard_scale="var",
+        n_genes=5,
+        key=f"rank_genes_leiden_{chosen_resolution_name}",
+        cmap=cmap,
+        save=f"_{annotation_level_1}.pdf",
+    )
 
     # Calculate number of cells per annotated cell type and save as csv
     celltype_counts = pd.DataFrame(adata.obs[annotation_level_1].value_counts())

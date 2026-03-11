@@ -490,15 +490,24 @@ seed_everything(19960915)
 h5ad_file = os.getenv("H5AD_FILE")
 subset = os.getenv("SUBSET")
 level_0 = "level_0_annotation"
-res_list = [0.3, 0.5, 0.8, 1.0]
+res_list = [0.3]
 
 
 # Resolution to use for mapping clusters to annotations
-resolution = 1.5
+resolution = 0.3
 # chosen_resolution_name = f"Immune_cells_{resolution}"
 chosen_resolution_name = ""
 # Annotate clusters based on marker genes and plot UMAP
-annotation_dict = {}
+annotation_dict = {
+    "0": "",
+    "1": "AT2 cells 1",
+    "2": "AT1 cells",
+    "3": "AT2 cells 2",
+    "4": "AT2 cells 3",
+    "5": "Proliferating AT2 cells",
+    "6": "AT2 cells 4",
+    "7": "AT2 cells 5",
+}
 
 
 # Define annotation column names
@@ -535,7 +544,6 @@ logger = logging.getLogger(__name__)
 
 
 # Set colors
-cmap = sns.color_palette("Spectral", as_cmap=True)
 cmap_blue = sns.color_palette("ch:start=.2,rot=-.3", as_cmap=True)
 color_palette_level_1 = sns.color_palette("hls", 12)
 
@@ -637,13 +645,22 @@ if annotation_level_1 in adata.obs:
         save=f"_{annotation_level_1}.pdf",
     )
 
+    # Recompute marker genes for the annotated cell types and plot dotplot
+    sc.tl.rank_genes_groups(
+        adata,
+        groupby=annotation_level_1,
+        method="wilcoxon",
+        key_added=f"rank_genes_{annotation_level_1}",
+    )
+
+    # Visualize top marker genes for each annotated cell type using a dotplot
     sc.pl.rank_genes_groups_dotplot(
         adata,
         groupby=annotation_level_1,
         standard_scale="var",
         n_genes=5,
-        key=f"rank_genes_leiden_{chosen_resolution_name}",
-        cmap=cmap,
+        key=f"rank_genes_{annotation_level_1}",
+        cmap=cmap_blue,
         save=f"_{annotation_level_1}.pdf",
     )
 

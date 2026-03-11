@@ -496,7 +496,7 @@ res_list = [0.3]
 # Resolution to use for mapping clusters to annotations
 resolution = 0.3
 # chosen_resolution_name = f"Immune_cells_{resolution}"
-chosen_resolution_name = f"Alveolar_epithelial_{resolution}"
+chosen_resolution_name = "Alveolar_epithelial_cells_0.3"
 # Annotate clusters based on marker genes and plot UMAP
 annotation_dict = {
     "0": "Intermediate AT cells and unknown",

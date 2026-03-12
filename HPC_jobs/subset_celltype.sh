@@ -45,13 +45,13 @@ echo "Starting at $(date)"
 # python src/manual_src/misc_analysis/celltype_level_1.py
 
 # # # high resolution clustering and plotting for each major cell type
-export H5AD_FILE="adata_subset_Stromal_cells.h5ad"
-export SUBSET="Stromal_cells"
-python src/manual_src/misc_analysis/celltype_level_1.py
+# export H5AD_FILE="adata_subset_Stromal_cells.h5ad"
+# export SUBSET="Stromal_cells"
+# python src/manual_src/misc_analysis/celltype_level_1.py
 
 # # # # high resolution clustering and plotting for each major cell type
-# export H5AD_FILE="adata_subset_Alveolar_epithelial_cells.h5ad"
-# export SUBSET="Alveolar_epithelial_cells"
-# python src/manual_src/misc_analysis/celltype_level_1.py
+export H5AD_FILE="adata_subset_Alveolar_epithelial_cells.h5ad"
+export SUBSET="Alveolar_epithelial_cells"
+python src/manual_src/misc_analysis/celltype_level_1.py
 
 echo "Completed at $(date)"

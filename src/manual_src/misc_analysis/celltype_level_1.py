@@ -492,26 +492,19 @@ subset = os.getenv("SUBSET")
 level_0 = "level_0_annotation"
 res_list = [0.5]
 
-
 # Resolution to use for mapping clusters to annotations
-resolution = 0.5
-chosen_resolution_name = f"Stromal_cells_{resolution}"
-
+resolution = 0.3
+chosen_resolution_name = f"Alveolar_epithelial_{resolution}"
 # Annotate clusters based on marker genes and plot UMAP
 annotation_dict = {
-    "0": "Unknown - APOD+",
-    "1": "SMC 1",
-    "2": "Adventitial fibroblasts 1",
-    "3": "Pericytes",
-    "4": "CTHRC1+ fibroblasts",
-    "5": "SMC 2 - DES hi",
-    "6": "Adventitial fibroblasts 2",  # PDGFRB
-    "7": "Alveolar fibroblasts 1",
-    "8": "SMC 3",
-    "9": "Alveolar fibroblasts 2",
-    "10": "Unknown - Basal epithelial cells",
-    "11": "SMC 4 - MYH11 hi",
-    "12": "Lipo-fibroblasts - PLIN1+ FABP4+ ",
+    "0": "Intermediate AT cells and Unknown",
+    "1": "AT2 cells 1",
+    "2": "AT1 cells",
+    "3": "AT2 cells 2",
+    "4": "AT2 cells 3",
+    "5": "Proliferating AT2 cells",
+    "6": "AT2 cells 4",
+    "7": "AT2 cells 5",
 }
 
 

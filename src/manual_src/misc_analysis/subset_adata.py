@@ -63,7 +63,7 @@ module_dir = base_dir / "annotate"
 h5ad_file = "adata.h5ad"
 
 output_dir = module_dir / "subset_adata"
-os.mkdir(output_dir, exist_ok=True)
+os.makedirs(output_dir, exist_ok=True)
 
 # Set up logging
 log_file = module_dir / "subsetting_by_meta.log"

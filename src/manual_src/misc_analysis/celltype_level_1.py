@@ -494,23 +494,40 @@ res_list = [0.5]
 
 
 # Resolution to use for mapping clusters to annotations
-resolution = 0.5
-# chosen_resolution_name = f"Immune_cells_{resolution}"
-chosen_resolution_name = "Airway_epithelial_cells_0.5"
+resolution = 1.5
+chosen_resolution_name = f"Immune_cells_{resolution}"
+
 # Annotate clusters based on marker genes and plot UMAP
 annotation_dict = {
-    "0": "Ciliated cells 1",
-    "1": "Ciliated cells 2",
-    "2": "Goblet cells 1",
-    "3": "Goblet cells 2",
-    "4": "Goblet cells 3",
-    "5": "Stromal?",
-    "6": "Ciliated cells 3",
-    "7": "Basal cells 1",
-    "8": "Basal cells 2",
-    "9": "Basal cells 3",
-    "10": "Secretory epithelial cells",
-    "11": "Proliferating Basal cells",
+    "0": "Mast cells 1",
+    "1": "Monocytes",  # not confident - could be monocytes or neutrophils
+    "2": "Unknown",  #
+    "3": "Unknown - megakaryocyte",  # low number of cells, 36
+    "4": "Lipid-associated macrophages",  # low MARCO, but high APOC1, GPNMB, APOE, C1QB (still lower than AV tho)
+    "5": "Dendritic cells 1",  # low expression of markers
+    "6": "Mast cells 2",  # higher expression of markers
+    "7": "CD4+ T cells 1",
+    "8": "Dendritic cells 2",
+    "9": "Plasma cells 1",
+    "10": "Macrophages - unclassified 1",  # LYVE1hi, Possibly next to LECs?
+    "11": "Macrophages - unclassified 2",
+    "12": "CD4+CD8+ T cells",
+    "13": "Unknown - Stromal cells",  #
+    "14": "Interstitial Macrophages 1",  #
+    "15": "Unknown - Profilerating cells",  #
+    "16": "Plasma cells 2",  #
+    "17": "Airway/Alveolar macrophages 1",  # APOC1, VIM, CD52, C1QB
+    "18": "CD8+ T cells 1",  # NKG7 lo
+    "19": "CD8+ T cells 2",  # NKG7 hi
+    "20": "B cells",  #
+    "21": "Plasma cells 3",  #
+    "22": "Neutrophils",  # not confident - could be monocytes or neutrophils
+    "23": "NK cells",  # lowest expression of CD3, maybe NKT
+    "24": "CD4+ T cells 2",  #
+    "25": "Interstitial Macrophages 2",  #
+    "26": "Interstitial Macrophages 3",  #
+    "27": "Airway/Alveolar macrophages 2",  #
+    "28": "Unknown - 16S",  #
 }
 
 

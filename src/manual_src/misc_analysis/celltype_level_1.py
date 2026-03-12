@@ -495,23 +495,18 @@ res_list = [0.5]
 
 # Resolution to use for mapping clusters to annotations
 resolution = 0.5
-chosen_resolution_name = f"Stromal_cells_{resolution}"
+chosen_resolution_name = f"Endothelial_cells_{resolution}"
 
 # Annotate clusters based on marker genes and plot UMAP
 annotation_dict = {
-    "0": "Unknown - APOD+",
-    "1": "SMC 1",
-    "2": "Adventitial fibroblasts 1",
-    "3": "Pericytes",
-    "4": "CTHRC1+ fibroblasts",
-    "5": "SMC 2 - DES hi",
-    "6": "Adventitial fibroblasts 2",  # PDGFRB
-    "7": "Alveolar fibroblasts 1",
-    "8": "SMC 3",
-    "9": "Alveolar fibroblasts 2",
-    "10": "Unknown - Basal epithelial cells",
-    "11": "SMC 4 - MYH11 hi",
-    "12": "Lipo-fibroblasts - PLIN1+ FABP4+ ",
+    "0": "Unknown",
+    "1": "Blood endothelial cells - unclassified",  # SOX18
+    "2": "Capillary endothelial cells",
+    "3": "Pulmonary artery endothelial cells",
+    "4": "Pulmonary vein endothelial cells 1",
+    "5": "Pulmonary vein endothelial cells 2",
+    "6": "Lymphatic endothelial cells",
+    "7": "Aerocytes",
 }
 
 

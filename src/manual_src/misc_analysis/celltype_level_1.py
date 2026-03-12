@@ -495,7 +495,7 @@ res_list = [0.5]
 
 # Resolution to use for mapping clusters to annotations
 resolution = 0.5
-chosen_resolution_name = f"stromal_{resolution}"
+chosen_resolution_name = f"Stromal_cells_{resolution}"
 
 # Annotate clusters based on marker genes and plot UMAP
 annotation_dict = {

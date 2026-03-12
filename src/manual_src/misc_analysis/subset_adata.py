@@ -5,7 +5,55 @@ import logging
 import os
 from pathlib import Path
 
+import anndata as ad
 import scanpy as sc
+
+
+def subset_adata_by_meta(
+    adata: ad.AnnData,
+    meta_col: str,
+    meta_values: list[str],
+    logger=None,
+) -> ad.AnnData:
+    """Subset an AnnData object based on values in a metadata column.
+
+    Args:
+    adata : anndata.AnnData
+        Input AnnData object.
+    meta_col : str
+        Column name in adata.obs to subset on.
+    meta_values : list[str]
+        Values in meta_col to retain.
+    logger : logging.Logger, optional
+        Logger for error reporting.
+
+    Returns:
+    anndata.AnnData
+        Subsetted AnnData object containing only cells matching meta_values.
+    """
+    # Check column exists
+    if meta_col not in adata.obs.columns:
+        msg = f"Meta column '{meta_col}' not found in adata.obs.columns"
+        if logger:
+            logger.error(msg)
+        raise ValueError(msg)
+
+    # Check values exist
+    available_values = set(adata.obs[meta_col].unique())
+    missing_values = [val for val in meta_values if val not in available_values]
+
+    if missing_values:
+        msg = f"Meta values {missing_values} not found in meta column '{meta_col}'"
+        if logger:
+            logger.error(msg)
+        raise ValueError(msg)
+
+    # Subset
+    mask = adata.obs[meta_col].isin(meta_values)
+    adata_subset = adata[mask].copy()
+
+    return adata_subset
+
 
 # Set directories and file names
 base_dir = Path(
@@ -32,34 +80,40 @@ logger.info(f"Loading data from {module_dir / f'{h5ad_file}'}")
 adata = sc.read_h5ad(module_dir / f"{h5ad_file}")
 logger.info(f"Data loaded successfully. Shape: {adata.shape}")
 
-# Meta data to subset by
-# Column name
+# Meta data to subset by condition
 meta_col = "condition"
-# Values to subset by
-meta_values = ["IPF", "PM08", "COPD_V1"]
-
-# Confirm that meta column exists
-if meta_col not in adata.obs.columns:
-    logger.error(f"Meta column '{meta_col}' not found in adata.obs.columns")
-    raise ValueError(f"Meta column '{meta_col}' not found in adata.obs.columns")
-
-# Confirm that meta values exist in the meta column
-missing_values = [val for val in meta_values if val not in adata.obs[meta_col].unique()]
-if missing_values:
-    logger.error(f"Meta values {missing_values} not found in meta column '{meta_col}'")
-    raise ValueError(
-        f"Meta values {missing_values} not found in meta column '{meta_col}'"
-    )
+meta_values = ["IPF", "PM08", "COPD"]
 
 # Subset data based on meta column and values
 logger.info(f"Subsetting data based on column '{meta_col}' and values {meta_values}")
 adata_subset = adata[adata.obs[meta_col].isin(meta_values)].copy()
 logger.info(f"Data subsetted successfully. New shape: {adata_subset.shape}")
 
-# Name of new adata file
-new_adata_file = f"adata_subset_by_{meta_col}.h5ad"
+adata_subset = subset_adata_by_meta(
+    adata,
+    meta_col=meta_col,
+    meta_values=meta_values,
+    logger=logger,
+)
+
+# Meta data to subset by condition
+meta_col = "timepoint"
+meta_values = ["NA", "V1"]
+
+# Subset data based on meta column and values
+logger.info(f"Subsetting data based on column '{meta_col}' and values {meta_values}")
+adata_subset = adata[adata.obs[meta_col].isin(meta_values)].copy()
+logger.info(f"Data subsetted successfully. New shape: {adata_subset.shape}")
+
+adata_subset = subset_adata_by_meta(
+    adata,
+    meta_col=meta_col,
+    meta_values=meta_values,
+    logger=logger,
+)
 
 # Save new adata
-logger.info(f"Saving subsetted data to {output_dir / new_adata_file}")
-adata_subset.write_h5ad(output_dir / new_adata_file)
+file_name = "adata_subset_COPD_IPF_PM08.h5ad"
+logger.info(f"Saving subsetted data to {output_dir / file_name}")
+adata_subset.write_h5ad(output_dir / file_name)
 logger.info("Subsetted data saved successfully.")

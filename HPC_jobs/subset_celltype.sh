@@ -23,32 +23,35 @@ export CELLTYPE_SUBSET_DIR="/rds/general/user/sep22/projects/phenotypingsputumas
 # Run with error logging
 echo "Starting at $(date)"
 
+# subset adata
+python src/manual_src/misc_analysis/subset_adata.py
+
 # # make new adata for each major cell type
-# python src/manual_src/celltype_subset.py
+#python src/manual_src/misc_analysis/celltype_subset.py
 
 # high resolution clustering and plotting for each major cell type
 # export H5AD_FILE="adata_subset_Immune_cells.h5ad"
 # export SUBSET="Immune_cells"
-# python src/manual_src/celltype_level_1.py
+# python src/manual_src/misc_analysis/celltype_level_1.py
 
 #high resolution clustering and plotting for each major cell type
 # export H5AD_FILE="adata_subset_Airway_epithelial_cells.h5ad"
 # export SUBSET="Airway_epithelial_cells"
-# python src/manual_src/celltype_level_1.py
+# python src/manual_src/misc_analysis/celltype_level_1.py
 
 # # # high resolution clustering and plotting for each major cell type
 # export H5AD_FILE="adata_subset_Endothelial_cells.h5ad"
 # export SUBSET="Endothelial_cells"
-# python src/manual_src/celltype_level_1.py
+# python src/manual_src/misc_analysis/celltype_level_1.py
 
 # # # high resolution clustering and plotting for each major cell type
 # export H5AD_FILE="adata_subset_Stromal_cells.h5ad"
 # export SUBSET="Stromal_cells"
-# python src/manual_src/celltype_level_1.py
+# python src/manual_src/misc_analysis/celltype_level_1.py
 
-# # # high resolution clustering and plotting for each major cell type
-export H5AD_FILE="adata_subset_Alveolar_epithelial_cells.h5ad"
-export SUBSET="Alveolar_epithelial_cells"
-python src/manual_src/celltype_level_1.py
+# # # # high resolution clustering and plotting for each major cell type
+# export H5AD_FILE="adata_subset_Alveolar_epithelial_cells.h5ad"
+# export SUBSET="Alveolar_epithelial_cells"
+# python src/manual_src/misc_analysis/celltype_level_1.py
 
 echo "Completed at $(date)"

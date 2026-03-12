@@ -494,40 +494,24 @@ res_list = [0.5]
 
 
 # Resolution to use for mapping clusters to annotations
-resolution = 1.5
-chosen_resolution_name = f"Immune_cells_{resolution}"
+resolution = 0.5
+chosen_resolution_name = f"stromal_{resolution}"
 
 # Annotate clusters based on marker genes and plot UMAP
 annotation_dict = {
-    "0": "Mast cells 1",
-    "1": "Monocytes",  # not confident - could be monocytes or neutrophils
-    "2": "Unknown",  #
-    "3": "Unknown - megakaryocyte",  # low number of cells, 36
-    "4": "Lipid-associated macrophages",  # low MARCO, but high APOC1, GPNMB, APOE, C1QB (still lower than AV tho)
-    "5": "Dendritic cells 1",  # low expression of markers
-    "6": "Mast cells 2",  # higher expression of markers
-    "7": "CD4+ T cells 1",
-    "8": "Dendritic cells 2",
-    "9": "Plasma cells 1",
-    "10": "Macrophages - unclassified 1",  # LYVE1hi, Possibly next to LECs?
-    "11": "Macrophages - unclassified 2",
-    "12": "CD4+CD8+ T cells",
-    "13": "Unknown - Stromal cells",  #
-    "14": "Interstitial Macrophages 1",  #
-    "15": "Unknown - Profilerating cells",  #
-    "16": "Plasma cells 2",  #
-    "17": "Airway/Alveolar macrophages 1",  # APOC1, VIM, CD52, C1QB
-    "18": "CD8+ T cells 1",  # NKG7 lo
-    "19": "CD8+ T cells 2",  # NKG7 hi
-    "20": "B cells",  #
-    "21": "Plasma cells 3",  #
-    "22": "Neutrophils",  # not confident - could be monocytes or neutrophils
-    "23": "NK cells",  # lowest expression of CD3, maybe NKT
-    "24": "CD4+ T cells 2",  #
-    "25": "Interstitial Macrophages 2",  #
-    "26": "Interstitial Macrophages 3",  #
-    "27": "Airway/Alveolar macrophages 2",  #
-    "28": "Unknown - 16S",  #
+    "0": "Unknown - APOD+",
+    "1": "SMC 1",
+    "2": "Adventitial fibroblasts 1",
+    "3": "Pericytes",
+    "4": "CTHRC1+ fibroblasts",
+    "5": "SMC 2 - DES hi",
+    "6": "Adventitial fibroblasts 2",  # PDGFRB
+    "7": "Alveolar fibroblasts 1",
+    "8": "SMC 3",
+    "9": "Alveolar fibroblasts 2",
+    "10": "Unknown - Basal epithelial cells",
+    "11": "SMC 4 - MYH11 hi",
+    "12": "Lipo-fibroblasts - PLIN1+ FABP4+ ",
 }
 
 

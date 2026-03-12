@@ -30,9 +30,9 @@ echo "Starting at $(date)"
 #python src/manual_src/misc_analysis/celltype_subset.py
 
 # high resolution clustering and plotting for each major cell type
-export H5AD_FILE="adata_subset_Immune_cells.h5ad"
-export SUBSET="Immune_cells"
-python src/manual_src/misc_analysis/celltype_level_1.py
+# export H5AD_FILE="adata_subset_Immune_cells.h5ad"
+# export SUBSET="Immune_cells"
+# python src/manual_src/misc_analysis/celltype_level_1.py
 
 #high resolution clustering and plotting for each major cell type
 # export H5AD_FILE="adata_subset_Airway_epithelial_cells.h5ad"

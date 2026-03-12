@@ -678,7 +678,7 @@ if annotation_level_1 in adata.obs:
 
     # Export cell ID and annotation for each cell as csv
     cell_annotations = adata.obs[[annotation_level_1]].copy()
-    cell_annotations["cell_id"] = adata.obs_names
+    cell_annotations["cell_id"] = adata.obs["cell_id"]
     cell_annotations.to_csv(file_dir / f"{subset}_cell_annotations.csv", index=False)
 else:
     logger.warning(

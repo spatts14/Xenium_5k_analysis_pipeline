@@ -80,37 +80,35 @@ logger.info(f"Loading data from {module_dir / f'{h5ad_file}'}")
 adata = sc.read_h5ad(module_dir / f"{h5ad_file}")
 logger.info(f"Data loaded successfully. Shape: {adata.shape}")
 
-# Meta data to subset by condition
-meta_col = "condition"
-meta_values = ["IPF", "PM08", "COPD"]
-
-# Subset data based on meta column and values
-logger.info(f"Subsetting data based on column '{meta_col}' and values {meta_values}")
-adata_subset = adata[adata.obs[meta_col].isin(meta_values)].copy()
-logger.info(f"Data subsetted successfully. New shape: {adata_subset.shape}")
-
-adata_subset = subset_adata_by_meta(
+# Step 1: subset by condition
+condition_col = "condition"
+condition_values = ["IPF", "PM08", "COPD"]
+logger.info(
+    f"Subsetting data based on column '{condition_col}' and values {condition_values}"
+)
+adata_condition_subset = subset_adata_by_meta(
     adata,
-    meta_col=meta_col,
-    meta_values=meta_values,
+    meta_col=condition_col,
+    meta_values=condition_values,
     logger=logger,
 )
+logger.info(f"Condition subset complete. New shape: {adata_condition_subset.shape}")
 
-# Meta data to subset by condition
-meta_col = "timepoint"
-meta_values = ["NA", "V1"]
-
-# Subset data based on meta column and values
-logger.info(f"Subsetting data based on column '{meta_col}' and values {meta_values}")
-adata_subset = adata[adata.obs[meta_col].isin(meta_values)].copy()
-logger.info(f"Data subsetted successfully. New shape: {adata_subset.shape}")
-
+# Step 2: subset the condition-filtered data by timepoint
+timepoint_col = "timepoint"
+timepoint_values = ["NA", "V1"]
+logger.info(
+    "Subsetting condition-filtered data based on column "
+    f"'{timepoint_col}' and values {timepoint_values}"
+)
 adata_subset = subset_adata_by_meta(
-    adata,
-    meta_col=meta_col,
-    meta_values=meta_values,
+    adata_condition_subset,
+    meta_col=timepoint_col,
+    meta_values=timepoint_values,
     logger=logger,
 )
+logger.info(f"Final subset complete. New shape: {adata_subset.shape}")
+
 
 # Check output of subsetted adata
 logger.info("Checking subsetted data...")

@@ -62,7 +62,7 @@ base_dir = Path(
 module_dir = base_dir / "annotate"
 h5ad_file = "adata.h5ad"
 
-output_dir = module_dir / "subset_adata"
+output_dir = base_dir / "subset_adata"
 os.makedirs(output_dir, exist_ok=True)
 
 # Set up logging

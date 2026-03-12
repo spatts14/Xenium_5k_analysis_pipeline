@@ -112,6 +112,11 @@ adata_subset = subset_adata_by_meta(
     logger=logger,
 )
 
+# Check output of subsetted adata
+logger.info("Checking subsetted data...")
+logger.info(f"Conditions: {adata_subset.obs['condition'].value_counts()}")
+logger.info(f"Timepoints: {adata_subset.obs['timepoint'].value_counts()}")
+
 # Save new adata
 file_name = "adata_subset_COPD_IPF_PM08.h5ad"
 logger.info(f"Saving subsetted data to {output_dir / file_name}")

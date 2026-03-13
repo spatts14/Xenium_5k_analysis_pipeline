@@ -108,7 +108,7 @@ for roi in ROI_list:
             wspace=0.4,
             vmax=5,
             title=f"{roi}: {color}",
-            save=f"_{roi}_{color}_spatial.png",
+            save=f"_{roi}_{color}_spatial.pdf",
         )
 
 # set figure directory back to main

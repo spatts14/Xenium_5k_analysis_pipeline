@@ -102,7 +102,7 @@ for roi in ROI_list:
             library_id="spatial",
             shape=None,
             color=color,
-            size=2.0,  # increase dot size (was 0.5)
+            size=1.0,
             frameon=False,
             figsize=(10, 10),
             wspace=0.4,

@@ -137,8 +137,16 @@ annotation_file_path = base_dir / "celltype_subset"
 annotate_path = base_dir / "annotate"
 
 # Set output directory
-output_path = base_dir / "subset_adata"
+output_path = annotate_path / "level_1_annotation"
 output_path.mkdir(exist_ok=True)
+
+# set fig directory for saving
+sc.settings.figdir = output_path
+
+# Set variables
+cell_id_col = "cell_id"
+annotation_col = "cell_annotation"
+new_col = "level_1_annotation"
 
 # Load adata
 adata = sc.read_h5ad(annotate_path / "adata.h5ad")
@@ -150,9 +158,6 @@ annotations_df.to_csv(output_path / "combined_annotations.csv", index=False)
 print(f"Saved combined annotations to: {output_path}")
 
 # Load adata and rename cells based on annotations
-cell_id_col = "cell_id"
-annotation_col = "cell_annotation"
-new_col = "level_1_annotation"
 adata = rename_cells_from_annotations(
     adata,
     annotations_df,
@@ -165,8 +170,6 @@ adata = rename_cells_from_annotations(
 adata.write_h5ad(output_path / f"adata_{new_col}1.h5ad")
 
 # Visualize UMAP
-# set fig directory for saving
-sc.settings.figdir = annotate_path
 sc.pl.umap(adata, color=new_col, save=f"_{new_col}_umap.png", show=False)
 
 # Verify results

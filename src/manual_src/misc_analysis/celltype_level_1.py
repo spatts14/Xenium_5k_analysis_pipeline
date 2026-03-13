@@ -490,16 +490,31 @@ seed_everything(19960915)
 h5ad_file = os.getenv("H5AD_FILE")
 subset = os.getenv("SUBSET")
 level_0 = "level_0_annotation"
-res_list = [0.3, 0.5, 0.8]
+res_list = [0.5]
 
 # Resolution to use for mapping clusters to annotations
-chosen_resolution_name = ""
+resolution = 0.5
+# chosen_resolution_name = f"Immune_cells_{resolution}"
+chosen_resolution_name = f"Airway_epithelial_cells_{resolution}"
 # Annotate clusters based on marker genes and plot UMAP
-annotation_dict = {}
+annotation_dict = {
+    "0": "Ciliated cells 1",
+    "1": "Ciliated cells 2",
+    "2": "Goblet cells 1",
+    "3": "Goblet cells 2",
+    "4": "Goblet cells 3",
+    "5": "Unknown - Stromal cells",
+    "6": "Ciliated cells 3",
+    "7": "Basal cells 1",
+    "8": "Basal cells 2",
+    "9": "Basal cells 3",
+    "10": "Secretory epithelial cells",
+    "11": "Proliferating Basal cells",
+}
 
+# Define annotation column names
 annotation_level_0 = subset + "_level_0"
 annotation_level_1 = subset + "_level_1"
-
 
 # Read directory from environment variable
 celltype_subset_dir = os.getenv("CELLTYPE_SUBSET_DIR")
@@ -531,7 +546,6 @@ logger = logging.getLogger(__name__)
 
 
 # Set colors
-cmap = sns.color_palette("Spectral", as_cmap=True)
 cmap_blue = sns.color_palette("ch:start=.2,rot=-.3", as_cmap=True)
 color_palette_level_1 = sns.color_palette("hls", 12)
 
@@ -576,31 +590,31 @@ subcluster_leiden_analysis(
 )
 
 
-# STEP 2: Recalculate UMAP using top 2000 variable genes for better
-recalc_umap(
-    adata,
-    n_pca_comps=50,
-    use_highly_variable=True,
-    n_neighbors=15,
-    n_pcs=20,
-    neighbors_key="neighbors_umap_recalc",
-    umap_key="umap_recalc",
-)
+# # STEP 2: Recalculate UMAP using top 2000 variable genes for better
+# recalc_umap(
+#     adata,
+#     n_pca_comps=50,
+#     use_highly_variable=True,
+#     n_neighbors=15,
+#     n_pcs=20,
+#     neighbors_key="neighbors_umap_recalc",
+#     umap_key="umap_recalc",
+# )
 
-# Re-run Leiden clustering and marker gene analysis using the recalculated UMAP graph
-subcluster_leiden_analysis(
-    adata=adata,
-    subset=subset,
-    subset_dir=subset_dir,
-    fig_dir_name="figs_recalc",
-    res_list=res_list,
-    neighbors_key="neighbors_umap_recalc",
-    umap_key="umap_recalc",
-    n_dotplot_genes=5,
-    n_top_genes_export=10,
-    cmap_dotplot=cmap_blue,
-    logger=logger,
-)
+# # Re-run Leiden clustering and marker gene analysis using the recalculated UMAP graph
+# subcluster_leiden_analysis(
+#     adata=adata,
+#     subset=subset,
+#     subset_dir=subset_dir,
+#     fig_dir_name="figs_recalc",
+#     res_list=res_list,
+#     neighbors_key="neighbors_umap_recalc",
+#     umap_key="umap_recalc",
+#     n_dotplot_genes=5,
+#     n_top_genes_export=10,
+#     cmap_dotplot=cmap_blue,
+#     logger=logger,
+# )
 
 # STEP 3: Map Leiden clusters to annotation_level_1 based on marker genes
 # and save in adata.obs
@@ -618,8 +632,47 @@ map_clusters_to_annotations(
 if annotation_level_1 in adata.obs:
     logger.info(f"Annotation column '{annotation_level_1}' created successfully")
 
+    # Confirm fig dir is correct
+    sc.settings.figdir = fig_dir
+
     # Visualize mapped annotation on UMAP
-    # (Add visualization code here if needed)
+    sc.pl.umap(
+        adata,
+        color=annotation_level_1,
+        legend_loc="right margin",
+        legend_fontsize=14,
+        frameon=False,
+        ncols=2,
+        wspace=0.4,
+        save=f"_{annotation_level_1}.pdf",
+    )
+
+    # Recompute marker genes for the annotated cell types and plot dotplot
+    sc.tl.rank_genes_groups(
+        adata,
+        groupby=annotation_level_1,
+        method="wilcoxon",
+        key_added=f"rank_genes_{annotation_level_1}",
+    )
+
+    # Compute dendrogram for the annotated cell types
+    sc.tl.dendrogram(
+        adata,
+        groupby=annotation_level_1,
+        key_added=f"dendrogram_{annotation_level_1}",
+    )
+
+    # Visualize top marker genes for each annotated cell type using a dotplot
+    sc.pl.rank_genes_groups_dotplot(
+        adata,
+        groupby=annotation_level_1,
+        dendrogram=f"dendrogram_{annotation_level_1}",
+        standard_scale="var",
+        n_genes=5,
+        key=f"rank_genes_{annotation_level_1}",
+        cmap=cmap_blue,
+        save=f"_{annotation_level_1}.pdf",
+    )
 
     # Calculate number of cells per annotated cell type and save as csv
     celltype_counts = pd.DataFrame(adata.obs[annotation_level_1].value_counts())
@@ -632,6 +685,13 @@ if annotation_level_1 in adata.obs:
     celltype_counts_condition.to_csv(
         file_dir / f"{subset}_celltype_counts_per_condition_ROI.csv"
     )
+
+    # Export cell ID and annotation for each cell as csv
+    df = adata.obs[[annotation_level_1, "cell_id"]].copy()
+    df.columns = ["cell_annotation", "cell_id"]
+    file_name = f"{annotation_level_1}_annotations.csv"
+    df.to_csv(file_dir / file_name)
+
 else:
     logger.warning(
         f"Annotation column '{annotation_level_1}' was not created. "
@@ -640,8 +700,9 @@ else:
         f"cell type annotation."
     )
 
+
 # Save the annotated data
-output_file = module_dir / f"{subset}_level_1.h5ad"
+output_file = module_dir / f"adata_subset_{subset}.h5ad"
 logger.info(f"Saving annotated data to {output_file}")
 adata.write_h5ad(output_file)
 logger.info("Main analysis data saved successfully")

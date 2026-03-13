@@ -56,8 +56,16 @@ def collect_all_annotations(base_dir):
     # Combine all annotations
     combined = pd.concat(all_annotations, ignore_index=True)
 
+    # Confirm correct columns are present
+    expected_columns = {"cell_annotation", "cell_id"}
+    missing_columns = expected_columns - set(combined.columns)
+    if missing_columns:
+        raise ValueError(
+            f"Missing expected columns in combined annotations: {missing_columns}"
+            f"Available columns: {combined.columns.tolist()}"
+        )
+
     # Check column names
-    print(f"\nCombined annotations columns names: {combined.columns.tolist()}")
     print(f"\nTotal annotations loaded: {len(combined)}")
     print(f"Columns: {combined.columns.tolist()}")
 

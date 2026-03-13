@@ -86,7 +86,7 @@ color_list = ["level_0_annotation", "level_1_annotation", "16S"]
 ROI_list = adata.obs["ROI"].unique().tolist()
 for roi in ROI_list:
     # Subset on ROI
-    adata_roi = adata_subset[adata_subset.obs["ROI"] == roi]
+    adata_roi = adata[adata.obs["ROI"] == roi]
 
     # Make a folder for the ROI
     roi_dir = fig_dir / roi

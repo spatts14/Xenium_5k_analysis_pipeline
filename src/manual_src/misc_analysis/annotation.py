@@ -1,5 +1,6 @@
 """Add cell annotations from CSV files to AnnData object and visualize with UMAP."""
 
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -129,9 +130,7 @@ def rename_cells_from_annotations(
 
 
 # Define base directory
-base_dir = Path(
-    "/Volumes/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/2026-02-22_analysis_run_HVG2000/"
-)
+base_dir = Path(os.getenv("BASE_DIR"))
 
 # Set paths to files and data
 annotation_file_path = base_dir / "celltype_subset"

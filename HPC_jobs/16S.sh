@@ -18,4 +18,4 @@ cd /rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline
 source xenium_5k_venv/bin/activate
 
 # Run script
-python /src/manual_src/misc_analysis/16S/plots.py
+python /rds/general/user/sep22/home/Projects/Xenium_5k_analysis_pipeline/src/manual_src/misc_analysis/16S/plots.py

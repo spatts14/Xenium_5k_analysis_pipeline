@@ -23,12 +23,8 @@ export CELLTYPE_SUBSET_DIR="/rds/general/user/sep22/projects/phenotypingsputumas
 # Run with error logging
 echo "Starting at $(date)"
 
-# subset adata
-# python src/manual_src/misc_analysis/subset_adata.py
-
 # # make new adata for each major cell type
 #python src/manual_src/misc_analysis/celltype_subset.py
-
 
 # # high resolution clustering and plotting for each major cell type
 export H5AD_FILE="adata_subset_Airway_epithelial_cells.h5ad"

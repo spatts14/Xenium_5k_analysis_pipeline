@@ -655,10 +655,18 @@ if annotation_level_1 in adata.obs:
         key_added=f"rank_genes_{annotation_level_1}",
     )
 
+    # Compute dendrogram for the annotated cell types
+    sc.tl.dendrogram(
+        adata,
+        groupby=annotation_level_1,
+        key_added=f"dendrogram_{annotation_level_1}",
+    )
+
     # Visualize top marker genes for each annotated cell type using a dotplot
     sc.pl.rank_genes_groups_dotplot(
         adata,
         groupby=annotation_level_1,
+        dendrogram=f"dendrogram_{annotation_level_1}",
         standard_scale="var",
         n_genes=5,
         key=f"rank_genes_{annotation_level_1}",
@@ -680,7 +688,7 @@ if annotation_level_1 in adata.obs:
 
     # Export cell ID and annotation for each cell as csv
     df = adata.obs[[annotation_level_1, "cell_id"]].copy()
-    df = df.rename(columns={df.columns[0]: "cell_annotation", df.columns[1]: "cell_id"})
+    df.columns = ["cell_annotation", "cell_id"]
     file_name = f"{annotation_level_1}_annotations.csv"
     df.to_csv(file_dir / file_name)
 

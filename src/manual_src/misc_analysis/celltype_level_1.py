@@ -697,9 +697,11 @@ if annotation_level_1 in adata.obs:
     )
 
     # Export cell ID and annotation for each cell as csv
-    cell_annotations = adata.obs[[annotation_level_1]].copy()
-    cell_annotations["cell_id"] = adata.obs["cell_id"]
-    cell_annotations.to_csv(file_dir / f"{subset}_cell_annotations.csv", index=False)
+    df = adata.obs[[annotation_level_1, "cell_id"]].copy()
+    df = df.rename(columns={df.columns[0]: "cell_annotation", df.columns[1]: "cell_id"})
+    file_name = f"{annotation_level_1}_annotations.csv"
+    df.to_csv(file_dir / file_name)
+
 else:
     logger.warning(
         f"Annotation column '{annotation_level_1}' was not created. "

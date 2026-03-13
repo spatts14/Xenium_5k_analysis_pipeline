@@ -102,13 +102,14 @@ for roi in ROI_list:
             library_id="spatial",
             shape=None,
             color=color,
-            size=0.5,
+            size=2.0,  # increase dot size (was 0.5)
             frameon=False,
             figsize=(10, 10),
             wspace=0.4,
             vmax=5,
             title=f"{roi}: {color}",
             save=f"_{roi}_{color}_spatial.pdf",
+            linewidths=0,  # removes the dot edge/border
         )
 
 # set figure directory back to main

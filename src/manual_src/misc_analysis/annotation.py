@@ -56,9 +56,8 @@ def collect_all_annotations(base_dir):
     # Combine all annotations
     combined = pd.concat(all_annotations, ignore_index=True)
 
-    # Rename first column
-    combined.rename(columns={combined.columns[0]: "cell_annotation"}, inplace=True)
-
+    # Check column names
+    print(f"\nCombined annotations columns names: {combined.columns.tolist()}")
     print(f"\nTotal annotations loaded: {len(combined)}")
     print(f"Columns: {combined.columns.tolist()}")
 

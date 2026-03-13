@@ -25,7 +25,7 @@ adata = sc.read_h5ad(dir / "subset_adata/adata_subset_COPD_IPF_PM08.h5ad")
 
 # Remove unknown cell types
 adata = adata[adata.obs["level_0_annotation"] != "Unknown"].copy()
-
+print(adata.obs["level_0_annotation"].value_counts())
 
 # Plots
 sc.pl.umap(

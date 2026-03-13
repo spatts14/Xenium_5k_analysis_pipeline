@@ -56,11 +56,9 @@ def subset_adata_by_meta(
 
 
 # Set directories and file names
-base_dir = Path(
-    "/rds/general/user/sep22/projects/phenotypingsputumasthmaticsaurorawellcomea1/live/Sara_Patti/009_ST_Xenium/output/2026-02-22_analysis_run_HVG2000/"
-)
-module_dir = base_dir / "annotate"
-h5ad_file = "adata.h5ad"
+base_dir = Path(os.getenv("BASE_DIR"))
+module_dir = base_dir / "annotate/level_1_annotation/"
+h5ad_file = "adata_level_1_annotation1.h5ad"
 
 output_dir = base_dir / "subset_adata"
 os.makedirs(output_dir, exist_ok=True)

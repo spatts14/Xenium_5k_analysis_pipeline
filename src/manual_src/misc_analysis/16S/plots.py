@@ -102,7 +102,7 @@ for roi in ROI_list:
             library_id="spatial",
             shape=None,
             color=color,
-            size=2.0,
+            size=5.0,
             frameon=False,
             figsize=(5, 5),
             wspace=0.4,

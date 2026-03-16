@@ -86,7 +86,6 @@ def plot_gene_expression_per_roi(
     plt.xlabel("Condition")
     plt.ylabel(f"{gene} Expression")
     plt.title(f"{gene} Expression per ROI by Condition")
-    plt.xticks(rotation=45, ha="right")
     plt.tight_layout()
     plt.savefig(fig_dir / f"{gene}_expression_per_ROI.pdf")
 

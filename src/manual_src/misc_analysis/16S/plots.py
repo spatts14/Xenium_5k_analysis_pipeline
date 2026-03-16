@@ -3,9 +3,88 @@
 import os
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+import pandas as pd
 import scanpy as sc
 import seaborn as sns
 import squidpy as sq
+
+
+# Functions
+def plot_gene_expression_per_roi(
+    adata, gene, roi_col="ROI", condition_col="condition", agg_func="sum"
+):
+    """Plot ROI-level expression for a given gene.
+
+    Args:
+    adata : AnnData
+        AnnData object containing expression matrix.
+    gene : str
+        Gene name to plot.
+    roi_col : str
+        Column in adata.obs defining ROI.
+    condition_col : str
+        Column in adata.obs defining condition.
+    agg_func : str
+        Aggregation across spots within ROI ('sum', 'mean', etc).
+
+    Returns:
+    plot_df : pd.DataFrame
+        Aggregated dataframe used for plotting.
+    """
+    if gene not in adata.var_names:
+        raise ValueError(f"{gene} not found in adata.var_names")
+
+    # Extract expression
+    expr = adata[:, gene].X
+    if hasattr(expr, "toarray"):  # sparse matrix
+        expr = expr.toarray().flatten()
+    else:
+        expr = expr.flatten()
+
+    # Temporary dataframe
+    temp_df = pd.DataFrame(
+        {
+            f"{gene}_expression": expr,
+            "ROI": adata.obs[roi_col].values,
+            "condition": adata.obs[condition_col].values,
+        }
+    )
+
+    # Aggregate per ROI
+    plot_df = temp_df.groupby(["ROI", "condition"], as_index=False, observed=True).agg(
+        {f"{gene}_expression": agg_func}
+    )
+
+    plot_df.rename(columns={f"{gene}_expression": f"{gene}_total_count"}, inplace=True)
+
+    print(f"ROI-level {gene} counts:")
+    print(plot_df.head())
+
+    # Plot
+    plt.figure(figsize=(14, 6))
+
+    sns.boxplot(data=plot_df, x="condition", y=f"{gene}_total_count")
+
+    sns.stripplot(
+        data=plot_df,
+        x="condition",
+        y=f"{gene}_total_count",
+        color="black",
+        size=4,
+        jitter=True,
+        alpha=0.6,
+    )
+
+    plt.xlabel("ROI")
+    plt.ylabel(f"{gene} Expression")
+    plt.title(f"{gene} Expression per ROI by Condition")
+    plt.xticks(rotation=45, ha="right")
+    plt.tight_layout()
+    plt.savefig(fig_dir / f"{gene}_expression_per_ROI.pdf")
+
+    return plot_df
+
 
 # Set directories
 dir = Path(
@@ -39,21 +118,20 @@ sc.pl.dotplot(
     save="_level_0.pdf",
 )
 
-# Look at 16S expression by cell type
 sc.pl.dotplot(
     adata, ["16S"], groupby="level_0_annotation", cmap=cmap, save="_level_0_16S.pdf"
 )
 
-# Look at 16S expression by cell type
+# Look at 16S expression by condition
 sc.pl.dotplot(
     adata,
     ["16S", "KRT5", "MRC1"],
     groupby="condition",
     cmap=cmap,
-    save="_condition.png",
+    save="_condition_multi.png",
 )
 
-# Look at 16S expression by cell type
+# Look at 16S expression by condition
 sc.pl.dotplot(adata, ["16S"], groupby="condition", cmap=cmap, save="_condition_16S.pdf")
 
 sc.pl.violin(adata, ["16S"], groupby="condition", save="_violin_16S.png")
@@ -76,6 +154,9 @@ for cell in cell_type_list:
         cmap=cmap,
         save=f"_{cell}_condition.pdf",
     )
+
+# Plot sum per ROI
+plot_df = plot_gene_expression_per_roi(adata, "16S")
 
 # Plot spatial plots
 color_list = ["level_0_annotation", "level_1_annotation", "16S"]

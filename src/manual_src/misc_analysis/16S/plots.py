@@ -62,9 +62,16 @@ def plot_gene_expression_per_roi(
     print(plot_df.head())
 
     # Plot
-    plt.figure(figsize=(14, 6))
+    plt.figure(figsize=(6, 6))
 
-    sns.boxplot(data=plot_df, x="condition", y=f"{gene}_total_count")
+    condition_color_dict = {"PM08": "#BC3C29", "IPF": "#E18727"}
+
+    sns.boxplot(
+        data=plot_df,
+        x="condition",
+        y=f"{gene}_total_count",
+        palette=condition_color_dict,
+    )
 
     sns.stripplot(
         data=plot_df,
@@ -76,7 +83,7 @@ def plot_gene_expression_per_roi(
         alpha=0.6,
     )
 
-    plt.xlabel("ROI")
+    plt.xlabel("Condition")
     plt.ylabel(f"{gene} Expression")
     plt.title(f"{gene} Expression per ROI by Condition")
     plt.xticks(rotation=45, ha="right")
